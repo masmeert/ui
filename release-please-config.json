@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": true,
+  "include-component-in-tag": true,
+  "changelog-sections": [
+    { "type": "feat", "section": "Added" },
+    { "type": "perf", "section": "Changed" },
+    { "type": "revert", "section": "Changed" },
+    { "type": "fix", "section": "Fixed" }
+  ],
+  "packages": {
+    "packages/ui": {
+      "release-type": "node",
+      "package-name": "@masmeert/ui",
+      "component": "ui"
+    }
+  }
+}

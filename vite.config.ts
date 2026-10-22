@@ -1,0 +1,29 @@
+import { defineConfig } from "vite-plus";
+
+export default defineConfig({
+  staged: {
+    "*": "vp check --fix",
+  },
+  fmt: {
+    sortTailwindcss: {
+      stylesheet: "./apps/playground/src/styles.css",
+      functions: ["cn", "cva", "clsx", "twMerge"],
+    },
+  },
+  lint: {
+    plugins: ["typescript", "unicorn", "oxc", "react", "react-perf", "import"],
+    jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
+    categories: { correctness: "error" },
+    env: { builtin: true },
+    options: { typeAware: true, typeCheck: true },
+    rules: {
+      "vite-plus/prefer-vite-plus-imports": "error",
+      "import/default": "off",
+      "oxc/no-accumulating-spread": "error",
+      "unicorn/filename-case": ["error", { case: "kebabCase" }],
+    },
+  },
+  run: {
+    cache: true,
+  },
+});
