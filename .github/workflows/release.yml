@@ -24,8 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # npm trusted publishing exchanges this OIDC token for a short-lived publish credential; no NPM_TOKEN secret.
-      id-token: write
+      # GitHub Packages authenticates with the workflow's GITHUB_TOKEN; this grants it publish rights.
+      packages: write
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
@@ -35,8 +35,13 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-          registry-url: https://registry.npmjs.org
+          registry-url: https://npm.pkg.github.com
+          scope: "@masmeert"
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @masmeert/ui build
-      - run: npm publish --access public
+      # pnpm pack rewrites `catalog:` ranges to real versions; npm publish of the raw folder would ship them verbatim.
+      - run: pnpm pack --pack-destination "$RUNNER_TEMP"
         working-directory: packages/ui
+      - run: npm publish "$RUNNER_TEMP"/masmeert-ui-*.tgz
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

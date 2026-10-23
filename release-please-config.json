@@ -12,6 +12,7 @@
   "packages": {
     "packages/ui": {
       "release-type": "node",
+      "initial-version": "0.1.0",
       "package-name": "@masmeert/ui",
       "component": "ui"
     }
