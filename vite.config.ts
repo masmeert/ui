@@ -6,7 +6,7 @@ export default defineConfig({
   },
   fmt: {
     sortTailwindcss: {
-      stylesheet: "./apps/playground/src/styles.css",
+      stylesheet: "./packages/ui/tailwind.css",
       functions: ["cn", "cva", "clsx", "twMerge"],
     },
   },

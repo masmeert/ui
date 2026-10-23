@@ -1,0 +1,3 @@
+/* Entry for oxfmt's Tailwind class sorting only; not shipped. */
+@import "tailwindcss";
+@import "./src/styles.css";
