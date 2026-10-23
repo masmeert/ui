@@ -1,0 +1,77 @@
+@import "tailwindcss";
+@import "@masmeert/ui/styles.css";
+@source "../../../packages/ui/src";
+@source "./";
+
+:root {
+  --background: oklch(99% 0 0);
+  --foreground: oklch(15% 0 0);
+  --card: oklch(97% 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(97% 0 0);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(20% 0 0);
+  --primary-foreground: oklch(99% 0 0);
+  --secondary: oklch(93% 0 0);
+  --secondary-foreground: var(--foreground);
+  --muted: oklch(93% 0 0);
+  --muted-foreground: oklch(50% 0 0);
+  --sunken: oklch(89% 0 0);
+  --accent: oklch(93% 0 0);
+  --accent-foreground: var(--foreground);
+  --border: oklch(15% 0 0 / 0.08);
+  --border-strong: oklch(15% 0 0 / 0.14);
+  --input: var(--border-strong);
+  --rule: oklch(15% 0 0 / 0.1);
+  --spine: oklch(15% 0 0 / 0.3);
+  --ring: oklch(55% 0 0 / 0.5);
+  --brand: oklch(35% 0 0);
+  --selection: oklch(15% 0 0 / 0.12);
+  --destructive: oklch(58% 0.19 25);
+  --destructive-foreground: oklch(99% 0 0);
+  --warning: oklch(65% 0.15 70);
+  --success: oklch(55% 0.1 160);
+  --success-foreground: oklch(99% 0 0);
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
+  --chart-1: oklch(55% 0 0);
+  --chart-2: oklch(70% 0 0);
+  --chart-3: oklch(40% 0 0);
+  --chart-4: oklch(80% 0 0);
+  --chart-5: oklch(30% 0 0);
+  --sheen: inset 0 1px 0 rgb(255 255 255 / 0.15), 0 1px 2px rgb(0 0 0 / 0.24);
+  --sheen-hover: inset 0 1px 0 rgb(255 255 255 / 0.2), 0 2px 6px rgb(0 0 0 / 0.22);
+  --sheen-active: inset 0 1px 0 rgb(0 0 0 / 0.08);
+}
+
+.dark {
+  --background: oklch(16% 0 0);
+  --foreground: oklch(97% 0 0);
+  --card: oklch(20% 0 0);
+  --popover: oklch(20% 0 0);
+  --primary: oklch(95% 0 0);
+  --primary-foreground: oklch(16% 0 0);
+  --secondary: oklch(26% 0 0);
+  --muted: oklch(26% 0 0);
+  --muted-foreground: oklch(68% 0 0);
+  --sunken: oklch(29% 0 0);
+  --accent: oklch(26% 0 0);
+  --border: oklch(100% 0 0 / 0.07);
+  --border-strong: oklch(100% 0 0 / 0.12);
+  --rule: oklch(100% 0 0 / 0.1);
+  --spine: oklch(100% 0 0 / 0.26);
+  --ring: oklch(80% 0 0 / 0.5);
+  --brand: oklch(90% 0 0);
+  --selection: oklch(100% 0 0 / 0.15);
+  --destructive: oklch(70% 0.17 25);
+}
+
+body {
+  @apply bg-background font-sans text-foreground antialiased;
+}

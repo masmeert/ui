@@ -13,6 +13,7 @@ export interface SwitchProps {
   ariaLabel?: string;
   size?: "default" | "sm";
   className?: string;
+  id?: string;
 }
 
 export function Switch({
@@ -23,8 +24,10 @@ export function Switch({
   ariaLabel,
   size = "default",
   className,
+  id: idProp,
 }: SwitchProps) {
-  const id = useId();
+  const autoId = useId();
+  const id = idProp ?? autoId;
   const thumbRef = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
   const [isPressed, setIsPressed] = useState(false);
@@ -59,6 +62,8 @@ export function Switch({
           onPointerLeave={() => setIsPressed(false)}
           initial={false}
           data-state={checked ? "checked" : "unchecked"}
+          data-checked={checked ? "" : undefined}
+          data-unchecked={checked ? undefined : ""}
           className={cn(
             "group peer inline-flex shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 outline-none",
             size === "sm" ? "h-5 w-9 px-0.5" : "h-7 w-12 px-1",

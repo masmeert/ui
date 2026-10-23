@@ -27,6 +27,7 @@ export interface SlideActionButtonProps extends Omit<HTMLAttributes<HTMLDivEleme
   onComplete?: () => void;
   thumbClassName?: string;
   fillClassName?: string;
+  disabled?: boolean;
 }
 
 export function SlideActionButton({
@@ -38,6 +39,7 @@ export function SlideActionButton({
   thumbClassName,
   fillClassName,
   className,
+  disabled = false,
   ...rest
 }: SlideActionButtonProps) {
   const reduce = useReducedMotion();
@@ -107,7 +109,7 @@ export function SlideActionButton({
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
+    if (disabled || (event.key !== "Enter" && event.key !== " ")) return;
     event.preventDefault();
     complete();
   };
@@ -121,8 +123,10 @@ export function SlideActionButton({
         // The track only carries the label — the slide starts on the thumb,
         // which suppresses selection for the whole gesture on its own.
         TOUCH_GESTURE_CONTENT_CLASS,
+        disabled && "opacity-60",
         className,
       )}
+      aria-disabled={disabled || undefined}
       {...rest}
     >
       <motion.span
@@ -167,7 +171,8 @@ export function SlideActionButton({
         ref={thumbRef}
         type="button"
         aria-label={typeof children === "string" ? children : "Slide action"}
-        drag={completed ? false : "x"}
+        disabled={disabled}
+        drag={completed || disabled ? false : "x"}
         dragConstraints={{ left: 0, right: maxDistance }}
         dragElastic={0}
         dragMomentum={false}
@@ -177,13 +182,14 @@ export function SlideActionButton({
           else moveTo(0);
         }}
         onKeyDown={handleKeyDown}
-        whileTap={reduce || completed ? undefined : { scale: 0.94 }}
+        whileTap={reduce || completed || disabled ? undefined : { scale: 0.94 }}
         transition={SPRING_PRESS}
         className={cn(
           "sheen relative z-10 grid size-14 cursor-grab touch-none place-items-center rounded-[18px] bg-primary text-primary-foreground",
           TOUCH_GESTURE_CLASS,
           "outline-none focus-visible:ring-4 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-background active:cursor-grabbing",
           completed && "cursor-default bg-background text-foreground",
+          disabled && "cursor-not-allowed active:cursor-not-allowed",
           thumbClassName,
         )}
       >

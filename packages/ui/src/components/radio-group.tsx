@@ -15,6 +15,7 @@ type RadioCtx = {
   value: string;
   setValue: (value: string) => void;
   layoutId: string;
+  disabled: boolean;
 };
 
 const RadioCtx = createContext<RadioCtx | null>(null);
@@ -34,7 +35,13 @@ export interface RadioGroupProps {
   children: ReactNode;
   className?: string;
   orientation?: "vertical" | "horizontal";
+  disabled?: boolean;
+  "aria-label"?: string;
+  "aria-labelledby"?: string;
 }
+
+const NEXT_KEYS = new Set(["ArrowDown", "ArrowRight"]);
+const PREVIOUS_KEYS = new Set(["ArrowUp", "ArrowLeft"]);
 
 export function RadioGroup({
   value,
@@ -43,6 +50,8 @@ export function RadioGroup({
   children,
   className,
   orientation = "vertical",
+  disabled = false,
+  ...labelling
 }: RadioGroupProps) {
   const [internal, setInternal] = useState(defaultValue);
   const layoutId = useId();
@@ -56,14 +65,44 @@ export function RadioGroup({
     [controlled, onValueChange],
   );
   const contextValue = useMemo(
-    () => ({ value: current, setValue, layoutId }),
-    [current, layoutId, setValue],
+    () => ({ value: current, setValue, layoutId, disabled }),
+    [current, layoutId, setValue, disabled],
   );
 
   return (
     <RadioCtx.Provider value={contextValue}>
       <div
         role="radiogroup"
+        aria-orientation={orientation}
+        aria-disabled={disabled || undefined}
+        {...labelling}
+        onKeyDown={(event) => {
+          const forward = NEXT_KEYS.has(event.key);
+          if (
+            !forward &&
+            !PREVIOUS_KEYS.has(event.key) &&
+            event.key !== "Home" &&
+            event.key !== "End"
+          ) {
+            return;
+          }
+          const radios = [
+            ...event.currentTarget.querySelectorAll<HTMLButtonElement>(
+              "[role=radio]:not(:disabled)",
+            ),
+          ];
+          if (radios.length === 0) return;
+          event.preventDefault();
+          const index = radios.indexOf(document.activeElement as HTMLButtonElement);
+          const target =
+            event.key === "Home"
+              ? radios[0]
+              : event.key === "End"
+                ? radios[radios.length - 1]
+                : radios[(index + (forward ? 1 : -1) + radios.length) % radios.length];
+          target.focus();
+          target.click();
+        }}
         className={cn(
           "flex gap-3",
           orientation === "vertical" ? "flex-col" : "flex-row flex-wrap",
@@ -94,18 +133,19 @@ export function RadioGroupItem({
   className,
   id: idProp,
 }: RadioGroupItemProps) {
-  const { value: groupValue, setValue, layoutId } = useRadioGroup();
+  const { value: groupValue, setValue, layoutId, disabled: groupDisabled } = useRadioGroup();
   const autoId = useId();
   const id = idProp ?? autoId;
   const reduce = useReducedMotion();
   const selected = groupValue === value;
+  const isDisabled = disabled || groupDisabled;
 
   return (
     <label
       htmlFor={id}
       className={cn(
         "inline-flex items-center gap-3",
-        disabled ? "cursor-not-allowed" : "cursor-pointer",
+        isDisabled ? "cursor-not-allowed" : "cursor-pointer",
         className,
       )}
     >
@@ -114,11 +154,15 @@ export function RadioGroupItem({
         type="button"
         role="radio"
         aria-checked={selected}
-        disabled={disabled}
-        onClick={() => !disabled && setValue(value)}
-        whileTap={reduce || disabled ? undefined : { scale: 0.95 }}
+        disabled={isDisabled}
+        // Roving focus: Tab lands on the selected radio (or any, before a choice) and arrows move within the group.
+        tabIndex={selected || !groupValue ? 0 : -1}
+        onClick={() => !isDisabled && setValue(value)}
+        whileTap={reduce || isDisabled ? undefined : { scale: 0.95 }}
         transition={SPRING_PRESS}
         data-state={selected ? "checked" : "unchecked"}
+        data-checked={selected ? "" : undefined}
+        data-unchecked={selected ? undefined : ""}
         className={cn(
           "relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-200 outline-none",
           "focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
@@ -138,7 +182,7 @@ export function RadioGroupItem({
         <span
           className={cn(
             "flex flex-col text-sm text-foreground select-none",
-            disabled && "opacity-60",
+            isDisabled && "opacity-60",
           )}
         >
           {label}

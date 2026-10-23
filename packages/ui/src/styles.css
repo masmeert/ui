@@ -814,3 +814,17 @@
     display: none;
   }
 }
+
+/* Indeterminate progress: a third-width bar sweeping across the track. */
+@theme {
+  --animate-progress-indeterminate: progress-indeterminate 1.4s ease-in-out infinite;
+
+  @keyframes progress-indeterminate {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(300%);
+    }
+  }
+}

@@ -321,7 +321,7 @@ export function ExpandableActionBar({
                   <>
                     <span
                       className={cn(
-                        "inline-flex shrink-0 items-center justify-center",
+                        "inline-flex shrink-0 items-center justify-center [&_svg:not([class*='size-'])]:size-full",
                         ICON_SIZE_CLASS[size],
                         classNames?.icon,
                       )}

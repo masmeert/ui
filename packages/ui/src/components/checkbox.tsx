@@ -60,6 +60,9 @@ export function Checkbox({
         whileTap={reduce || disabled ? undefined : { scale: 0.95 }}
         transition={SPRING_PRESS}
         data-state={checked ? "checked" : indeterminate ? "indeterminate" : "unchecked"}
+        data-checked={checked ? "" : undefined}
+        data-unchecked={!checked && !indeterminate ? "" : undefined}
+        data-indeterminate={indeterminate ? "" : undefined}
         className={cn(
           "inline-grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 transition-colors duration-200 outline-none",
           "focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",

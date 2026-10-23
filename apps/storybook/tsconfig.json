@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "module": "esnext",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "paths": {
+      "@masmeert/ui/hooks/*": ["../../packages/ui/src/hooks/*"],
+      "@masmeert/ui/lib/*": ["../../packages/ui/src/lib/*"],
+      "@masmeert/ui/*": ["../../packages/ui/src/components/*"],
+      "@/*": ["../../packages/ui/src/*"]
+    }
+  },
+  "include": ["src", ".storybook"]
+}
