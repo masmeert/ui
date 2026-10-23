@@ -1,7 +1,7 @@
 export type Side = "top" | "bottom";
 export type Align = "start" | "center" | "end";
 
-interface Rect {
+export interface Rect {
   x: number;
   y: number;
   width: number;
@@ -78,7 +78,7 @@ export function buildGeometry({
   };
 }
 
-function rectAtProgress(geometry: Geometry, progress: number): Rect {
+export function rectAtProgress(geometry: Geometry, progress: number): Rect {
   const trigger = geometry.trigger;
   const panel = geometry.panel;
 
@@ -118,7 +118,7 @@ function roundedRectangleShape(rect: Rect) {
   );
 }
 
-function roundedRectanglePath(rect: Rect) {
+export function roundedRectanglePath(rect: Rect) {
   const radius = Math.max(0, Math.min(rect.radius, rect.width / 2, rect.height / 2));
   const toCoordinate = (value: number) => value.toFixed(3);
   const x1 = rect.x;
