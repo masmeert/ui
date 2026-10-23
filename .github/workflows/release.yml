@@ -3,6 +3,8 @@ name: Release
 on:
   push:
     branches: [main]
+  # Manual re-publish of the current main version, e.g. after a failed publish job.
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -20,7 +22,7 @@ jobs:
 
   publish-ui:
     needs: release-please
-    if: needs.release-please.outputs.ui-released == 'true'
+    if: needs.release-please.outputs.ui-released == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -42,6 +44,8 @@ jobs:
       # pnpm pack rewrites `catalog:` ranges to real versions; npm publish of the raw folder would ship them verbatim.
       - run: pnpm pack --pack-destination "$RUNNER_TEMP"
         working-directory: packages/ui
-      - run: npm publish "$RUNNER_TEMP"/masmeert-ui-*.tgz
+      # Run outside the repo: npm rejects the root package.json's pnpm devEngines.
+      - run: npm publish ./masmeert-ui-*.tgz
+        working-directory: ${{ runner.temp }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
