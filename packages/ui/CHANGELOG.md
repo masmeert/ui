@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/masmeert/ui/compare/ui-v0.1.0...ui-v0.1.1) (2026-10-23)
+
+
+### Added
+
+* **ui:** export popover geometry primitives ([f987069](https://github.com/masmeert/ui/commit/f987069abcde9eebed271149f1a50d684b12eaab))
+
 ## 0.1.0 (2026-10-23)
 
 
