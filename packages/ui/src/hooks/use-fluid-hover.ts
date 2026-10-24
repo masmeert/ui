@@ -219,15 +219,34 @@ export function useFluidHover<T extends HTMLElement>(
     return () => element?.removeAttribute("data-fluid-hover-active");
   }, [activeIndex]);
 
+  // React bubbles events from portaled children (a flyout, a submenu) through the container,
+  // though the pointer is over another surface. Those count as outside.
+  const isOutside = useCallback(
+    (target: EventTarget) => !containerRef.current?.contains(target as Node),
+    [containerRef],
+  );
+  const wasOutside = useRef(false);
+
   const handlers = useMemo(
     () => ({
       onPointerEnter(event: PointerEvent) {
-        if (event.pointerType !== "mouse") return;
+        if (event.pointerType !== "mouse" || isOutside(event.target)) return;
+        wasOutside.current = false;
         setSession((s) => s + 1);
         pickAt(event.clientX, event.clientY);
       },
       onPointerMove(event: PointerEvent) {
         if (event.pointerType !== "mouse") return;
+        if (isOutside(event.target)) {
+          wasOutside.current = true;
+          setActiveIndex(null);
+          return;
+        }
+        // Back from a portaled child: React fires no pointerenter, so start a fresh session here.
+        if (wasOutside.current) {
+          wasOutside.current = false;
+          setSession((s) => s + 1);
+        }
         pickAt(event.clientX, event.clientY);
       },
       onPointerLeave(event: PointerEvent) {
@@ -237,6 +256,7 @@ export function useFluidHover<T extends HTMLElement>(
       onClick(event: MouseEvent) {
         const { gapClick: gap } = options.current;
         if (!gap || event.defaultPrevented || event.detail === 0) return;
+        if (isOutside(event.target)) return;
         const target = event.target as HTMLElement;
         // Not a gap: inside an item, or a control between rows.
         for (const element of items.current.values()) if (element.contains(target)) return;
@@ -251,7 +271,7 @@ export function useFluidHover<T extends HTMLElement>(
         items.current.get(index)?.click();
       },
     }),
-    [pickAt, skip, toLocal],
+    [isOutside, pickAt, skip, toLocal],
   );
 
   return {

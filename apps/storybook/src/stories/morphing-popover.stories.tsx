@@ -141,6 +141,72 @@ function NewProjectPopover(props: ComponentProps<typeof MorphingPopoverContent>)
   );
 }
 
+const MODELS = ["Opus", "Sonnet", "Haiku"];
+
+/** A row whose list flies out beside the menu; the flyout is portaled but a React child of the menu. */
+function ModelMenuPopover(props: ComponentProps<typeof MorphingPopoverContent>) {
+  const [open, setOpen] = useState(false);
+  const [flyout, setFlyout] = useState(false);
+  const [model, setModel] = useState(MODELS[0]);
+
+  function changeOpen(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (!nextOpen) setFlyout(false);
+  }
+
+  return (
+    <MorphingPopover open={open} onOpenChange={changeOpen}>
+      <MorphingPopoverTrigger>
+        <Button variant="secondary">{model}</Button>
+      </MorphingPopoverTrigger>
+      <MorphingPopoverContent {...props} className="p-1.5">
+        <MorphingPopoverMenu className="w-52">
+          <button
+            type="button"
+            role="menuitem"
+            onPointerEnter={() => setFlyout(false)}
+            className={itemClass}
+          >
+            Effort
+          </button>
+          <MorphingPopover open={flyout} onOpenChange={setFlyout} className="flex w-full">
+            <button
+              type="button"
+              role="menuitem"
+              aria-haspopup="listbox"
+              aria-expanded={flyout}
+              onClick={() => setFlyout(true)}
+              onPointerEnter={() => setFlyout(true)}
+              className={`${itemClass} w-full`}
+            >
+              Model
+              <span className="ml-auto text-muted-foreground">{model}</span>
+            </button>
+            <MorphingPopoverContent side="right" sideOffset={8} radius={12} className="p-1.5">
+              <MorphingPopoverMenu className="w-40">
+                {MODELS.map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setModel(name);
+                      changeOpen(false);
+                    }}
+                    className={itemClass}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </MorphingPopoverMenu>
+            </MorphingPopoverContent>
+          </MorphingPopover>
+        </MorphingPopoverMenu>
+      </MorphingPopoverContent>
+    </MorphingPopover>
+  );
+}
+
 export const Menu: Story = {
   render: (args) => <ThreadActionsPopover {...args} />,
 };
@@ -153,4 +219,9 @@ export const MenuToForm: Story = {
 export const Top: Story = {
   args: { side: "top" },
   render: (args) => <ThreadActionsPopover {...args} />,
+};
+
+export const MenuWithFlyout: Story = {
+  args: { align: "start" },
+  render: (args) => <ModelMenuPopover {...args} />,
 };
