@@ -440,7 +440,7 @@ function DropdownMenuShortcut({ className, children, ...props }: React.Component
     <span
       data-slot="dropdown-menu-shortcut"
       className={cn(
-        // Deliberate letter-spacing exception: ⌘⇧⌥ glyphs run together without it.
+        // eslint-disable-next-line masmeert-ui/no-raw-classes -- key-cap glyphs run together without spacing
         "ml-auto tracking-widest text-muted-foreground",
         size.type.caption,
         className,

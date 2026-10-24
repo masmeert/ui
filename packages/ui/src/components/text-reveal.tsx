@@ -87,7 +87,9 @@ export function TextReveal({
             ? { opacity: { ...tier.fast, delay: d * 0.3 } }
             : {
                 y: { type: "spring" as const, ...s, delay: d },
+                // eslint-disable-next-line masmeert-ui/no-raw-motion -- hero pacing is the effect
                 opacity: { duration: 0.7, ease: EASE_OUT, delay: d },
+                // eslint-disable-next-line masmeert-ui/no-raw-motion -- hero pacing is the effect
                 filter: { duration: 0.9, ease: EASE_OUT, delay: d },
               };
           return (

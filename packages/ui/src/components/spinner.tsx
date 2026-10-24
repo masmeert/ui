@@ -377,6 +377,7 @@ function Scramble({ size, cycleSeconds, prefersReducedMotion }: PartProps) {
   return (
     // Letter-spacing is deliberate: these are scrambling cells, not a text label.
     <span
+      // eslint-disable-next-line masmeert-ui/no-raw-classes -- scramble glyphs need fixed spacing
       className="font-mono font-medium tracking-[0.2em] tabular-nums"
       style={{ fontSize: size * 0.42 }}
     >

@@ -766,7 +766,7 @@ export function ContextMenuShortcut({ children, className }: ContextMenuShortcut
     <span
       aria-hidden="true"
       className={cn(
-        // Deliberate letter-spacing exception: ⌘⇧⌥ glyphs run together without it.
+        // eslint-disable-next-line masmeert-ui/no-raw-classes -- key-cap glyphs run together without spacing
         "ml-auto pl-4 tracking-widest text-muted-foreground",
         size.type.caption,
         className,

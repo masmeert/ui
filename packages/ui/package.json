@@ -140,6 +140,7 @@
     "./lib/text-shimmer": "./dist/lib/text-shimmer.js",
     "./lib/touch": "./dist/lib/touch.js",
     "./lib/type-scale": "./dist/lib/type-scale.js",
+    "./eslint-plugin": "./dist/lint/eslint-plugin.js",
     "./package.json": "./package.json",
     "./styles.css": "./dist/styles.css"
   },

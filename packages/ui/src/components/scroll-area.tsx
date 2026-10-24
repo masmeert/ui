@@ -89,8 +89,8 @@ function ScrollBar({
         "group/scrollbar flex touch-none select-none",
         // Hide delay lets the thumb visibly narrow before it fades.
         "opacity-0 transition-opacity delay-160 duration-(--duration-exit-moderate) ease-(--ease-exit)",
-        "data-hovering:opacity-100 data-hovering:delay-0 data-hovering:duration-160 data-hovering:ease-out",
-        "data-scrolling:opacity-100 data-scrolling:delay-0 data-scrolling:duration-160 data-scrolling:ease-out",
+        "data-hovering:opacity-100 data-hovering:delay-0 data-hovering:duration-(--duration-moderate) data-hovering:ease-out",
+        "data-scrolling:opacity-100 data-scrolling:delay-0 data-scrolling:duration-(--duration-moderate) data-scrolling:ease-out",
         "data-vertical:h-full data-vertical:w-2.5 data-vertical:justify-end data-vertical:pr-0.5",
         "data-horizontal:h-2.5 data-horizontal:flex-col data-horizontal:justify-end data-horizontal:pb-0.5",
         className,

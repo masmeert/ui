@@ -2,7 +2,13 @@ import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   pack: {
-    entry: ["src/components/*.tsx", "src/hooks/*.ts", "src/lib/*.ts", "src/lib/*.tsx"],
+    entry: [
+      "src/components/*.tsx",
+      "src/hooks/*.ts",
+      "src/lib/*.ts",
+      "src/lib/*.tsx",
+      "src/lint/eslint-plugin.ts",
+    ],
     root: "src",
     unbundle: true,
     platform: "neutral",
@@ -14,7 +20,7 @@ export default defineConfig({
         return {
           ...Object.fromEntries(
             Object.entries(exports).map(([key, target]) => [
-              key.replace(/^\.\/components\//, "./"),
+              key.replace(/^\.\/(components|lint)\//, "./"),
               target,
             ]),
           ),

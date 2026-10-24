@@ -86,3 +86,25 @@ behind them. If the source and this file disagree, the source wins, and this fil
 - `reveal-product` is for an app people come back to. Children fade in on load, a step apart, and nothing moves on scroll.
 - `reveal-scroll`, `reveal-items` and `reveal-swap` (which hands a skeleton over to its data) handle single blocks. Add `-subtle` to the landing or product class for a quieter version.
 - Clip the ancestors of a revealed element with `overflow: clip`, never `hidden`.
+
+## Lint: `@masmeert/ui/eslint-plugin`
+
+One plugin, written against the ESLint API, so it loads in both ESLint and oxlint.
+
+- `masmeert-ui/no-raw-classes` checks every string for raw text sizes, raw durations, alpha text colours, dimmed icons, uppercase or letter-spacing, and `hover:bg-muted`/`accent`.
+- `masmeert-ui/no-raw-motion` flags hand-written motion durations (`duration: 0.3`). Loops with `repeat` are exempt.
+- A deliberate exception gets `// eslint-disable-next-line masmeert-ui/<rule> -- <reason>`.
+
+```js
+// eslint.config.js
+import ui from "@masmeert/ui/eslint-plugin";
+export default [ui.configs.recommended];
+```
+
+```json
+// .oxlintrc.json
+{
+  "jsPlugins": ["@masmeert/ui/eslint-plugin"],
+  "rules": { "masmeert-ui/no-raw-classes": "error", "masmeert-ui/no-raw-motion": "error" }
+}
+```

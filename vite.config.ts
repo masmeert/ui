@@ -14,7 +14,10 @@ export default defineConfig({
   },
   lint: {
     plugins: ["typescript", "unicorn", "oxc", "react", "react-perf", "import"],
-    jsPlugins: [{ name: "vite-plus", specifier: "vite-plus/oxlint-plugin" }],
+    jsPlugins: [
+      { name: "vite-plus", specifier: "vite-plus/oxlint-plugin" },
+      { name: "masmeert-ui", specifier: "./packages/ui/src/lint/eslint-plugin.ts" },
+    ],
     categories: { correctness: "error" },
     env: { builtin: true },
     options: { typeAware: true, typeCheck: true },
@@ -23,7 +26,21 @@ export default defineConfig({
       "import/default": "off",
       "oxc/no-accumulating-spread": "error",
       "unicorn/filename-case": ["error", { case: "kebabCase" }],
+      "masmeert-ui/no-raw-classes": "error",
+      "masmeert-ui/no-raw-motion": "error",
     },
+    overrides: [
+      {
+        // Stories are demo copy; the token files and the plugin itself hold the raw values.
+        files: [
+          "apps/storybook/**",
+          "packages/ui/src/lib/springs.ts",
+          "packages/ui/src/lib/ease.ts",
+          "packages/ui/src/lint/**",
+        ],
+        rules: { "masmeert-ui/no-raw-classes": "off", "masmeert-ui/no-raw-motion": "off" },
+      },
+    ],
   },
   run: {
     cache: true,

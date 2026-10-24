@@ -44,7 +44,7 @@ export function Switch({
   useEffect(() => {
     if (!thumbRef.current || reduce) return;
     if (disabled && isPressed) {
-      // A keyframed shake: its length is the gesture, not a tier.
+      // eslint-disable-next-line masmeert-ui/no-raw-motion -- disabled shake keyframes, not a tier
       animate(thumbRef.current, { x: [0, -2, 2, -1, 0] }, { delay: 0.2, duration: 0.6 });
     }
   }, [disabled, isPressed, reduce]);

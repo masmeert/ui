@@ -139,7 +139,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
 
   useEffect(() => {
     if (!fieldRef.current || reduce || !hasError) return;
-    // A keyframed shake, not travel to a target: its length is the gesture, not a tier.
+    // eslint-disable-next-line masmeert-ui/no-raw-motion -- error shake keyframes, not a tier
     animate(fieldRef.current, { x: [0, -6, 6, -4, 4, -2, 0] }, { duration: 0.45 });
   }, [hasError, reduce]);
 

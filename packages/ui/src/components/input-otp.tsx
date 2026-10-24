@@ -164,7 +164,7 @@ export function InputOTP({
   // Imperative so it replays on every transition into "error".
   useEffect(() => {
     if (status !== "error" || reduce || !slotsRef.current) return;
-    // A keyframed shake, not travel to a target: its length is the gesture, not a tier.
+    // eslint-disable-next-line masmeert-ui/no-raw-motion -- error shake keyframes, not a tier
     animate(slotsRef.current, { x: [0, -5, 5, -3, 3, -1, 0] }, { duration: 0.45, ease: EASE_OUT });
   }, [status, reduce]);
 
