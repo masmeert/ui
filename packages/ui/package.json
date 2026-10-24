@@ -1,6 +1,6 @@
 {
   "name": "@masmeert/ui",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Massimo's React UI kit: Radix primitives, motion components and charts on Tailwind v4.",
   "license": "MIT",
   "author": "Massimo Meert",
