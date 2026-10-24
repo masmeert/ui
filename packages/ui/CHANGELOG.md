@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/masmeert/ui/compare/ui-v0.1.1...ui-v0.2.0) (2026-10-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ui:** sizes are compact|default|large everywhere (sm/md/lg removed); default control height is 36px; Input's native size attribute is htmlSize; InputGroupButton sizes are inset|icon-inset; removed DigitSwap duration, ScrollReveal durationSeconds, SharedLayoutBg pillContainerClassName, DirectionProvider dir, the SPRING_* aliases, SPRING_MOUSE, EASE_DRAWER and the shadow-panel token.
+
+### Added
+
+* **ui:** export an eslint/oxlint plugin for the design system ([208d86d](https://github.com/masmeert/ui/commit/208d86dac6fa7bf00be66a05e05c8ff79623b1e7))
+* **ui:** shared motion, size, surface and type systems ([b1dfb63](https://github.com/masmeert/ui/commit/b1dfb63b48350d29a7c4bb294c84fcef544f0c28))
+
 ## [0.1.1](https://github.com/masmeert/ui/compare/ui-v0.1.0...ui-v0.1.1) (2026-10-23)
 
 
