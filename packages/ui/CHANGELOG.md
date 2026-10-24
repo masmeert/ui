@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/masmeert/ui/compare/ui-v0.2.0...ui-v0.2.1) (2026-10-24)
+
+
+### Fixed
+
+* **ui:** keep TextScramble visible under background-clip text ([61d8dad](https://github.com/masmeert/ui/commit/61d8dadbc1e8e6da9da7615b2a75f1a5e8f05188))
+
 ## [0.2.0](https://github.com/masmeert/ui/compare/ui-v0.1.1...ui-v0.2.0) (2026-10-24)
 
 
