@@ -1,4 +1,4 @@
-import { Search, X } from "lucide-react";
+import { IconSearch, IconX } from "@tabler/icons-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ButtonHTMLAttributes, forwardRef, useEffect, useRef, useState } from "react";
 import { cn } from "cn";
@@ -85,7 +85,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
         }
         onKeyDown?.(event);
       }}
-      leftIcon={<Search />}
+      leftIcon={<IconSearch />}
       rightIcon={
         // One fixed cell so the clear button and shortcut hint cross-fade on the same centre.
         <span className={cn("grid place-items-center", tokens.square)}>
@@ -105,7 +105,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
                 }}
                 className="col-start-1 row-start-1 transition-colors duration-(--duration-fast) hover:text-foreground"
               >
-                <X />
+                <IconX />
               </motion.button>
             ) : shortcut ? (
               <motion.span
@@ -165,7 +165,7 @@ export const SearchTrigger = forwardRef<HTMLButtonElement, SearchTriggerProps>(
         )}
         {...rest}
       >
-        <Search size={tokens.icon} className="shrink-0 text-muted-foreground" />
+        <IconSearch size={tokens.icon} className="shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1 truncate">{placeholder}</span>
         {shortcut ? <Kbd>{shortcut}</Kbd> : null}
       </button>

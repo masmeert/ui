@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Lock } from "lucide-react";
+import { IconLock } from "@tabler/icons-react";
 import { Label } from "@masmeert/ui/label";
 import { Textarea } from "@masmeert/ui/textarea";
 
@@ -21,7 +21,7 @@ export const WithIcon: Story = {
   args: {
     children: (
       <>
-        <Lock className="size-3.5" />
+        <IconLock className="size-3.5" />
         Encrypted secret
       </>
     ),

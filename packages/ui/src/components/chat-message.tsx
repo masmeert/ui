@@ -1,17 +1,17 @@
 import {
-  Check,
-  Copy,
-  File,
-  FileArchive,
-  FileAudio,
-  FileCode,
-  FileImage,
-  FileSpreadsheet,
-  FileText,
-  FileVideo,
-  RotateCcw,
-  X,
-} from "lucide-react";
+  IconCheck,
+  IconCopy,
+  IconFile,
+  IconFileCode,
+  IconFileMusic,
+  IconFileSpreadsheet,
+  IconFileText,
+  IconFileZip,
+  IconMovie,
+  IconPhoto,
+  IconRotate,
+  IconX,
+} from "@tabler/icons-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   type ComponentType,
@@ -44,14 +44,14 @@ export interface ChatAttachment {
 }
 
 const ICON_BY_KIND: Record<string, ComponentType<{ size?: number; "aria-hidden"?: boolean }>> = {
-  image: FileImage,
-  video: FileVideo,
-  audio: FileAudio,
-  text: FileText,
-  code: FileCode,
-  sheet: FileSpreadsheet,
-  archive: FileArchive,
-  file: File,
+  image: IconPhoto,
+  video: IconMovie,
+  audio: IconFileMusic,
+  text: IconFileText,
+  code: IconFileCode,
+  sheet: IconFileSpreadsheet,
+  archive: IconFileZip,
+  file: IconFile,
 };
 
 const EXTENSION_KIND: Record<string, string> = {
@@ -131,7 +131,7 @@ export function AttachmentChip({
   ...props
 }: AttachmentChipProps) {
   const tokens = useSize(size);
-  const Icon = ICON_BY_KIND[attachmentKind(attachment)] ?? File;
+  const Icon = ICON_BY_KIND[attachmentKind(attachment)] ?? IconFile;
   const meta = attachment.size !== undefined ? formatFileSize(attachment.size) : undefined;
 
   const body = (
@@ -189,7 +189,7 @@ export function AttachmentChip({
             "transition-colors duration-(--duration-fast) outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
           )}
         >
-          <X className="size-3" aria-hidden />
+          <IconX className="size-3" aria-hidden />
         </button>
       ) : null}
     </div>
@@ -304,7 +304,7 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(function
           ) : null}
           {onRetry ? (
             <ChatMessageAction size={size} label="Retry" onClick={onRetry}>
-              <RotateCcw size={tokens.icon} aria-hidden />
+              <IconRotate size={tokens.icon} aria-hidden />
             </ChatMessageAction>
           ) : null}
           {actions}
@@ -384,9 +384,9 @@ function CopyAction({
             transition={swap}
           >
             {copied ? (
-              <Check size={tokens.icon} aria-hidden />
+              <IconCheck size={tokens.icon} aria-hidden />
             ) : (
-              <Copy size={tokens.icon} aria-hidden />
+              <IconCopy size={tokens.icon} aria-hidden />
             )}
           </motion.span>
         </AnimatePresence>

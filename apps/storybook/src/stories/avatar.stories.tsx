@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Check } from "lucide-react";
+import { IconCheck } from "@tabler/icons-react";
 import {
   Avatar,
   AvatarBadge,
@@ -55,7 +55,7 @@ function ApprovedReviewerAvatar(props: AvatarProps) {
       <AvatarImage src="https://github.com/sindresorhus.png" alt="sindresorhus" />
       <AvatarFallback>SS</AvatarFallback>
       <AvatarBadge className="bg-emerald-500">
-        <Check />
+        <IconCheck />
       </AvatarBadge>
     </Avatar>
   );

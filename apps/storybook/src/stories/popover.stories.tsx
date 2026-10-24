@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import { Copy, Share2, Users } from "lucide-react";
+import { IconCopy, IconShare, IconUsers } from "@tabler/icons-react";
 import { Button } from "@masmeert/ui/button";
 import { Popover, PopoverContent, PopoverTrigger, type PopoverProps } from "@masmeert/ui/popover";
 import { typeClass } from "@masmeert/ui/lib/type-scale";
@@ -37,7 +37,7 @@ function ShareThreadPopover(props: PopoverProps) {
     <Popover {...props}>
       <PopoverTrigger>
         <Button variant="secondary">
-          <Share2 className="size-4" />
+          <IconShare className="size-4" />
           Share
         </Button>
       </PopoverTrigger>
@@ -56,7 +56,7 @@ function ShareThreadPopover(props: PopoverProps) {
           >
             <span className="min-w-0 flex-1 truncate">masscode.dev/t/fix-flaky-auth-test</span>
             <Button variant="ghost" size="icon" aria-label="Copy link">
-              <Copy className="size-4" />
+              <IconCopy className="size-4" />
             </Button>
           </div>
         </div>
@@ -70,7 +70,7 @@ function ParticipantsPopover(props: PopoverProps) {
     <Popover {...props}>
       <PopoverTrigger>
         <Button variant="ghost" size="compact">
-          <Users className="size-4" />3 watching
+          <IconUsers className="size-4" />3 watching
         </Button>
       </PopoverTrigger>
       <PopoverContent>

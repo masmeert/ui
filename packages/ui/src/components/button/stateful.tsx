@@ -1,4 +1,4 @@
-import { Check, Loader2, X } from "lucide-react";
+import { IconCheck, IconLoader2, IconX } from "@tabler/icons-react";
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import { forwardRef, type ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { sizeTokens, useSizeContext } from "@/lib/size";
@@ -210,17 +210,17 @@ export const StatefulButton = forwardRef<HTMLButtonElement, StatefulButtonProps>
           <AnimatePresence initial={false}>
             {state === "loading" ? (
               <IconSlot keyId="loading-icon" width={iconWidth}>
-                <Loader2 size={tokens.icon} className="animate-spin" />
+                <IconLoader2 size={tokens.icon} className="animate-spin" />
               </IconSlot>
             ) : null}
             {state === "success" ? (
               <IconSlot keyId="success-icon" width={iconWidth}>
-                <Check size={tokens.icon} />
+                <IconCheck size={tokens.icon} />
               </IconSlot>
             ) : null}
             {state === "error" ? (
               <IconSlot keyId="error-icon" width={iconWidth}>
-                <X size={tokens.icon} />
+                <IconX size={tokens.icon} />
               </IconSlot>
             ) : null}
           </AnimatePresence>

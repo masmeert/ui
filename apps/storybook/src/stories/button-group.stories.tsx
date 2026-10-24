@@ -1,5 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChevronDown, GitBranch, Pause, Play, RotateCcw } from "lucide-react";
+import {
+  IconChevronDown,
+  IconGitBranch,
+  IconPlayerPause,
+  IconPlayerPlay,
+  IconRotate,
+} from "@tabler/icons-react";
 import { Button } from "@masmeert/ui/button";
 import { ButtonGroup, ButtonGroupSeparator, ButtonGroupText } from "@masmeert/ui/button-group";
 
@@ -31,12 +37,12 @@ export const Compact: Story = {
   render: (args) => (
     <ButtonGroup {...args}>
       <ButtonGroupText>
-        <GitBranch />
+        <IconGitBranch />
         main
       </ButtonGroupText>
       <Button variant="outline">Switch branch</Button>
       <Button variant="outline" size="icon" aria-label="Retry">
-        <RotateCcw />
+        <IconRotate />
       </Button>
     </ButtonGroup>
   ),
@@ -47,15 +53,15 @@ export const Vertical: Story = {
   render: (args) => (
     <ButtonGroup {...args} aria-label="Pipeline controls">
       <Button variant="outline">
-        <Play className="size-4" />
+        <IconPlayerPlay className="size-4" />
         Resume pipeline
       </Button>
       <Button variant="outline">
-        <Pause className="size-4" />
+        <IconPlayerPause className="size-4" />
         Pause pipeline
       </Button>
       <Button variant="outline">
-        <RotateCcw className="size-4" />
+        <IconRotate className="size-4" />
         Retry failed jobs
       </Button>
     </ButtonGroup>
@@ -66,7 +72,7 @@ export const WithText: Story = {
   render: (args) => (
     <ButtonGroup {...args}>
       <ButtonGroupText>
-        <GitBranch />
+        <IconGitBranch />
         main
       </ButtonGroupText>
       <Button variant="outline">Switch branch</Button>
@@ -80,7 +86,7 @@ export const SplitButton: Story = {
       <Button>Deploy</Button>
       <ButtonGroupSeparator />
       <Button className="px-3" aria-label="More deploy options" aria-haspopup="menu">
-        <ChevronDown className="size-4" />
+        <IconChevronDown className="size-4" />
       </Button>
     </ButtonGroup>
   ),

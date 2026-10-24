@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { CircleAlert, GitPullRequest, Rocket } from "lucide-react";
+import { IconAlertCircle, IconGitPullRequest, IconRocket } from "@tabler/icons-react";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@masmeert/ui/alert";
 import { Button } from "@masmeert/ui/button";
 
@@ -21,7 +21,7 @@ type Story = StoryObj<typeof meta>;
 function DeployQueuedAlert(props: AlertProps) {
   return (
     <Alert className="w-[28rem]" {...props}>
-      <Rocket />
+      <IconRocket />
       <AlertTitle>Deploy queued</AlertTitle>
       <AlertDescription>
         main@4f2c91a ships to production once the 3 remaining checks pass.
@@ -33,7 +33,7 @@ function DeployQueuedAlert(props: AlertProps) {
 function DeployFailedAlert(props: AlertProps) {
   return (
     <Alert className="w-[28rem]" {...props}>
-      <CircleAlert />
+      <IconAlertCircle />
       <AlertTitle>Deploy failed on build step</AlertTitle>
       <AlertDescription>
         <p>
@@ -48,7 +48,7 @@ function DeployFailedAlert(props: AlertProps) {
 function ReviewRequestedAlert(props: AlertProps) {
   return (
     <Alert className="w-[28rem]" {...props}>
-      <GitPullRequest />
+      <IconGitPullRequest />
       <AlertTitle>Review requested</AlertTitle>
       <AlertDescription>Ana asked you to review #482 “Stream thread output”.</AlertDescription>
       <AlertAction>

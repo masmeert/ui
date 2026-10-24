@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { IconCheck } from "@tabler/icons-react";
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import {
   type HTMLAttributes,
@@ -571,7 +571,7 @@ function OptionRow({
                 transition={reducedTransition(spring.fast, reduce)}
               >
                 {multiple ? (
-                  <Check className="size-3" strokeWidth={3} />
+                  <IconCheck className="size-3" stroke={3} />
                 ) : (
                   <span className="size-1.5 rounded-full bg-background" />
                 )}

@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { MessagesSquare, Rocket, SearchX } from "lucide-react";
+import { IconMessages, IconRocket, IconSearchOff } from "@tabler/icons-react";
 import { Button } from "@masmeert/ui/button";
 import {
   Empty,
@@ -26,7 +26,7 @@ function NoThreadsEmpty(props: EmptyProps) {
     <Empty className="w-[32rem]" {...props}>
       <EmptyHeader>
         <EmptyMedia variant="icon">
-          <MessagesSquare />
+          <IconMessages />
         </EmptyMedia>
         <EmptyTitle>No threads yet</EmptyTitle>
         <EmptyDescription>
@@ -45,7 +45,7 @@ function NoSearchResultsEmpty(props: EmptyProps) {
     <Empty className="w-[32rem]" {...props}>
       <EmptyHeader>
         <EmptyMedia variant="icon">
-          <SearchX />
+          <IconSearchOff />
         </EmptyMedia>
         <EmptyTitle>No commits match “refactor auth”</EmptyTitle>
         <EmptyDescription>
@@ -61,7 +61,7 @@ function NoDeploysEmpty(props: EmptyProps) {
     <Empty className="w-[32rem] border" {...props}>
       <EmptyHeader>
         <EmptyMedia>
-          <Rocket className="size-8 text-muted-foreground" />
+          <IconRocket className="size-8 text-muted-foreground" />
         </EmptyMedia>
         <EmptyTitle>Nothing deployed to staging</EmptyTitle>
         <EmptyDescription>Push to the staging branch or promote a preview deploy.</EmptyDescription>

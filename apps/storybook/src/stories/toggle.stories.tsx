@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Bell, Pin } from "lucide-react";
+import { IconBell, IconPin } from "@tabler/icons-react";
 import { fn } from "storybook/test";
 import { Toggle } from "@masmeert/ui/toggle";
 
@@ -8,7 +8,7 @@ const meta = {
   component: Toggle,
   args: {
     "aria-label": "Pin deployment",
-    children: <Pin />,
+    children: <IconPin />,
     variant: "default",
     size: "default",
     defaultPressed: false,
@@ -38,7 +38,7 @@ export const WithText: Story = {
     variant: "outline",
     children: (
       <>
-        <Bell />
+        <IconBell />
         Notify on failure
       </>
     ),

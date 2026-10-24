@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Mail } from "lucide-react";
+import { IconMail } from "@tabler/icons-react";
 import { fn } from "storybook/test";
 import { Input } from "@masmeert/ui/input";
 
@@ -40,9 +40,9 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
-export const WithIcon: Story = { args: { leftIcon: <Mail /> } };
+export const WithIcon: Story = { args: { leftIcon: <IconMail /> } };
 
-export const Compact: Story = { args: { size: "compact", leftIcon: <Mail /> } };
+export const Compact: Story = { args: { size: "compact", leftIcon: <IconMail /> } };
 
 export const Sizes: Story = {
   render: (args) => (
@@ -53,7 +53,7 @@ export const Sizes: Story = {
           {...args}
           size={size}
           label={`${args.label} (${size})`}
-          leftIcon={<Mail />}
+          leftIcon={<IconMail />}
         />
       ))}
     </div>
@@ -62,14 +62,14 @@ export const Sizes: Story = {
 
 export const Invalid: Story = {
   args: {
-    leftIcon: <Mail />,
+    leftIcon: <IconMail />,
     defaultValue: "maya@acme",
     error: "Enter a full email address, like maya@acme.dev.",
   },
 };
 
 export const Success: Story = {
-  args: { leftIcon: <Mail />, defaultValue: "maya@acme.dev", success: true },
+  args: { leftIcon: <IconMail />, defaultValue: "maya@acme.dev", success: true },
 };
 
 export const Disabled: Story = {

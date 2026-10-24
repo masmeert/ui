@@ -1,4 +1,12 @@
-import { AlertTriangle, Check, Circle, Info, LoaderCircle, X, type LucideIcon } from "lucide-react";
+import {
+  IconAlertTriangle,
+  IconCheck,
+  IconCircle,
+  IconInfoCircle,
+  IconLoader2,
+  IconX,
+  type Icon as TablerIcon,
+} from "@tabler/icons-react";
 import {
   AnimatePresence,
   motion,
@@ -46,13 +54,13 @@ const ICON_CLASS: Record<BadgeSize, string> = {
   default: "size-3.5",
 };
 
-const ICONS: Record<BadgeStatus, LucideIcon> = {
-  neutral: Circle,
-  info: Info,
-  success: Check,
-  warning: AlertTriangle,
-  danger: X,
-  loading: LoaderCircle,
+const ICONS: Record<BadgeStatus, TablerIcon> = {
+  neutral: IconCircle,
+  info: IconInfoCircle,
+  success: IconCheck,
+  warning: IconAlertTriangle,
+  danger: IconX,
+  loading: IconLoader2,
 };
 
 // No blur: the roll window clips it into hard-edged blocks.

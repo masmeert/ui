@@ -1,4 +1,4 @@
-import { ChevronsUpDown, Search, X } from "lucide-react";
+import { IconSearch, IconSelector, IconX } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "motion/react";
 import type {
   InputHTMLAttributes,
@@ -57,7 +57,7 @@ export function MultiSelectTrigger({ children, className }: MultiSelectTriggerPr
       )}
     >
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">{children}</div>
-      <ChevronsUpDown
+      <IconSelector
         aria-hidden="true"
         size={tokens.icon}
         className="mr-1 shrink-0 text-muted-foreground"
@@ -154,7 +154,7 @@ export function MultiSelectValue({
                 }}
                 className="-mr-1 grid size-5 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors outline-none hover:bg-hover hover:text-foreground focus-visible:ring-4 focus-visible:ring-ring"
               >
-                <X aria-hidden="true" className="size-3" />
+                <IconX aria-hidden="true" className="size-3" />
               </button>
             </motion.span>
           );
@@ -221,7 +221,11 @@ export function MultiSelectInput({
   return (
     <div className={cn("flex min-w-20 flex-1 items-center pl-1", tokens.gap)}>
       {showIcon ? (
-        <Search aria-hidden="true" size={tokens.icon} className="shrink-0 text-muted-foreground" />
+        <IconSearch
+          aria-hidden="true"
+          size={tokens.icon}
+          className="shrink-0 text-muted-foreground"
+        />
       ) : null}
       <input
         {...props}

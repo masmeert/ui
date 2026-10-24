@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { IconCheck } from "@tabler/icons-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   cloneElement,
@@ -657,7 +657,7 @@ export function ContextMenuCheckboxItem({
               }}
               transition={reducedTransition(spring.fast, context.reduce)}
             >
-              <Check aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={2.4} />
+              <IconCheck aria-hidden="true" className="h-3.5 w-3.5" stroke={2.4} />
             </motion.span>
           ) : null}
         </AnimatePresence>

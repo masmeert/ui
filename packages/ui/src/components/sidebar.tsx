@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { IconChevronRight } from "@tabler/icons-react";
 import {
   AnimatePresence,
   type HTMLMotionProps,
@@ -1148,7 +1148,7 @@ export function SidebarMenuButton({
           transition={reducedTransition(spring.moderate, context.reduce)}
           className="relative z-10 grid size-4 shrink-0 place-items-center text-muted-foreground"
         >
-          <ChevronRight className="size-3.5" />
+          <IconChevronRight className="size-3.5" />
         </motion.span>
       ) : null}
     </>

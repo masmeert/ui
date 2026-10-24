@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { AttachmentChip, type ChatAttachment } from "@masmeert/ui/chat-message";
 import { InputMessage } from "@masmeert/ui/input-message";
-import { Globe, Paperclip } from "lucide-react";
+import { IconPaperclip, IconWorld } from "@tabler/icons-react";
 import { type ReactNode, useState } from "react";
 import { typeClass } from "@/lib/type-scale";
 
@@ -58,12 +58,12 @@ export const Default: Story = {
           }}
           leading={
             <Tool label="Attach file">
-              <Paperclip size={16} />
+              <IconPaperclip size={16} />
             </Tool>
           }
           trailing={
             <Tool label="Search the web">
-              <Globe size={16} />
+              <IconWorld size={16} />
             </Tool>
           }
         />

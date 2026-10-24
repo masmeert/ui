@@ -1,5 +1,12 @@
 import { AnimatePresence, motion, type Transition, useReducedMotion } from "motion/react";
-import { Bell, CircleAlert, CircleCheck, Info, TriangleAlert, X } from "lucide-react";
+import {
+  IconAlertCircle,
+  IconAlertTriangle,
+  IconBell,
+  IconCircleCheck,
+  IconInfoCircle,
+  IconX,
+} from "@tabler/icons-react";
 import { type HTMLAttributes, type ReactNode, useState } from "react";
 import { cn } from "cn";
 import { FOLD } from "@/lib/ease";
@@ -31,12 +38,12 @@ export interface BannerProps extends Omit<HTMLAttributes<HTMLDivElement>, "title
   containerClassName?: string;
 }
 
-const ICONS: Record<BannerStatus, typeof Info> = {
-  info: Info,
-  success: CircleCheck,
-  warning: TriangleAlert,
-  error: CircleAlert,
-  neutral: Bell,
+const ICONS: Record<BannerStatus, typeof IconInfoCircle> = {
+  info: IconInfoCircle,
+  success: IconCircleCheck,
+  warning: IconAlertTriangle,
+  error: IconAlertCircle,
+  neutral: IconBell,
 };
 
 // The stylesheet has no info/warning ink tokens, so those fall back to values that hold contrast in both themes.
@@ -195,7 +202,7 @@ export function Banner({
                       : "text-muted-foreground hover:bg-hover hover:text-foreground",
                   )}
                 >
-                  <X size={size.icon} aria-hidden />
+                  <IconX size={size.icon} aria-hidden />
                 </button>
               ) : null}
             </div>

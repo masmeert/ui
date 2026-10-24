@@ -1,34 +1,34 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Marquee, type MarqueeProps } from "@masmeert/ui/marquee";
-import { CircleCheck, CircleX, GitCommitHorizontal, LoaderCircle } from "lucide-react";
+import { IconCircleCheck, IconCircleX, IconGitCommit, IconLoader2 } from "@tabler/icons-react";
 import { typeClass } from "@masmeert/ui/lib/type-scale";
 
 const deployments = [
   {
     service: "web-app",
     commit: "a3f9c1e",
-    icon: <CircleCheck className="size-4 text-emerald-600 dark:text-emerald-400" />,
+    icon: <IconCircleCheck className="size-4 text-emerald-600 dark:text-emerald-400" />,
   },
   {
     service: "api-gateway",
     commit: "7d02b4f",
-    icon: <LoaderCircle className="size-4 animate-spin text-muted-foreground" />,
+    icon: <IconLoader2 className="size-4 animate-spin text-muted-foreground" />,
   },
   {
     service: "billing-worker",
     commit: "e81c5a9",
-    icon: <CircleCheck className="size-4 text-emerald-600 dark:text-emerald-400" />,
+    icon: <IconCircleCheck className="size-4 text-emerald-600 dark:text-emerald-400" />,
   },
-  { service: "docs", commit: "0b6f3d2", icon: <CircleX className="size-4 text-destructive" /> },
+  { service: "docs", commit: "0b6f3d2", icon: <IconCircleX className="size-4 text-destructive" /> },
   {
     service: "auth-service",
     commit: "5c7e1aa",
-    icon: <CircleCheck className="size-4 text-emerald-600 dark:text-emerald-400" />,
+    icon: <IconCircleCheck className="size-4 text-emerald-600 dark:text-emerald-400" />,
   },
   {
     service: "search-indexer",
     commit: "9fd40b3",
-    icon: <LoaderCircle className="size-4 animate-spin text-muted-foreground" />,
+    icon: <IconLoader2 className="size-4 animate-spin text-muted-foreground" />,
   },
 ];
 
@@ -71,7 +71,7 @@ const meta = {
             <span
               className={`flex items-center gap-1 font-mono text-muted-foreground ${typeClass("caption")}`}
             >
-              <GitCommitHorizontal className="size-3.5" />
+              <IconGitCommit className="size-3.5" />
               {deployment.commit}
             </span>
           </div>

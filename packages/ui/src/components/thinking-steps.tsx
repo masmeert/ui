@@ -1,4 +1,4 @@
-import { Check, ChevronRight } from "lucide-react";
+import { IconCheck, IconChevronRight } from "@tabler/icons-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   type HTMLAttributes,
@@ -178,7 +178,7 @@ export function ThinkingSteps({
           animate={{ rotate: open ? 90 : 0 }}
           transition={reducedTransition(spring.moderate, reduce)}
         >
-          <ChevronRight size={tokens.icon} />
+          <IconChevronRight size={tokens.icon} />
         </motion.span>
       </button>
 
@@ -279,7 +279,7 @@ function StepRow({
               animate={{ rotate: open ? 90 : 0 }}
               transition={reducedTransition(spring.moderate, reduce)}
             >
-              <ChevronRight size={tokens.icon - 2} />
+              <IconChevronRight size={tokens.icon - 2} />
             </motion.span>
           </button>
         ) : (
@@ -324,7 +324,7 @@ function StepMarker({ status, size }: { status: ThinkingStepStatus; size?: Size 
           transition={reducedTransition(spring.fast, reduce)}
         >
           {status === "done" ? (
-            <Check size={tokens.icon - 2} className="text-muted-foreground" aria-hidden />
+            <IconCheck size={tokens.icon - 2} className="text-muted-foreground" aria-hidden />
           ) : status === "active" ? (
             <ThinkingGlyph pixelSize={tokens.icon - 4} />
           ) : (

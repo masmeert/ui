@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Columns3, List, Rows3 } from "lucide-react";
+import { IconLayoutColumns, IconLayoutRows, IconList } from "@tabler/icons-react";
 import { fn } from "storybook/test";
 import { ToggleGroup, ToggleGroupItem } from "@masmeert/ui/toggle-group";
 
@@ -64,13 +64,13 @@ export const WithIcons: Story = {
     children: (
       <>
         <ToggleGroupItem value="list" aria-label="List">
-          <List />
+          <IconList />
         </ToggleGroupItem>
         <ToggleGroupItem value="table" aria-label="Table">
-          <Rows3 />
+          <IconLayoutRows />
         </ToggleGroupItem>
         <ToggleGroupItem value="board" aria-label="Board">
-          <Columns3 />
+          <IconLayoutColumns />
         </ToggleGroupItem>
       </>
     ),

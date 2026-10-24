@@ -1,6 +1,13 @@
 import type { ComponentProps } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { BookOpen, Bot, GitPullRequest, Rocket, Terminal, Workflow } from "lucide-react";
+import {
+  IconBook,
+  IconGitPullRequest,
+  IconRobot,
+  IconRocket,
+  IconSitemap,
+  IconTerminal,
+} from "@tabler/icons-react";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -41,19 +48,23 @@ function SiteNavigation(props: ComponentProps<typeof NavigationMenu>) {
                   {
                     title: "Agents",
                     description: "Run Claude, Codex or Cursor side by side.",
-                    icon: Bot,
+                    icon: IconRobot,
                   },
                   {
                     title: "Threads",
                     description: "One branch and transcript per task.",
-                    icon: Workflow,
+                    icon: IconSitemap,
                   },
                   {
                     title: "Review",
                     description: "Read diffs and open pull requests.",
-                    icon: GitPullRequest,
+                    icon: IconGitPullRequest,
                   },
-                  { title: "Terminal", description: "A shell in every project.", icon: Terminal },
+                  {
+                    title: "Terminal",
+                    description: "A shell in every project.",
+                    icon: IconTerminal,
+                  },
                 ].map(({ title, description, icon: Icon }) => (
                   <li key={title}>
                     <NavigationMenuLink href="#">
@@ -77,7 +88,7 @@ function SiteNavigation(props: ComponentProps<typeof NavigationMenu>) {
                 <li>
                   <NavigationMenuLink href="#">
                     <span className="flex items-center gap-2 font-medium text-foreground">
-                      <Rocket />
+                      <IconRocket />
                       Getting started
                     </span>
                   </NavigationMenuLink>
@@ -85,7 +96,7 @@ function SiteNavigation(props: ComponentProps<typeof NavigationMenu>) {
                 <li>
                   <NavigationMenuLink href="#">
                     <span className="flex items-center gap-2 font-medium text-foreground">
-                      <BookOpen />
+                      <IconBook />
                       Guides
                     </span>
                   </NavigationMenuLink>

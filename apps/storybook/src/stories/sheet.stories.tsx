@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import { FolderGit2, MessageSquare, Settings, X } from "lucide-react";
+import { IconFolderCode, IconMessage, IconSettings, IconX } from "@tabler/icons-react";
 import { Button } from "@masmeert/ui/button";
 import { Sheet, type SheetProps } from "@masmeert/ui/sheet";
 
@@ -43,7 +43,7 @@ function ThreadDetailsSheet({ onOpenChange, ...props }: SheetProps) {
         <div className="flex items-center justify-between border-b border-border p-4">
           <h2 className="text-sm font-medium text-foreground">Fix flaky auth test</h2>
           <Button variant="ghost" size="icon" aria-label="Close" onClick={() => changeOpen(false)}>
-            <X className="size-4" />
+            <IconX className="size-4" />
           </Button>
         </div>
         <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 p-4 text-sm">
@@ -83,9 +83,9 @@ function NavigationSheet({ onOpenChange, ...props }: SheetProps) {
       <Sheet {...props} open={open} onOpenChange={changeOpen}>
         <nav className="flex flex-col gap-1 p-3">
           {[
-            { label: "Threads", icon: MessageSquare },
-            { label: "Projects", icon: FolderGit2 },
-            { label: "Settings", icon: Settings },
+            { label: "Threads", icon: IconMessage },
+            { label: "Projects", icon: IconFolderCode },
+            { label: "Settings", icon: IconSettings },
           ].map(({ label, icon: Icon }) => (
             <button
               key={label}

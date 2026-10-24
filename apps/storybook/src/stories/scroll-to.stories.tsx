@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ScrollTo, type ScrollToProps } from "@masmeert/ui/scroll-to";
 import { SmoothScroll } from "@masmeert/ui/smooth-scroll";
-import { ArrowUp } from "lucide-react";
+import { IconArrowUp } from "@tabler/icons-react";
 import { useId } from "react";
 
 const meta = {
@@ -70,7 +70,7 @@ const meta = {
             {...args}
             className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted"
           >
-            <ArrowUp className="size-3.5" />
+            <IconArrowUp className="size-3.5" />
             {args.children}
           </ScrollTo>
         </div>

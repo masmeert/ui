@@ -1,5 +1,5 @@
 import { motion, useReducedMotion, type Transition } from "motion/react";
-import { ChevronDown } from "lucide-react";
+import { IconChevronDown } from "@tabler/icons-react";
 import { useCallback, useId, useRef, useState, type ReactNode } from "react";
 import { FluidHoverHighlight } from "@/components/fluid-hover-highlight";
 import { useFluidHover } from "@/hooks/use-fluid-hover";
@@ -174,7 +174,7 @@ function AccordionRow({
               classNames?.chevron,
             )}
           >
-            <ChevronDown className="h-4 w-4" />
+            <IconChevronDown className="h-4 w-4" />
           </motion.span>
         </button>
 

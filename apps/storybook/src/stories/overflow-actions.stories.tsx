@@ -1,6 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import { Archive, Copy, GitPullRequest, Pencil, Play, Share2, Trash2 } from "lucide-react";
+import {
+  IconArchive,
+  IconCopy,
+  IconGitPullRequest,
+  IconPencil,
+  IconPlayerPlay,
+  IconShare,
+  IconTrash,
+} from "@tabler/icons-react";
 import { OverflowActions } from "@masmeert/ui/overflow-actions";
 
 const meta = {
@@ -8,14 +16,14 @@ const meta = {
   component: OverflowActions,
   args: {
     primaryActions: [
-      { id: "run", label: "Run", icon: <Play className="size-full" /> },
-      { id: "open-pr", label: "Open PR", icon: <GitPullRequest className="size-full" /> },
+      { id: "run", label: "Run", icon: <IconPlayerPlay className="size-full" /> },
+      { id: "open-pr", label: "Open PR", icon: <IconGitPullRequest className="size-full" /> },
     ],
     overflowActions: [
-      { id: "rename", label: "Rename", icon: <Pencil className="size-full" /> },
-      { id: "copy-link", label: "Copy link", icon: <Copy className="size-full" /> },
-      { id: "share", label: "Share", icon: <Share2 className="size-full" /> },
-      { id: "archive", label: "Archive", icon: <Archive className="size-full" /> },
+      { id: "rename", label: "Rename", icon: <IconPencil className="size-full" /> },
+      { id: "copy-link", label: "Copy link", icon: <IconCopy className="size-full" /> },
+      { id: "share", label: "Share", icon: <IconShare className="size-full" /> },
+      { id: "archive", label: "Archive", icon: <IconArchive className="size-full" /> },
     ],
     size: "default",
     defaultExpanded: false,
@@ -49,9 +57,9 @@ export const CollapseOnAction: Story = { args: { collapseOnAction: true } };
 export const WithDisabledAction: Story = {
   args: {
     overflowActions: [
-      { id: "rename", label: "Rename", icon: <Pencil className="size-full" /> },
-      { id: "archive", label: "Archive", icon: <Archive className="size-full" /> },
-      { id: "delete", label: "Delete", icon: <Trash2 className="size-full" />, disabled: true },
+      { id: "rename", label: "Rename", icon: <IconPencil className="size-full" /> },
+      { id: "archive", label: "Archive", icon: <IconArchive className="size-full" /> },
+      { id: "delete", label: "Delete", icon: <IconTrash className="size-full" />, disabled: true },
     ],
     defaultExpanded: true,
   },

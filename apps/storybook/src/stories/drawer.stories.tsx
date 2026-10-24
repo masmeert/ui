@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import { GitBranch } from "lucide-react";
+import { IconGitBranch } from "@tabler/icons-react";
 import { Button } from "@masmeert/ui/button";
 import { Drawer, type DrawerProps } from "@masmeert/ui/drawer";
 
@@ -38,7 +38,7 @@ function BranchPickerDrawer({ onOpenChange, ...props }: DrawerProps) {
   return (
     <>
       <Button variant="outline" onClick={() => changeOpen(true)}>
-        <GitBranch className="size-4" />
+        <IconGitBranch className="size-4" />
         Switch branch
       </Button>
       <Drawer {...props} open={open} onOpenChange={changeOpen}>
@@ -63,7 +63,7 @@ function BranchPickerDrawer({ onOpenChange, ...props }: DrawerProps) {
                 onClick={() => changeOpen(false)}
                 className="flex h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm text-foreground transition-colors hover:bg-muted/60"
               >
-                <GitBranch className="size-4 text-muted-foreground" />
+                <IconGitBranch className="size-4 text-muted-foreground" />
                 {branch}
               </button>
             </li>

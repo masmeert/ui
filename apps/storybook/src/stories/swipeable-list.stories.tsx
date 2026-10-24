@@ -1,30 +1,37 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { SwipeableList, type SwipeAction } from "@masmeert/ui/swipeable-list";
-import { Archive, GitMerge, GitPullRequest, Pin, RotateCcw, Trash2 } from "lucide-react";
+import {
+  IconArchive,
+  IconGitMerge,
+  IconGitPullRequest,
+  IconPin,
+  IconRotate,
+  IconTrash,
+} from "@tabler/icons-react";
 import { fn } from "storybook/test";
 
 const pinAction: SwipeAction = {
   id: "pin",
   label: "Pin",
-  icon: <Pin className="size-4" />,
+  icon: <IconPin className="size-4" />,
   tone: "primary",
 };
 const mergeAction: SwipeAction = {
   id: "merge",
   label: "Merge",
-  icon: <GitMerge className="size-4" />,
+  icon: <IconGitMerge className="size-4" />,
   tone: "success",
 };
 const archiveAction: SwipeAction = {
   id: "archive",
   label: "Archive",
-  icon: <Archive className="size-4" />,
+  icon: <IconArchive className="size-4" />,
   tone: "warning",
 };
 const deleteAction: SwipeAction = {
   id: "delete",
   label: "Delete branch",
-  icon: <Trash2 className="size-4" />,
+  icon: <IconTrash className="size-4" />,
   tone: "danger",
 };
 
@@ -35,7 +42,7 @@ const meta = {
     items: [
       {
         id: "pr-482",
-        leading: <GitPullRequest className="size-5 text-emerald-600 dark:text-emerald-400" />,
+        leading: <IconGitPullRequest className="size-5 text-emerald-600 dark:text-emerald-400" />,
         title: "Add usage-based billing tiers",
         description: "#482 · feat/billing-v2 · 12 files",
         meta: "2m",
@@ -44,7 +51,7 @@ const meta = {
       },
       {
         id: "pr-479",
-        leading: <GitPullRequest className="size-5 text-emerald-600 dark:text-emerald-400" />,
+        leading: <IconGitPullRequest className="size-5 text-emerald-600 dark:text-emerald-400" />,
         title: "Fix session timeout on token refresh",
         description: "#479 · fix/session-timeout · 3 files",
         meta: "1h",
@@ -53,7 +60,7 @@ const meta = {
       },
       {
         id: "pr-476",
-        leading: <GitPullRequest className="size-5 text-muted-foreground" />,
+        leading: <IconGitPullRequest className="size-5 text-muted-foreground" />,
         title: "Split search indexer into workers",
         description: "#476 · refactor/indexer · draft",
         meta: "1d",
@@ -62,7 +69,7 @@ const meta = {
       },
       {
         id: "pr-471",
-        leading: <GitPullRequest className="size-5 text-muted-foreground" />,
+        leading: <IconGitPullRequest className="size-5 text-muted-foreground" />,
         title: "Bump TypeScript to 5.9",
         description: "#471 · renovate/typescript · locked",
         meta: "3d",
@@ -111,7 +118,7 @@ export const SingleSide: Story = {
         {
           id: "retry",
           label: "Retry deploy",
-          icon: <RotateCcw className="size-4" />,
+          icon: <IconRotate className="size-4" />,
           tone: "primary",
         },
         archiveAction,

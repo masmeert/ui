@@ -1,4 +1,4 @@
-import { Check, ChevronDown } from "lucide-react";
+import { IconCheck, IconChevronDown } from "@tabler/icons-react";
 import { motion, useReducedMotion } from "motion/react";
 import {
   createContext,
@@ -208,7 +208,7 @@ export function SelectTrigger({ className, children }: SelectTriggerProps) {
       )}
     >
       {children}
-      <ChevronDown
+      <IconChevronDown
         aria-hidden
         size={tokens.icon}
         className={cn(
@@ -387,7 +387,7 @@ export function SelectItem({
         )}
       >
         {children}
-        {selected ? <Check aria-hidden size={tokens.icon} className="shrink-0" /> : null}
+        {selected ? <IconCheck aria-hidden size={tokens.icon} className="shrink-0" /> : null}
       </button>
     </li>
   );

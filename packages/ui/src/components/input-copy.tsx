@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Check, Copy } from "lucide-react";
+import { IconCheck, IconCopy } from "@tabler/icons-react";
 import {
   forwardRef,
   type InputHTMLAttributes,
@@ -180,9 +180,9 @@ export const InputCopy = forwardRef<HTMLInputElement, InputCopyProps>(function I
               transition={swap}
             >
               {copied ? (
-                <Check size={size.icon} aria-hidden />
+                <IconCheck size={size.icon} aria-hidden />
               ) : (
-                <Copy size={size.icon} aria-hidden />
+                <IconCopy size={size.icon} aria-hidden />
               )}
             </motion.span>
           </AnimatePresence>

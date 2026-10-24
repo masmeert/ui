@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { IconX } from "@tabler/icons-react";
 import {
   AnimatePresence,
   animate as animateValue,
@@ -812,7 +812,7 @@ export function MorphingTabs({
                           classNames?.close,
                         )}
                       >
-                        <X aria-hidden className="size-3.5 stroke-[1.5]" />
+                        <IconX aria-hidden className="size-3.5 stroke-[1.5]" />
                       </button>
                     ) : null}
                   </div>

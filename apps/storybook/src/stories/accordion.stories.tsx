@@ -1,6 +1,6 @@
 import { useState, type ComponentProps } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { GitBranch, Hammer, Rocket, ShieldCheck } from "lucide-react";
+import { IconGitBranch, IconHammer, IconRocket, IconShieldCheck } from "@tabler/icons-react";
 import { Accordion, type AccordionItem } from "@masmeert/ui/accordion";
 import { Button } from "@masmeert/ui/button";
 
@@ -30,10 +30,10 @@ const pipelineSteps: AccordionItem[] = [
 ];
 
 const pipelineIcons: Record<string, AccordionItem["icon"]> = {
-  checkout: <GitBranch className="size-4" />,
-  build: <Hammer className="size-4" />,
-  checks: <ShieldCheck className="size-4" />,
-  deploy: <Rocket className="size-4" />,
+  checkout: <IconGitBranch className="size-4" />,
+  build: <IconHammer className="size-4" />,
+  checks: <IconShieldCheck className="size-4" />,
+  deploy: <IconRocket className="size-4" />,
 };
 
 const meta = {

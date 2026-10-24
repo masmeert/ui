@@ -1,6 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ActionSwapButton } from "@masmeert/ui/action-swap";
-import { Check, Copy, GitMerge, Loader, Pause, Play, Rocket } from "lucide-react";
+import {
+  IconCheck,
+  IconCopy,
+  IconGitMerge,
+  IconLoader,
+  IconPlayerPause,
+  IconPlayerPlay,
+  IconRocket,
+} from "@tabler/icons-react";
 import { fn } from "storybook/test";
 
 const meta = {
@@ -8,8 +16,8 @@ const meta = {
   component: ActionSwapButton,
   args: {
     items: [
-      { id: "copy", label: "Copy commit SHA", icon: <Copy /> },
-      { id: "copied", label: "Copied", icon: <Check /> },
+      { id: "copy", label: "Copy commit SHA", icon: <IconCopy /> },
+      { id: "copied", label: "Copied", icon: <IconCheck /> },
     ],
     variant: "secondary",
     size: "default",
@@ -38,9 +46,9 @@ export const Roll: Story = {
     animation: "roll",
     variant: "primary",
     items: [
-      { id: "deploy", label: "Deploy to production", icon: <Rocket /> },
-      { id: "deploying", label: "Deploying", icon: <Loader /> },
-      { id: "live", label: "Live on main", icon: <Check /> },
+      { id: "deploy", label: "Deploy to production", icon: <IconRocket /> },
+      { id: "deploying", label: "Deploying", icon: <IconLoader /> },
+      { id: "live", label: "Live on main", icon: <IconCheck /> },
     ],
   },
 };
@@ -50,8 +58,8 @@ export const Cascade: Story = {
     animation: "cascade",
     variant: "outline",
     items: [
-      { id: "merge", label: "Merge pull request", icon: <GitMerge /> },
-      { id: "merged", label: "Merged into main", icon: <Check /> },
+      { id: "merge", label: "Merge pull request", icon: <IconGitMerge /> },
+      { id: "merged", label: "Merged into main", icon: <IconCheck /> },
     ],
   },
 };
@@ -61,8 +69,8 @@ export const IconOnly: Story = {
     animation: "roll",
     size: "icon",
     items: [
-      { id: "paused", label: "Resume build", icon: <Play /> },
-      { id: "running", label: "Pause build", icon: <Pause /> },
+      { id: "paused", label: "Resume build", icon: <IconPlayerPlay /> },
+      { id: "running", label: "Pause build", icon: <IconPlayerPause /> },
     ],
   },
 };

@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { IconCheck } from "@tabler/icons-react";
 import { motion } from "motion/react";
 import {
   createContext,
@@ -243,7 +243,7 @@ export function MultiSelectItem({
         transition={reducedTransition(spring.fast, context.reduce)}
         className="grid size-5 shrink-0 place-items-center text-foreground"
       >
-        <Check size={tokens.icon} />
+        <IconCheck size={tokens.icon} />
       </motion.span>
     </button>
   );

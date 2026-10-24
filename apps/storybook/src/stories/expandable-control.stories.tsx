@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Sparkles, X } from "lucide-react";
+import { IconSparkles, IconX } from "@tabler/icons-react";
 import { fn } from "storybook/test";
 import { ExpandableButton, ExpandableChip } from "@masmeert/ui/expandable-control";
 
@@ -7,7 +7,7 @@ const meta = {
   title: "Inputs/Expandable Control",
   component: ExpandableButton,
   args: {
-    icon: <Sparkles className="size-4" />,
+    icon: <IconSparkles className="size-4" />,
     label: "Explain this build failure",
     defaultExpanded: false,
     disabled: false,
@@ -37,7 +37,7 @@ export const Chip: Story = {
   render: (args) => (
     <ExpandableChip
       label="env: production"
-      actionIcon={<X className="size-4" />}
+      actionIcon={<IconX className="size-4" />}
       actionLabel="Remove production filter"
       disabled={args.disabled}
       size={args.size}

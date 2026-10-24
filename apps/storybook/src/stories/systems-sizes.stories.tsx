@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Search } from "lucide-react";
+import { IconSearch } from "@tabler/icons-react";
 import { type Size, SizeProvider, useSize } from "@masmeert/ui/lib/size";
 
 function Toolbar() {
@@ -15,7 +15,7 @@ function Toolbar() {
       <div
         className={`${s.control} ${s.controlPx} flex items-center ${s.gap} rounded-lg border border-border`}
       >
-        <Search size={s.icon} className="text-muted-foreground" />
+        <IconSearch size={s.icon} className="text-muted-foreground" />
         <input
           placeholder="Search"
           className={`${s.field} w-32 bg-transparent outline-none placeholder:text-muted-foreground`}

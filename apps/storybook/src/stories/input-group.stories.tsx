@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ArrowUp, Check, Copy, Search } from "lucide-react";
+import { IconArrowUp, IconCheck, IconCopy, IconSearch } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import {
   InputGroup,
@@ -35,7 +35,7 @@ export const WithIcon: Story = {
   render: (args) => (
     <InputGroup {...args}>
       <InputGroupAddon>
-        <Search />
+        <IconSearch />
       </InputGroupAddon>
       <InputGroupInput
         placeholder="Search environment variables"
@@ -82,7 +82,7 @@ function CopyableDeployHook({ size }: { size?: "compact" | "default" | "large" }
           aria-label={copied ? "Copied" : "Copy deploy hook URL"}
           onClick={() => setCopied(true)}
         >
-          {copied ? <Check /> : <Copy />}
+          {copied ? <IconCheck /> : <IconCopy />}
         </InputGroupButton>
       </InputGroupAddon>
     </InputGroup>
@@ -101,7 +101,7 @@ export const Sizes: Story = {
         <div key={size} className="flex items-center gap-2">
           <InputGroup size={size}>
             <InputGroupAddon>
-              <Search />
+              <IconSearch />
             </InputGroupAddon>
             <InputGroupInput placeholder={`Search (${size})`} aria-label={`Search (${size})`} />
             <InputGroupAddon align="inline-end">
@@ -132,7 +132,7 @@ export const WithTextarea: Story = {
           aria-label="Send message"
           className="ml-auto"
         >
-          <ArrowUp />
+          <IconArrowUp />
         </InputGroupButton>
       </InputGroupAddon>
     </InputGroup>

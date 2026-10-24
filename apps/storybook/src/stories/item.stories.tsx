@@ -1,6 +1,11 @@
 import { Fragment, type ComponentProps } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChevronRight, GitBranch, GitPullRequest, Rocket } from "lucide-react";
+import {
+  IconChevronRight,
+  IconGitBranch,
+  IconGitPullRequest,
+  IconRocket,
+} from "@tabler/icons-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@masmeert/ui/avatar";
 import { Badge } from "@masmeert/ui/badge";
 import { Button } from "@masmeert/ui/button";
@@ -55,7 +60,7 @@ function DeployItem(props: ItemProps) {
   return (
     <Item className="w-[28rem]" {...props}>
       <ItemMedia variant="icon">
-        <Rocket />
+        <IconRocket />
       </ItemMedia>
       <ItemContent>
         <ItemTitle>Production deploy</ItemTitle>
@@ -74,7 +79,7 @@ function PullRequestLinkItem(props: ItemProps) {
   return (
     <Item className="w-[28rem]" render={<a href="#pull-482" />} {...props}>
       <ItemMedia>
-        <GitPullRequest className="size-4" />
+        <IconGitPullRequest className="size-4" />
       </ItemMedia>
       <ItemContent>
         <ItemTitle>
@@ -85,7 +90,7 @@ function PullRequestLinkItem(props: ItemProps) {
         </ItemTitle>
       </ItemContent>
       <ItemActions>
-        <ChevronRight className="size-4 text-muted-foreground" />
+        <IconChevronRight className="size-4 text-muted-foreground" />
       </ItemActions>
     </Item>
   );
@@ -107,7 +112,7 @@ function ThreadList(props: ItemProps) {
             <ItemContent>
               <ItemTitle>{thread.title}</ItemTitle>
               <ItemDescription className="flex items-center gap-1 font-mono text-xs">
-                <GitBranch className="size-3" />
+                <IconGitBranch className="size-3" />
                 {thread.branch}
               </ItemDescription>
             </ItemContent>

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ArrowDown, ArrowUp, Command, CornerDownLeft } from "lucide-react";
+import { IconArrowDown, IconArrowUp, IconCommand, IconCornerDownLeft } from "@tabler/icons-react";
 import { Kbd, KbdGroup } from "@masmeert/ui/kbd";
 
 const meta = {
@@ -29,13 +29,13 @@ export const WithIcons: Story = {
   render: () => (
     <KbdGroup>
       <Kbd>
-        <ArrowUp />
+        <IconArrowUp />
       </Kbd>
       <Kbd>
-        <ArrowDown />
+        <IconArrowDown />
       </Kbd>
       <Kbd>
-        <CornerDownLeft />
+        <IconCornerDownLeft />
       </Kbd>
     </KbdGroup>
   ),
@@ -47,7 +47,7 @@ export const InText: Story = {
       Press{" "}
       <KbdGroup>
         <Kbd>
-          <Command />
+          <IconCommand />
         </Kbd>
         <Kbd>Enter</Kbd>
       </KbdGroup>{" "}

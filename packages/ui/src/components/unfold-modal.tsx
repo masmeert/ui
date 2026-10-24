@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { IconX } from "@tabler/icons-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   cloneElement,
@@ -294,7 +294,7 @@ export function UnfoldModalContent({
                         }
                         className="absolute top-4 right-4 inline-flex size-8 items-center justify-center rounded-full bg-hover text-muted-foreground transition-colors duration-(--duration-fast) hover:bg-selected hover:text-foreground focus-visible:ring-4 focus-visible:ring-ring focus-visible:outline-none"
                       >
-                        <X className="size-4" aria-hidden="true" />
+                        <IconX className="size-4" aria-hidden="true" />
                       </motion.button>
                     ) : null}
                   </motion.div>

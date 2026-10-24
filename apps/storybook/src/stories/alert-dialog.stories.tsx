@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Archive, Trash2 } from "lucide-react";
+import { IconArchive, IconTrash } from "@tabler/icons-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,13 +54,13 @@ function ArchiveThreadAlert(props: ComponentProps<typeof AlertDialogContent>) {
   return (
     <AlertDialog>
       <AlertDialogTrigger className={buttonVariants({ variant: "outline" })}>
-        <Archive className="size-4" />
+        <IconArchive className="size-4" />
         Archive thread
       </AlertDialogTrigger>
       <AlertDialogContent {...props}>
         <AlertDialogHeader>
           <AlertDialogMedia>
-            <Archive />
+            <IconArchive />
           </AlertDialogMedia>
           <AlertDialogTitle>Archive “Fix flaky auth test”?</AlertDialogTitle>
           <AlertDialogDescription>
@@ -80,13 +80,13 @@ function DiscardChangesAlert(props: ComponentProps<typeof AlertDialogContent>) {
   return (
     <AlertDialog>
       <AlertDialogTrigger className={buttonVariants({ variant: "outline" })}>
-        <Trash2 className="size-4" />
+        <IconTrash className="size-4" />
         Discard changes
       </AlertDialogTrigger>
       <AlertDialogContent {...props}>
         <AlertDialogHeader>
           <AlertDialogMedia>
-            <Trash2 />
+            <IconTrash />
           </AlertDialogMedia>
           <AlertDialogTitle>Discard 3 changed files?</AlertDialogTitle>
           <AlertDialogDescription>This can’t be undone.</AlertDialogDescription>

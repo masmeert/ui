@@ -1,4 +1,4 @@
-import { MoreHorizontal, X } from "lucide-react";
+import { IconDots, IconX } from "@tabler/icons-react";
 import {
   AnimatePresence,
   motion,
@@ -247,7 +247,7 @@ export function OverflowActions({
               exit={reduce ? { opacity: 0 } : "exit"}
               className="inline-grid place-items-center"
             >
-              {isExpanded ? <X size={size.icon} /> : <MoreHorizontal size={size.icon} />}
+              {isExpanded ? <IconX size={size.icon} /> : <IconDots size={size.icon} />}
             </motion.span>
           </AnimatePresence>
         </motion.button>

@@ -1,5 +1,11 @@
 import { Toaster as Sonner, type ToasterProps } from "sonner";
-import { Check, CircleAlert, Info, LoaderCircle, TriangleAlert } from "lucide-react";
+import {
+  IconAlertCircle,
+  IconAlertTriangle,
+  IconCheck,
+  IconInfoCircle,
+  IconLoader2,
+} from "@tabler/icons-react";
 import { cn } from "cn";
 import { sizeTokens, useSize } from "@/lib/size";
 import { SURFACE_OFFSET, useElevation } from "@/lib/surface";
@@ -15,11 +21,11 @@ function Toaster({ toastOptions, ...props }: ToasterProps) {
       className="toaster group"
       closeButton
       icons={{
-        success: <Check className="size-3.5" />,
-        info: <Info className="size-3.5" />,
-        warning: <TriangleAlert className="size-3.5" />,
-        error: <CircleAlert className="size-3.5" />,
-        loading: <LoaderCircle className="size-3.5 animate-spin" />,
+        success: <IconCheck className="size-3.5" />,
+        info: <IconInfoCircle className="size-3.5" />,
+        warning: <IconAlertTriangle className="size-3.5" />,
+        error: <IconAlertCircle className="size-3.5" />,
+        loading: <IconLoader2 className="size-3.5 animate-spin" />,
       }}
       {...props}
       toastOptions={{

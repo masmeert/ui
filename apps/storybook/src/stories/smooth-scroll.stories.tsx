@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ScrollProgress } from "@masmeert/ui/scroll-progress";
 import { SmoothScroll, type SmoothScrollProps } from "@masmeert/ui/smooth-scroll";
-import { FileCode, FileJson, FileText } from "lucide-react";
+import { IconFileCode, IconFileText, IconJson } from "@tabler/icons-react";
 
 const changedFiles = [
   ["src/billing/tiers.ts", "+142 −18"],
@@ -19,9 +19,10 @@ const changedFiles = [
 ];
 
 function fileIcon(path: string) {
-  if (path.endsWith(".json")) return <FileJson className="size-4 shrink-0 text-muted-foreground" />;
-  if (path.endsWith(".md")) return <FileText className="size-4 shrink-0 text-muted-foreground" />;
-  return <FileCode className="size-4 shrink-0 text-muted-foreground" />;
+  if (path.endsWith(".json")) return <IconJson className="size-4 shrink-0 text-muted-foreground" />;
+  if (path.endsWith(".md"))
+    return <IconFileText className="size-4 shrink-0 text-muted-foreground" />;
+  return <IconFileCode className="size-4 shrink-0 text-muted-foreground" />;
 }
 
 const meta = {

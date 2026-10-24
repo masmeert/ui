@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { GitPullRequest } from "lucide-react";
+import { IconGitPullRequest } from "@tabler/icons-react";
 import { Avatar, AvatarFallback } from "@masmeert/ui/avatar";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@masmeert/ui/hover-card";
 import { typeClass } from "@masmeert/ui/lib/type-scale";
@@ -57,7 +57,7 @@ function PullRequestHoverCard(props: ComponentProps<typeof HoverCardContent>) {
         href="#"
         className={`inline-flex items-center gap-1.5 ${typeClass("body")} font-medium text-foreground underline-offset-4 hover:underline`}
       >
-        <GitPullRequest className="size-4 text-muted-foreground" />
+        <IconGitPullRequest className="size-4 text-muted-foreground" />
         #21
       </HoverCardTrigger>
       <HoverCardContent {...props} className="w-80">

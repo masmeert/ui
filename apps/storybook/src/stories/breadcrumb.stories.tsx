@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Slash } from "lucide-react";
+import { IconSlash } from "@tabler/icons-react";
 import {
   Breadcrumb,
   BreadcrumbEllipsis,
@@ -91,13 +91,13 @@ export const CustomSeparator: Story = {
           <BreadcrumbLink href="#">masmeert</BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbSeparator>
-          <Slash />
+          <IconSlash />
         </BreadcrumbSeparator>
         <BreadcrumbItem>
           <BreadcrumbLink href="#">masscode</BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbSeparator>
-          <Slash />
+          <IconSlash />
         </BreadcrumbSeparator>
         <BreadcrumbItem>
           <BreadcrumbPage>fix/auth-retry</BreadcrumbPage>

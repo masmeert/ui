@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { TextShimmer } from "@masmeert/ui/text-shimmer";
-import { LoaderCircle } from "lucide-react";
+import { IconLoader2 } from "@tabler/icons-react";
 import { typeClass } from "@masmeert/ui/lib/type-scale";
 
 const meta = {
@@ -39,7 +39,7 @@ export const StatusRow: Story = {
   args: { children: "Running 312 tests on ubuntu-latest" },
   render: (args) => (
     <div className="flex items-center gap-2 rounded-full border border-border px-3 py-1.5">
-      <LoaderCircle className="size-4 animate-spin text-muted-foreground" />
+      <IconLoader2 className="size-4 animate-spin text-muted-foreground" />
       <TextShimmer {...args} />
     </div>
   ),

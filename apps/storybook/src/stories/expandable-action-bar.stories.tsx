@@ -1,7 +1,13 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import { Bell, FolderGit2, MessageSquare, Search, Settings } from "lucide-react";
+import {
+  IconBell,
+  IconFolderCode,
+  IconMessage,
+  IconSearch,
+  IconSettings,
+} from "@tabler/icons-react";
 import {
   ExpandableActionBar,
   type ExpandableActionBarProps,
@@ -15,18 +21,18 @@ const meta = {
       {
         id: "threads",
         label: "Threads",
-        icon: <MessageSquare className="size-full" />,
+        icon: <IconMessage className="size-full" />,
         shortcut: "⌘1",
       },
       {
         id: "projects",
         label: "Projects",
-        icon: <FolderGit2 className="size-full" />,
+        icon: <IconFolderCode className="size-full" />,
         shortcut: "⌘2",
       },
-      { id: "search", label: "Search", icon: <Search className="size-full" />, shortcut: "⌘K" },
-      { id: "inbox", label: "Inbox", icon: <Bell className="size-full" />, badge: 3 },
-      { id: "settings", label: "Settings", icon: <Settings className="size-full" /> },
+      { id: "search", label: "Search", icon: <IconSearch className="size-full" />, shortcut: "⌘K" },
+      { id: "inbox", label: "Inbox", icon: <IconBell className="size-full" />, badge: 3 },
+      { id: "settings", label: "Settings", icon: <IconSettings className="size-full" /> },
     ],
     size: "default",
     defaultExpanded: false,

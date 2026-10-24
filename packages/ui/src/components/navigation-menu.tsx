@@ -1,7 +1,7 @@
 import { NavigationMenu as NavigationMenuPrimitive } from "@base-ui/react/navigation-menu";
 import { cva } from "class-variance-authority";
 import { cn } from "cn";
-import { ChevronDownIcon } from "lucide-react";
+import { IconChevronDown } from "@tabler/icons-react";
 import {
   type FocusEvent,
   type MouseEvent,
@@ -184,7 +184,7 @@ function NavigationMenuTrigger({
       {...props}
     >
       {children}{" "}
-      <ChevronDownIcon
+      <IconChevronDown
         className="relative top-px ml-1 size-3 transition duration-(--duration-moderate) group-data-popup-open/navigation-menu-trigger:rotate-180"
         aria-hidden="true"
       />

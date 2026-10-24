@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChevronDown } from "lucide-react";
+import { IconChevronDown } from "@tabler/icons-react";
 import { Button } from "@masmeert/ui/button";
 import { Collapsible } from "@masmeert/ui/collapsible";
 
@@ -51,7 +51,9 @@ function DeployStepWithLog() {
           onClick={() => setLogOpen((open) => !open)}
         >
           {logOpen ? "Hide log" : "Show log"}
-          <ChevronDown className={`size-4 transition-transform ${logOpen ? "rotate-180" : ""}`} />
+          <IconChevronDown
+            className={`size-4 transition-transform ${logOpen ? "rotate-180" : ""}`}
+          />
         </Button>
       </div>
       <Collapsible open={logOpen}>

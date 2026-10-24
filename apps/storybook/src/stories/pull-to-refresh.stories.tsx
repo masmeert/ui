@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { PullToRefresh, type PullToRefreshProps } from "@masmeert/ui/pull-to-refresh";
-import { CircleCheck } from "lucide-react";
+import { IconCircleCheck } from "@tabler/icons-react";
 import { useState } from "react";
 import { fn } from "storybook/test";
 
@@ -57,7 +57,7 @@ const meta = {
         <ul className="flex flex-col p-2">
           {deployments.map((deployment) => (
             <li key={deployment.id} className="flex items-center gap-3 rounded-lg px-2 py-2.5">
-              <CircleCheck className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+              <IconCircleCheck className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium">Deployment #{deployment.id}</p>
                 <p className="truncate font-mono text-xs text-muted-foreground">

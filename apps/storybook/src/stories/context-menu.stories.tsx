@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import { Archive, Copy, FileCode, Pencil, Trash2 } from "lucide-react";
+import { IconArchive, IconCopy, IconFileCode, IconPencil, IconTrash } from "@tabler/icons-react";
 import {
   ContextMenu,
   ContextMenuCheckboxItem,
@@ -43,22 +43,22 @@ function ThreadRowContextMenu(props: ContextMenuProps) {
       </ContextMenuTrigger>
       <ContextMenuContent ariaLabel="Thread actions" className="w-56">
         <ContextMenuItem>
-          <Pencil className="size-4 text-muted-foreground" />
+          <IconPencil className="size-4 text-muted-foreground" />
           Rename
           <ContextMenuShortcut>⌘R</ContextMenuShortcut>
         </ContextMenuItem>
         <ContextMenuItem>
-          <Copy className="size-4 text-muted-foreground" />
+          <IconCopy className="size-4 text-muted-foreground" />
           Copy link
           <ContextMenuShortcut>⌘⇧C</ContextMenuShortcut>
         </ContextMenuItem>
         <ContextMenuItem disabled>
-          <Archive className="size-4 text-muted-foreground" />
+          <IconArchive className="size-4 text-muted-foreground" />
           Archive (agent running)
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem tone="destructive">
-          <Trash2 className="size-4" />
+          <IconTrash className="size-4" />
           Delete
           <ContextMenuShortcut>⌘⌫</ContextMenuShortcut>
         </ContextMenuItem>
@@ -81,7 +81,7 @@ function DiffViewContextMenu(props: ContextMenuProps) {
           <p
             className={`flex items-center gap-2 font-sans ${typeClass("body")} font-medium text-foreground`}
           >
-            <FileCode className="size-4 text-muted-foreground" />
+            <IconFileCode className="size-4 text-muted-foreground" />
             src/auth/session.ts
           </p>
           <p className="text-destructive">- await sleep(100);</p>

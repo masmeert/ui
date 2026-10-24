@@ -1,6 +1,13 @@
 import { useState, type ComponentProps } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Archive, Copy, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  IconArchive,
+  IconCopy,
+  IconDots,
+  IconPencil,
+  IconPlus,
+  IconTrash,
+} from "@tabler/icons-react";
 import { Button } from "@masmeert/ui/button";
 import { Input } from "@masmeert/ui/input";
 import {
@@ -44,16 +51,16 @@ function ThreadActionsPopover(props: ComponentProps<typeof MorphingPopoverConten
     <MorphingPopover open={open} onOpenChange={setOpen}>
       <MorphingPopoverTrigger>
         <Button variant="ghost" size="icon" aria-label="Thread actions">
-          <MoreHorizontal className="size-4" />
+          <IconDots className="size-4" />
         </Button>
       </MorphingPopoverTrigger>
       <MorphingPopoverContent {...props} className="p-1.5">
         <MorphingPopoverMenu className="w-48">
           {[
-            { label: "Rename", icon: Pencil },
-            { label: "Copy link", icon: Copy },
-            { label: "Archive", icon: Archive },
-            { label: "Delete", icon: Trash2 },
+            { label: "Rename", icon: IconPencil },
+            { label: "Copy link", icon: IconCopy },
+            { label: "Archive", icon: IconArchive },
+            { label: "Delete", icon: IconTrash },
           ].map(({ label, icon: Icon }) => (
             <button
               key={label}
@@ -86,7 +93,7 @@ function NewProjectPopover(props: ComponentProps<typeof MorphingPopoverContent>)
     <MorphingPopover open={open} onOpenChange={changeOpen}>
       <MorphingPopoverTrigger>
         <Button variant="secondary">
-          <Plus className="size-4" />
+          <IconPlus className="size-4" />
           New
         </Button>
       </MorphingPopoverTrigger>

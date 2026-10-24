@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
 import { cancelFrame, frame, motion, MotionConfig, useReducedMotion } from "motion/react";
 import {
   createContext,
@@ -283,7 +283,7 @@ export function TabsList({
           onClick={() => scroll(-1)}
           className={cn(controlClass, "left-0 rounded-l-full")}
         >
-          <ChevronLeft size={20} aria-hidden="true" />
+          <IconChevronLeft size={20} aria-hidden="true" />
         </button>
       )}
       <motion.div
@@ -347,7 +347,7 @@ export function TabsList({
           onClick={() => scroll(1)}
           className={cn(controlClass, "right-0 rounded-r-full")}
         >
-          <ChevronRight size={20} aria-hidden="true" />
+          <IconChevronRight size={20} aria-hidden="true" />
         </button>
       )}
     </div>

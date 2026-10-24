@@ -13,7 +13,7 @@ The package is on GitHub Packages, so point the scope at it in `.npmrc`:
 ```
 
 ```sh
-pnpm add @masmeert/ui motion lucide-react
+pnpm add @masmeert/ui motion @tabler/icons-react
 ```
 
 ## Styles

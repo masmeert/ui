@@ -1,14 +1,14 @@
 import { useState, type ComponentProps } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
-  Archive,
-  ChevronDown,
-  Copy,
-  FolderInput,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+  IconArchive,
+  IconChevronDown,
+  IconCopy,
+  IconDots,
+  IconFolderDown,
+  IconPencil,
+  IconTrash,
+} from "@tabler/icons-react";
 import { buttonVariants } from "@masmeert/ui/button";
 import {
   DropdownMenu,
@@ -50,30 +50,30 @@ function ThreadActionsMenu(props: ComponentProps<typeof DropdownMenuContent>) {
         aria-label="Thread actions"
         className={buttonVariants({ variant: "outline", size: "icon" })}
       >
-        <MoreHorizontal className="size-4" />
+        <IconDots className="size-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent {...props} className="w-52">
         <DropdownMenuGroup>
           <DropdownMenuLabel>Fix flaky auth test</DropdownMenuLabel>
           <DropdownMenuItem>
-            <Pencil />
+            <IconPencil />
             Rename
             <DropdownMenuShortcut>⌘R</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <Copy />
+            <IconCopy />
             Copy link
             <DropdownMenuShortcut>⌘⇧C</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <Archive />
+            <IconArchive />
             Archive
             <DropdownMenuShortcut>⌘E</DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive">
-          <Trash2 />
+          <IconTrash />
           Delete
           <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
         </DropdownMenuItem>
@@ -91,7 +91,7 @@ function ThreadListViewMenu(props: ComponentProps<typeof DropdownMenuContent>) {
     <DropdownMenu>
       <DropdownMenuTrigger className={buttonVariants({ variant: "outline", size: "compact" })}>
         View
-        <ChevronDown className="size-3.5" />
+        <IconChevronDown className="size-3.5" />
       </DropdownMenuTrigger>
       <DropdownMenuContent {...props} className="w-48">
         <DropdownMenuGroup>
@@ -122,16 +122,16 @@ function MoveThreadMenu(props: ComponentProps<typeof DropdownMenuContent>) {
     <DropdownMenu>
       <DropdownMenuTrigger className={buttonVariants({ variant: "outline", size: "compact" })}>
         Thread
-        <ChevronDown className="size-3.5" />
+        <IconChevronDown className="size-3.5" />
       </DropdownMenuTrigger>
       <DropdownMenuContent {...props} className="w-52">
         <DropdownMenuItem>
-          <Pencil />
+          <IconPencil />
           Rename
         </DropdownMenuItem>
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
-            <FolderInput />
+            <IconFolderDown />
             Move to project
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="w-44">
@@ -143,7 +143,7 @@ function MoveThreadMenu(props: ComponentProps<typeof DropdownMenuContent>) {
         </DropdownMenuSub>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive">
-          <Trash2 />
+          <IconTrash />
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>

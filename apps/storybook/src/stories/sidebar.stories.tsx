@@ -1,6 +1,14 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Archive, FolderGit2, Inbox, MessageSquare, PanelLeft, Plus, Settings } from "lucide-react";
+import {
+  IconArchive,
+  IconFolderCode,
+  IconInbox,
+  IconLayoutSidebar,
+  IconMessage,
+  IconPlus,
+  IconSettings,
+} from "@tabler/icons-react";
 import { Avatar, AvatarFallback } from "@masmeert/ui/avatar";
 import { SizeProvider } from "@masmeert/ui/lib/size";
 import {
@@ -62,7 +70,7 @@ function WorkspaceShell(props: SidebarProps) {
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    icon={<Plus className="size-4" />}
+                    icon={<IconPlus className="size-4" />}
                     onSelect={() => setActivePage("Threads")}
                   >
                     New thread
@@ -70,7 +78,7 @@ function WorkspaceShell(props: SidebarProps) {
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    icon={<MessageSquare className="size-4" />}
+                    icon={<IconMessage className="size-4" />}
                     badge="4"
                     onSelect={() => setActivePage("Threads")}
                     isActive={activePage === "Threads"}
@@ -80,7 +88,7 @@ function WorkspaceShell(props: SidebarProps) {
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    icon={<Inbox className="size-4" />}
+                    icon={<IconInbox className="size-4" />}
                     badge="2"
                     onSelect={() => setActivePage("Inbox")}
                     isActive={activePage === "Inbox"}
@@ -90,7 +98,7 @@ function WorkspaceShell(props: SidebarProps) {
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    icon={<FolderGit2 className="size-4" />}
+                    icon={<IconFolderCode className="size-4" />}
                     ariaExpanded={projectsOpen}
                     onSelect={() => setProjectsOpen(!projectsOpen)}
                   >
@@ -118,7 +126,7 @@ function WorkspaceShell(props: SidebarProps) {
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    icon={<Archive className="size-4" />}
+                    icon={<IconArchive className="size-4" />}
                     onSelect={() => setActivePage("Archived")}
                     isActive={activePage === "Archived"}
                   >
@@ -127,7 +135,7 @@ function WorkspaceShell(props: SidebarProps) {
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    icon={<Settings className="size-4" />}
+                    icon={<IconSettings className="size-4" />}
                     onSelect={() => setActivePage("Settings")}
                     isActive={activePage === "Settings"}
                   >
@@ -151,7 +159,7 @@ function WorkspaceShell(props: SidebarProps) {
       <SidebarInset>
         <header className="flex h-14 items-center gap-2 border-b border-border px-3">
           <SidebarTrigger className="text-muted-foreground hover:bg-hover hover:text-foreground">
-            <PanelLeft className="size-4" />
+            <IconLayoutSidebar className="size-4" />
           </SidebarTrigger>
           <h1 className="text-sm font-medium text-foreground">{activePage}</h1>
           <span className="ml-auto text-xs text-muted-foreground">⌘B toggles the sidebar</span>

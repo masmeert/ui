@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Database, GitCommitHorizontal, Globe, Lock, Server } from "lucide-react";
+import { IconDatabase, IconGitCommit, IconLock, IconServer, IconWorld } from "@tabler/icons-react";
 import { Badge } from "@masmeert/ui/badge";
 import { Button } from "@masmeert/ui/button";
 import {
@@ -69,7 +69,7 @@ function CommitCard(props: CardProps) {
     <Card className="w-80" {...props}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <GitCommitHorizontal className="size-4 text-muted-foreground" />
+          <IconGitCommit className="size-4 text-muted-foreground" />
           fix(web): hide the countdown
         </CardTitle>
         <CardDescription>fa70ddc · 2 files changed, 14 insertions</CardDescription>
@@ -104,10 +104,10 @@ export const Compact: Story = { args: { size: "compact" }, render: CommitCard };
 export const WithDividers: Story = { render: ThreadSummaryCard };
 
 const services = [
-  { icon: Globe, name: "web", detail: "Next.js · fra1 · 3 instances" },
-  { icon: Server, name: "api", detail: "Node 22 · fra1 · 2 instances" },
-  { icon: Database, name: "postgres", detail: "16.4 · 10 GB · daily backups" },
-  { icon: Lock, name: "auth", detail: "Edge function · global" },
+  { icon: IconWorld, name: "web", detail: "Next.js · fra1 · 3 instances" },
+  { icon: IconServer, name: "api", detail: "Node 22 · fra1 · 2 instances" },
+  { icon: IconDatabase, name: "postgres", detail: "16.4 · 10 GB · daily backups" },
+  { icon: IconLock, name: "auth", detail: "Edge function · global" },
 ];
 
 /**

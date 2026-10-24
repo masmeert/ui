@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { SharedLayoutBg, type SharedLayoutBgProps } from "@masmeert/ui/shared-layout-bg";
-import { FileCode, FileJson, FileText, Folder } from "lucide-react";
+import { IconFileCode, IconFileText, IconFolder, IconJson } from "@tabler/icons-react";
 
 const meta = {
   title: "Motion/Shared Layout Bg",
@@ -21,11 +21,11 @@ const meta = {
       <div className="w-80 px-4">
         <SharedLayoutBg {...args}>
           {[
-            { Icon: Folder, path: "src/billing", diff: "4 files" },
-            { Icon: FileCode, path: "src/api/routes/usage.ts", diff: "+88" },
-            { Icon: FileCode, path: "src/workers/meter.ts", diff: "+97 −12" },
-            { Icon: FileJson, path: "package.json", diff: "+2 −1" },
-            { Icon: FileText, path: "docs/billing.md", diff: "+64" },
+            { Icon: IconFolder, path: "src/billing", diff: "4 files" },
+            { Icon: IconFileCode, path: "src/api/routes/usage.ts", diff: "+88" },
+            { Icon: IconFileCode, path: "src/workers/meter.ts", diff: "+97 −12" },
+            { Icon: IconJson, path: "package.json", diff: "+2 −1" },
+            { Icon: IconFileText, path: "docs/billing.md", diff: "+64" },
           ].map(({ Icon, path, diff }) => (
             <li key={path} className="list-none">
               <div className="flex cursor-default items-center gap-2 py-2 text-sm">

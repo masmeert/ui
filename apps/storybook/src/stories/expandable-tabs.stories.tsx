@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import { Bell, GitBranch, Search, Settings } from "lucide-react";
+import { IconBell, IconGitBranch, IconSearch, IconSettings } from "@tabler/icons-react";
 import {
   ExpandableTabs,
   type ExpandableTabsItem,
@@ -12,7 +12,7 @@ const toolbarTabs: ExpandableTabsItem[] = [
   {
     id: "search",
     label: "Search",
-    icon: <Search className="size-4" />,
+    icon: <IconSearch className="size-4" />,
     content: (
       <div className="flex w-72 flex-col gap-2 p-4 text-sm">
         <p className="font-medium text-foreground">Recent searches</p>
@@ -24,7 +24,7 @@ const toolbarTabs: ExpandableTabsItem[] = [
   {
     id: "branches",
     label: "Branches",
-    icon: <GitBranch className="size-4" />,
+    icon: <IconGitBranch className="size-4" />,
     content: (
       <div className="flex w-72 flex-col gap-2 p-4 text-sm">
         <p className="font-medium text-foreground">fix/auth-retry</p>
@@ -35,7 +35,7 @@ const toolbarTabs: ExpandableTabsItem[] = [
   {
     id: "notifications",
     label: "Notifications",
-    icon: <Bell className="size-4" />,
+    icon: <IconBell className="size-4" />,
     content: (
       <div className="flex w-80 flex-col gap-2 p-4 text-sm">
         <p className="font-medium text-foreground">Claude is waiting for an answer</p>
@@ -46,7 +46,7 @@ const toolbarTabs: ExpandableTabsItem[] = [
   {
     id: "settings",
     label: "Settings",
-    icon: <Settings className="size-4" />,
+    icon: <IconSettings className="size-4" />,
     content: (
       <div className="flex w-64 flex-col gap-2 p-4 text-sm">
         <p className="font-medium text-foreground">Default agent</p>

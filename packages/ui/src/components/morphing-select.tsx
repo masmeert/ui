@@ -1,4 +1,4 @@
-import { Check, ChevronDown } from "lucide-react";
+import { IconCheck, IconChevronDown } from "@tabler/icons-react";
 import {
   AnimatePresence,
   motion,
@@ -222,7 +222,7 @@ export function MorphingSelectTrigger({ className, children }: MorphingSelectTri
       {/* Reserves the closed height; the morph surface is absolute. */}
       <div aria-hidden inert className={cn(row, "invisible rounded-xl border border-border")}>
         {children}
-        <ChevronDown size={tokens.icon} />
+        <IconChevronDown size={tokens.icon} />
       </div>
 
       <AnimatePresence initial={false} mode="popLayout">
@@ -252,7 +252,7 @@ export function MorphingSelectTrigger({ className, children }: MorphingSelectTri
               {children}
             </motion.span>
             <motion.span layout="position" className="text-muted-foreground">
-              <ChevronDown size={tokens.icon} />
+              <IconChevronDown size={tokens.icon} />
             </motion.span>
           </motion.button>
         ) : null}
@@ -328,7 +328,7 @@ export function MorphingSelectContent({ className, children }: MorphingSelectCon
                 transition={reducedTransition(spring.moderate, ctx.reduce)}
                 className="text-muted-foreground"
               >
-                <ChevronDown size={tokens.icon} />
+                <IconChevronDown size={tokens.icon} />
               </motion.span>
             </motion.button>
 
@@ -411,7 +411,7 @@ export function MorphingSelectItem({
         )}
       >
         {children}
-        {selected ? <Check aria-hidden size={tokens.icon} className="shrink-0" /> : null}
+        {selected ? <IconCheck aria-hidden size={tokens.icon} className="shrink-0" /> : null}
       </button>
     </motion.li>
   );

@@ -1,4 +1,4 @@
-import { Moon, Sun } from "lucide-react";
+import { IconMoon, IconSun } from "@tabler/icons-react";
 import { useReducedMotion } from "motion/react";
 import { useEffect, type ComponentPropsWithoutRef } from "react";
 import { flushSync } from "react-dom";
@@ -191,7 +191,7 @@ export function ThemeToggle({
       {...rest}
     >
       <ActionSwapIcon value={dark ? "dark" : "light"} animation="blur" className={iconClassName}>
-        {dark ? <Sun className={iconClassName} /> : <Moon className={iconClassName} />}
+        {dark ? <IconSun className={iconClassName} /> : <IconMoon className={iconClassName} />}
       </ActionSwapIcon>
     </button>
   );

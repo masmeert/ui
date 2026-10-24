@@ -2,15 +2,15 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
 import {
-  Archive,
-  FolderGit2,
-  GitBranch,
-  MessageSquarePlus,
-  Moon,
-  PanelLeft,
-  Search,
-  Settings,
-} from "lucide-react";
+  IconArchive,
+  IconFolderCode,
+  IconGitBranch,
+  IconLayoutSidebar,
+  IconMessagePlus,
+  IconMoon,
+  IconSearch,
+  IconSettings,
+} from "@tabler/icons-react";
 import { Badge } from "@masmeert/ui/badge";
 import { Button } from "@masmeert/ui/button";
 import { CommandDialog, type CommandDialogProps, type CommandItem } from "@masmeert/ui/command";
@@ -22,7 +22,7 @@ const commands: CommandItem[] = [
     label: "New thread",
     group: "Threads",
     hint: "⌘N",
-    icon: MessageSquarePlus,
+    icon: IconMessagePlus,
     onSelect: fn(),
   },
   {
@@ -30,7 +30,7 @@ const commands: CommandItem[] = [
     label: "Search threads",
     group: "Threads",
     hint: "⌘F",
-    icon: Search,
+    icon: IconSearch,
     onSelect: fn(),
   },
   {
@@ -38,7 +38,7 @@ const commands: CommandItem[] = [
     label: "Archive current thread",
     group: "Threads",
     hint: "⌘E",
-    icon: Archive,
+    icon: IconArchive,
     onSelect: fn(),
   },
   {
@@ -46,7 +46,7 @@ const commands: CommandItem[] = [
     label: "masscode",
     group: "Projects",
     keywords: ["desktop", "electron"],
-    icon: FolderGit2,
+    icon: IconFolderCode,
     badge: <Badge size="compact">4 running</Badge>,
     onSelect: fn(),
   },
@@ -55,14 +55,14 @@ const commands: CommandItem[] = [
     label: "ui",
     group: "Projects",
     keywords: ["kit", "storybook"],
-    icon: FolderGit2,
+    icon: IconFolderCode,
     onSelect: fn(),
   },
   {
     id: "switch-branch",
     label: "Switch branch…",
     group: "Git",
-    icon: GitBranch,
+    icon: IconGitBranch,
     onSelect: fn(),
   },
   {
@@ -70,7 +70,7 @@ const commands: CommandItem[] = [
     label: "Toggle sidebar",
     group: "View",
     hint: "⌘B",
-    icon: PanelLeft,
+    icon: IconLayoutSidebar,
     onSelect: fn(),
   },
   {
@@ -78,7 +78,7 @@ const commands: CommandItem[] = [
     label: "Toggle dark mode",
     group: "View",
     keywords: ["theme", "light"],
-    icon: Moon,
+    icon: IconMoon,
     onSelect: fn(),
   },
   {
@@ -86,7 +86,7 @@ const commands: CommandItem[] = [
     label: "Open settings",
     group: "View",
     hint: "⌘,",
-    icon: Settings,
+    icon: IconSettings,
     onSelect: fn(),
   },
 ];
@@ -123,7 +123,7 @@ function CommandPalette({ onOpenChange, ...props }: CommandDialogProps) {
   return (
     <>
       <Button variant="outline" onClick={() => changeOpen(true)}>
-        <Search className="size-4" />
+        <IconSearch className="size-4" />
         Search or run a command
         <Kbd>⌘{props.shortcut?.toUpperCase()}</Kbd>
       </Button>

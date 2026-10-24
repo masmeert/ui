@@ -1,4 +1,4 @@
-import { ArrowUp, Square } from "lucide-react";
+import { IconArrowUp, IconSquare } from "@tabler/icons-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   type KeyboardEvent,
@@ -216,9 +216,9 @@ export const InputMessage = forwardRef<HTMLTextAreaElement, InputMessageProps>(
                 transition={swap}
               >
                 {showStop ? (
-                  <Square size={tokens.icon - 4} fill="currentColor" aria-hidden />
+                  <IconSquare size={tokens.icon - 4} fill="currentColor" aria-hidden />
                 ) : (
-                  <ArrowUp size={tokens.icon} aria-hidden />
+                  <IconArrowUp size={tokens.icon} aria-hidden />
                 )}
               </motion.span>
             </AnimatePresence>

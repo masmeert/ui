@@ -1,5 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { GitBranch, Plus, Search, Settings, Terminal } from "lucide-react";
+import {
+  IconGitBranch,
+  IconPlus,
+  IconSearch,
+  IconSettings,
+  IconTerminal,
+} from "@tabler/icons-react";
 import { Button } from "@masmeert/ui/button";
 import { Kbd } from "@masmeert/ui/kbd";
 import { Tooltip } from "@masmeert/ui/tooltip";
@@ -16,7 +22,7 @@ const meta = {
   render: (args) => (
     <Tooltip {...args}>
       <Button variant="secondary" size="icon" aria-label="New thread">
-        <Plus className="size-4" />
+        <IconPlus className="size-4" />
       </Button>
     </Tooltip>
   ),
@@ -40,7 +46,7 @@ export const WithShortcut: Story = {
   render: (args) => (
     <Tooltip {...args}>
       <Button variant="secondary" size="icon" aria-label="Search threads">
-        <Search className="size-4" />
+        <IconSearch className="size-4" />
       </Button>
     </Tooltip>
   ),
@@ -50,10 +56,10 @@ export const Toolbar: Story = {
   render: ({ side, delay }) => (
     <div className="flex items-center gap-1 rounded-xl border border-border bg-card p-1">
       {[
-        { label: "New thread", icon: Plus },
-        { label: "Switch branch", icon: GitBranch },
-        { label: "Open terminal", icon: Terminal },
-        { label: "Settings", icon: Settings },
+        { label: "New thread", icon: IconPlus },
+        { label: "Switch branch", icon: IconGitBranch },
+        { label: "Open terminal", icon: IconTerminal },
+        { label: "Settings", icon: IconSettings },
       ].map(({ label, icon: Icon }) => (
         <Tooltip key={label} content={label} side={side} delay={delay}>
           <Button variant="ghost" size="icon" aria-label={label}>

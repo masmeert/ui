@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ExternalLink, Rocket, RotateCcw } from "lucide-react";
+import { IconExternalLink, IconRocket, IconRotate } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { Button, ButtonLink, StatefulButton, type ButtonState } from "@masmeert/ui/button";
 import { SizeProvider } from "@masmeert/ui/lib/size";
@@ -28,7 +28,7 @@ export const WithIcon: Story = {
   args: {
     children: (
       <>
-        <Rocket />
+        <IconRocket />
         Deploy to production
       </>
     ),
@@ -40,7 +40,7 @@ export const IconOnly: Story = {
     variant: "outline",
     size: "icon",
     "aria-label": "Redeploy",
-    children: <RotateCcw />,
+    children: <IconRotate />,
   },
 };
 
@@ -53,11 +53,11 @@ export const Sizes: Story = {
       {steps.map((step) => (
         <div key={step} className="flex items-center gap-2">
           <Button variant={args.variant} size={step}>
-            <Rocket />
+            <IconRocket />
             Deploy
           </Button>
           <Button variant="outline" size={step} square aria-label="Redeploy">
-            <RotateCcw />
+            <IconRotate />
           </Button>
           <Button variant="ghost" size={step}>
             Cancel
@@ -74,12 +74,12 @@ export const CompactRegion: Story = {
     <SizeProvider size="compact">
       <div className="flex items-center gap-1">
         <Button>
-          <Rocket />
+          <IconRocket />
           Deploy
         </Button>
         <Button variant="outline">Promote</Button>
         <Button variant="ghost" size="icon" aria-label="Redeploy">
-          <RotateCcw />
+          <IconRotate />
         </Button>
       </div>
     </SizeProvider>
@@ -99,7 +99,7 @@ export const Link: Story = {
       rel="noreferrer"
     >
       View deployment
-      <ExternalLink />
+      <IconExternalLink />
     </ButtonLink>
   ),
   args: { variant: "secondary" },
@@ -123,7 +123,7 @@ function SimulatedDeployButton({ failing }: { failing: boolean }) {
       loadingText="Deploying"
       successText="Deployed"
       errorText="Deploy failed"
-      icon={<Rocket />}
+      icon={<IconRocket />}
       onClick={() => setState("loading")}
     >
       Deploy

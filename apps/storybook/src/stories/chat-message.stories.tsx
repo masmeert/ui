@@ -3,7 +3,7 @@ import { ChatMessage, ChatMessageAction } from "@masmeert/ui/chat-message";
 import { InputMessage } from "@masmeert/ui/input-message";
 import { ThinkingSteps } from "@masmeert/ui/thinking-steps";
 import { SizeProvider } from "@/lib/size";
-import { ThumbsUp } from "lucide-react";
+import { IconThumbUp } from "@tabler/icons-react";
 import { useState } from "react";
 
 const meta = {
@@ -99,7 +99,7 @@ export const Transcript: Story = {
               onRetry={() => {}}
               actions={
                 <ChatMessageAction label="Good response">
-                  <ThumbsUp size={16} aria-hidden />
+                  <IconThumbUp size={16} aria-hidden />
                 </ChatMessageAction>
               }
             >

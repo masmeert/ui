@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import { FileCode, FileJson, FileText, TerminalSquare } from "lucide-react";
+import { IconFileCode, IconFileText, IconJson, IconTerminal2 } from "@tabler/icons-react";
 import {
   MorphingTabs,
   type MorphingTabsItem,
@@ -21,7 +21,7 @@ const openFiles: MorphingTabsItem[] = [
   {
     id: "session",
     label: "session.ts",
-    icon: <FileCode className="size-4" />,
+    icon: <IconFileCode className="size-4" />,
     content: (
       <FilePreview
         path="src/auth/session.ts"
@@ -37,7 +37,7 @@ const openFiles: MorphingTabsItem[] = [
   {
     id: "package",
     label: "package.json",
-    icon: <FileJson className="size-4" />,
+    icon: <IconJson className="size-4" />,
     content: (
       <FilePreview
         path="package.json"
@@ -48,7 +48,7 @@ const openFiles: MorphingTabsItem[] = [
   {
     id: "readme",
     label: "README.md",
-    icon: <FileText className="size-4" />,
+    icon: <IconFileText className="size-4" />,
     content: (
       <FilePreview
         path="README.md"
@@ -59,7 +59,7 @@ const openFiles: MorphingTabsItem[] = [
   {
     id: "terminal",
     label: "Terminal",
-    icon: <TerminalSquare className="size-4" />,
+    icon: <IconTerminal2 className="size-4" />,
     content: (
       <FilePreview
         path="zsh · ~/code/masscode"

@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Search, type LucideIcon } from "lucide-react";
+import { IconSearch, type Icon as TablerIcon } from "@tabler/icons-react";
 import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FluidHoverHighlight } from "@/components/fluid-hover-highlight";
@@ -20,7 +20,7 @@ export type CommandItem = {
   group?: string;
   hint?: string;
   keywords?: string[];
-  icon?: LucideIcon;
+  icon?: TablerIcon;
   badge?: ReactNode;
   onSelect: () => void;
 };
@@ -233,7 +233,7 @@ export function CommandDialog({
               >
                 <SurfaceProvider value={surface.level}>
                   <div className="flex items-center gap-3 border-b border-border px-4">
-                    <Search size={size.icon} className="text-muted-foreground" />
+                    <IconSearch size={size.icon} className="text-muted-foreground" />
                     <input
                       ref={inputRef}
                       value={query}

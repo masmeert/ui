@@ -1,4 +1,4 @@
-import { ChevronsUpDown, Search } from "lucide-react";
+import { IconSearch, IconSelector } from "@tabler/icons-react";
 import type {
   InputHTMLAttributes,
   KeyboardEvent as ReactKeyboardEvent,
@@ -50,7 +50,7 @@ export function ComboboxTrigger({ children, className }: ComboboxTriggerProps) {
     >
       <span className="min-w-0 flex-1 text-left">{children}</span>
       <span aria-hidden className="shrink-0 text-muted-foreground">
-        <ChevronsUpDown size={tokens.icon} />
+        <IconSelector size={tokens.icon} />
       </span>
     </div>
   );
@@ -143,7 +143,7 @@ export function ComboboxInput({
 
   return (
     <div className={cn("flex min-w-0 flex-1 items-center", tokens.gap, wrapperClassName)}>
-      <Search aria-hidden size={tokens.icon} className="shrink-0 text-muted-foreground" />
+      <IconSearch aria-hidden size={tokens.icon} className="shrink-0 text-muted-foreground" />
       <input
         {...props}
         ref={mergeRefs(ref, context.inputRef)}
