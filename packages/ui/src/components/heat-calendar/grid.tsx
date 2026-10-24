@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "motion/react";
 import type { ReactNode } from "react";
-import { EASE_OUT, SPRING_PRESS } from "@/lib/ease";
+import { reducedTransition, spring, springExit } from "@/lib/springs";
+import { typeClass } from "@/lib/type-scale";
 import { cn } from "cn";
 import { useHeatCalendar } from "./context";
 import { DAYS, fmtDay, GAP, LIFT, MONTH_ROW, PITCH } from "./utils";
@@ -53,8 +54,10 @@ export function HeatCalendarGrid({
         c.label ? (
           <span
             key={c.id}
+            // micro's 12px leading is exactly MONTH_ROW, which the tooltip's offset relies on
             className={cn(
-              "text-[10px] leading-none whitespace-nowrap transition-colors duration-200",
+              typeClass("micro"),
+              "whitespace-nowrap transition-colors duration-(--duration-fast)",
               hotMonth === c.m ? "text-foreground" : "text-muted-foreground",
             )}
             style={{ gridColumn: c.w + 1, gridRow: 1 }}
@@ -74,7 +77,6 @@ export function HeatCalendarGrid({
           const isEnd = span ? i === span.lo || i === span.hi : pinned?.w === w && pinned?.d === d;
           const dim =
             (step !== null && step !== b) || (span !== null && (i < span.lo || i > span.hi));
-          // the ripple: the hovered cell rises most, the ring around it a little, two out barely
           const dist = hot ? Math.max(Math.abs(hot.w - w), Math.abs(hot.d - d)) : 9;
           const lift =
             reduce || !canHover
@@ -88,7 +90,7 @@ export function HeatCalendarGrid({
             // the outer span owns the legend dim so it never fights the transforms inside
             <span
               key={`${id}-${dayId}`}
-              className="relative block aspect-square w-full transition-opacity duration-200"
+              className="relative block aspect-square w-full transition-opacity duration-(--duration-fast)"
               style={{
                 gridColumn: w + 1,
                 gridRow: d + 2,
@@ -96,10 +98,8 @@ export function HeatCalendarGrid({
                 zIndex: lift > 1 ? LIFT.length - dist : 0,
               }}
             >
-              {/* the hit area is the cell plus half the gap on every side, so the grid
-                    has no dead space between cells and a fast pointer never falls through;
-                    the visual inside never takes pointer events, so a lifted neighbour
-                    cannot steal a click either */}
+              {/* Hit area covers half the gap on every side so a fast pointer never falls
+                  through; the visual ignores pointers so a lifted neighbour can't steal clicks. */}
               <motion.button
                 type="button"
                 aria-label={`${count(v)} ${unit}${date ? ` on ${fmtDay.format(date)}` : ""}`}
@@ -114,7 +114,7 @@ export function HeatCalendarGrid({
                   if (e.key === "Escape") clear();
                 }}
                 className="absolute -inset-0.5 block rounded-[5px] outline-none focus-visible:ring-4 focus-visible:ring-ring"
-                whileTap={reduce ? undefined : { scale: 0.9, transition: SPRING_PRESS }}
+                whileTap={reduce ? undefined : { scale: 0.9, transition: spring.fast }}
               >
                 <motion.span
                   className="pointer-events-none absolute inset-0.5 block rounded-[4px]"
@@ -123,31 +123,31 @@ export function HeatCalendarGrid({
                     boxShadow: isEnd
                       ? "0 0 0 2px var(--background), 0 0 0 3.5px var(--foreground)"
                       : "none",
-                    transition: "box-shadow 150ms",
+                    transition: "box-shadow var(--duration-fast)",
                   }}
-                  // the diagonal wave: each cell arrives (w + d) steps after the corner;
-                  // once settled, the ripple spreads out from the hovered cell by distance
-                  initial={reduce ? false : { opacity: 0, scale: 0.4 }}
+                  // Diagonal entrance wave; once settled, the hover ripple delays by distance.
+                  initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.4 }}
                   animate={
                     settled
                       ? {
                           opacity: 1,
                           scale: lift,
-                          transition: { ...SPRING_PRESS, delay: Math.min(dist, 3) * 0.03 },
+                          transition: reducedTransition(
+                            { ...spring.fast, delay: Math.min(dist, 3) * 0.03 },
+                            reduce,
+                          ),
                         }
                       : {
                           opacity: 1,
                           scale: 1,
-                          transition: reduce
-                            ? { duration: 0 }
-                            : { ...SPRING_PRESS, delay: (w + d) * 0.018 },
+                          transition: reducedTransition(
+                            { ...spring.fast, delay: (w + d) * 0.018 },
+                            reduce,
+                          ),
                         }
                   }
                 >
-                  {/* the ring lives INSIDE the cell: inset-0 fills its box and
-                        borderRadius:inherit copies its corner, so it always shares the
-                        cell's exact size, scale (hover lift included) and roundness and
-                        cannot drift however the cells are restyled */}
+                  {/* Inside the cell so it inherits its size, lift scale and radius. */}
                   <AnimatePresence>
                     {on && !isEnd ? (
                       <motion.span
@@ -156,10 +156,10 @@ export function HeatCalendarGrid({
                           borderRadius: "inherit",
                           borderColor: "color-mix(in srgb, var(--foreground) 55%, transparent)",
                         }}
-                        initial={reduce ? false : { opacity: 0 }}
+                        initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.12, ease: EASE_OUT }}
+                        exit={{ opacity: 0, transition: springExit.fast }}
+                        transition={spring.fast}
                       />
                     ) : null}
                   </AnimatePresence>

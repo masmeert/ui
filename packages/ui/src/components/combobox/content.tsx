@@ -9,19 +9,14 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { usePopoverPortalPosition } from "@/lib/popover-position";
+import { INSTANT, reducedTransition, spring, springExit } from "@/lib/springs";
+import { SURFACE_OFFSET, SurfaceProvider, useElevation } from "@/lib/surface";
 import { cn } from "cn";
 import { useComboboxContext } from "./context";
 
 type Side = "top" | "bottom";
 type Align = "start" | "center" | "end";
 
-// The panel uses one weighted spring for both directions, so opening and
-// closing travel through the same detached geometry.
-const COMBOBOX_MORPH: Transition = {
-  type: "spring",
-  duration: 0.5,
-  bounce: 0.22,
-};
 const VIEWPORT_PADDING = 8;
 
 export interface ComboboxContentProps {
@@ -42,6 +37,7 @@ export function ComboboxContent({
   className,
 }: ComboboxContentProps) {
   const context = useComboboxContext("ComboboxContent");
+  const surface = useElevation(SURFACE_OFFSET.popover, { shadowLevel: 3 });
   const measureRef = useRef<HTMLDivElement>(null);
   const [portalReady, setPortalReady] = useState(false);
   const [actualSide, setActualSide] = useState<Side>(side);
@@ -85,6 +81,10 @@ export function ComboboxContent({
   const maxLeft = Math.max(VIEWPORT_PADDING, window.innerWidth - contentWidth - VIEWPORT_PADDING);
   const left = Math.min(Math.max(desiredLeft, VIEWPORT_PADDING), maxLeft);
   const surfaceHeight = layout?.content.height ?? 0;
+  // Height animates, so no bounce. The first frame snaps: there's nothing to grow from.
+  const transition: Transition = !morphReady
+    ? INSTANT
+    : reducedTransition(context.open ? spring.moderate : springExit.moderate, context.reduce);
 
   return createPortal(
     <motion.div
@@ -99,7 +99,7 @@ export function ComboboxContent({
         opacity: context.open ? 1 : 0,
         y: context.open ? (actualSide === "bottom" ? sideOffset : -sideOffset) : 0,
       }}
-      transition={context.reduce || !morphReady ? { duration: 0 } : COMBOBOX_MORPH}
+      transition={transition}
       style={
         {
           left,
@@ -117,7 +117,8 @@ export function ComboboxContent({
         } as CSSProperties
       }
       className={cn(
-        "fixed z-[9999] w-(--combobox-trigger-width) overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-panel outline-none",
+        "fixed z-(--z-popup) w-(--combobox-trigger-width) overflow-hidden rounded-xl border border-border text-popover-foreground outline-none",
+        surface.className,
         className,
       )}
     >
@@ -125,9 +126,9 @@ export function ComboboxContent({
         ref={measureRef}
         initial={false}
         animate={{ opacity: context.open ? 1 : 0 }}
-        transition={context.reduce || !morphReady ? { duration: 0 } : COMBOBOX_MORPH}
+        transition={transition}
       >
-        {children}
+        <SurfaceProvider value={surface.level}>{children}</SurfaceProvider>
       </motion.div>
     </motion.div>,
     document.body,

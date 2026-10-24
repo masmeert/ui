@@ -8,6 +8,7 @@ const meta = {
   component: ButtonGroup,
   args: { orientation: "horizontal" },
   argTypes: {
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
     orientation: { control: "inline-radio", options: ["horizontal", "vertical"] },
   },
 } satisfies Meta<typeof ButtonGroup>;
@@ -21,6 +22,22 @@ export const Default: Story = {
       <Button variant="outline">Redeploy</Button>
       <Button variant="outline">Promote</Button>
       <Button variant="outline">Roll back</Button>
+    </ButtonGroup>
+  ),
+};
+
+export const Compact: Story = {
+  args: { size: "compact" },
+  render: (args) => (
+    <ButtonGroup {...args}>
+      <ButtonGroupText>
+        <GitBranch />
+        main
+      </ButtonGroupText>
+      <Button variant="outline">Switch branch</Button>
+      <Button variant="outline" size="icon" aria-label="Retry">
+        <RotateCcw />
+      </Button>
     </ButtonGroup>
   ),
 };

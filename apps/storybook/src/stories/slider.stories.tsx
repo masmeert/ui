@@ -12,6 +12,7 @@ const meta = {
     max: 10,
     step: 1,
     disabled: false,
+    size: "default",
     onValueChange: fn(),
   },
   argTypes: {
@@ -20,6 +21,7 @@ const meta = {
     max: { control: "number" },
     step: { control: "number" },
     disabled: { control: "boolean" },
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
   },
   decorators: [
     function FixedWidth(Story) {
@@ -38,6 +40,10 @@ type Story = StoryObj<typeof Slider>;
 
 export const Default: Story = {
   args: { variant: "default", showTicks: true },
+};
+
+export const Compact: Story = {
+  args: { variant: "default", showTicks: true, size: "compact" },
 };
 
 export const Bubble: Story = {

@@ -6,6 +6,7 @@ import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react
 import { DayPicker, getDefaultClassNames, type DayButton, type Locale } from "react-day-picker";
 
 import { buttonVariants, type ButtonVariant } from "@/components/button";
+import { useSize } from "@/lib/size";
 
 function Calendar({
   className,
@@ -21,12 +22,15 @@ function Calendar({
   buttonVariant?: ButtonVariant;
 }) {
   const defaultClassNames = getDefaultClassNames();
+  const { type } = useSize();
 
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
+      // No fill of its own: it takes the colour of whatever surface it sits on.
       className={cn(
-        "group/calendar bg-background p-3 [--cell-size:--spacing(8)] in-data-[slot=card-content]:bg-transparent in-data-[slot=popover-content]:bg-transparent",
+        "group/calendar p-3 [--cell-size:--spacing(8)]",
+        type.body,
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
         String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
         className,
@@ -60,31 +64,34 @@ function Calendar({
           defaultClassNames.month_caption,
         ),
         dropdowns: cn(
-          "flex h-(--cell-size) w-full items-center justify-center gap-1.5 text-sm font-medium",
+          "flex h-(--cell-size) w-full items-center justify-center gap-1.5 font-semibold",
           defaultClassNames.dropdowns,
         ),
         dropdown_root: cn(
           "relative rounded-lg border border-input has-focus:border-brand/40",
           defaultClassNames.dropdown_root,
         ),
-        dropdown: cn("absolute inset-0 bg-popover opacity-0", defaultClassNames.dropdown),
+        // Invisible, but some platforms paint the option list with its background.
+        dropdown: cn("absolute inset-0 bg-surface-2 opacity-0", defaultClassNames.dropdown),
         caption_label: cn(
-          "font-medium select-none",
+          "font-semibold select-none",
           captionLayout === "label"
-            ? "text-sm"
-            : "flex h-8 items-center gap-1 rounded-lg pr-1 pl-2 text-sm [&>svg]:size-3.5 [&>svg]:text-muted-foreground",
+            ? undefined
+            : "flex h-8 items-center gap-1 rounded-lg pr-1 pl-2 [&>svg]:size-3.5 [&>svg]:text-muted-foreground",
           defaultClassNames.caption_label,
         ),
         month_grid: cn("w-full border-collapse", defaultClassNames.month_grid),
         weekdays: cn("flex", defaultClassNames.weekdays),
         weekday: cn(
-          "flex-1 rounded-md text-[0.8rem] font-normal text-muted-foreground select-none",
+          "flex-1 rounded-md font-normal text-muted-foreground select-none",
+          type.caption,
           defaultClassNames.weekday,
         ),
         week: cn("mt-2 flex w-full", defaultClassNames.week),
         week_number_header: cn("w-(--cell-size) select-none", defaultClassNames.week_number_header),
         week_number: cn(
-          "text-[0.8rem] text-muted-foreground select-none",
+          "text-muted-foreground select-none",
+          type.caption,
           defaultClassNames.week_number,
         ),
         day: cn(
@@ -94,9 +101,9 @@ function Calendar({
             : "[&:first-child[data-selected=true]_button]:rounded-l-lg",
           defaultClassNames.day,
         ),
-        range_start: cn("rounded-l-lg bg-accent", defaultClassNames.range_start),
+        range_start: cn("rounded-l-lg bg-selected", defaultClassNames.range_start),
         range_middle: cn("rounded-none", defaultClassNames.range_middle),
-        range_end: cn("rounded-r-lg bg-accent", defaultClassNames.range_end),
+        range_end: cn("rounded-r-lg bg-selected", defaultClassNames.range_end),
         today: cn(
           "rounded-lg bg-accent text-accent-foreground data-[selected=true]:rounded-none",
           defaultClassNames.today,
@@ -149,6 +156,7 @@ function CalendarDayButton({
   ...props
 }: React.ComponentProps<typeof DayButton> & { locale?: Partial<Locale> }) {
   const defaultClassNames = getDefaultClassNames();
+  const { type } = useSize();
 
   const ref = React.useRef<HTMLButtonElement>(null);
   React.useEffect(() => {
@@ -171,7 +179,10 @@ function CalendarDayButton({
       data-range-middle={modifiers.range_middle}
       className={cn(
         buttonVariants({ variant: "ghost", size: "icon" }),
-        "flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 leading-none font-normal text-foreground outline-none group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:ring-4 group-data-[focused=true]/day:ring-ring data-[range-end=true]:rounded-lg data-[range-end=true]:rounded-r-lg data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-accent data-[range-middle=true]:text-accent-foreground data-[range-start=true]:rounded-lg data-[range-start=true]:rounded-l-lg data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground dark:hover:text-accent-foreground [&>span]:text-xs [&>span]:opacity-70",
+        "flex aspect-square size-auto w-full min-w-(--cell-size) flex-col gap-1 leading-none font-normal text-foreground outline-none group-data-[focused=true]/day:relative group-data-[focused=true]/day:z-10 group-data-[focused=true]/day:ring-4 group-data-[focused=true]/day:ring-ring data-[range-end=true]:rounded-lg data-[range-end=true]:rounded-r-lg data-[range-end=true]:bg-primary data-[range-end=true]:text-primary-foreground data-[range-middle=true]:rounded-none data-[range-middle=true]:bg-selected data-[range-middle=true]:text-foreground data-[range-start=true]:rounded-lg data-[range-start=true]:rounded-l-lg data-[range-start=true]:bg-primary data-[range-start=true]:text-primary-foreground data-[selected-single=true]:bg-primary data-[selected-single=true]:text-primary-foreground [&>span]:text-[length:var(--fs-caption,12px)] [&>span]:leading-[var(--lh-caption,16px)] [&>span]:text-muted-foreground",
+        // No fluid hover: with disabled days mixed in it could light a date the pointer isn't on.
+        "transition-colors duration-(--duration-fast) hover:bg-hover",
+        type.body,
         defaultClassNames.day,
         className,
       )}

@@ -5,10 +5,15 @@ import {
   useContext,
   useId,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
-import { SPRING_LAYOUT, SPRING_PRESS } from "@/lib/ease";
+import { FluidHoverHighlight } from "@/components/fluid-hover-highlight";
+import { type ItemRect, useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHoverDomItems } from "@/hooks/use-fluid-hover-dom-items";
+import { useSize } from "@/lib/size";
+import { reducedTransition, spring } from "@/lib/springs";
 import { cn } from "cn";
 
 type RadioCtx = {
@@ -41,6 +46,21 @@ export interface RadioGroupProps {
 }
 
 const NEXT_KEYS = new Set(["ArrowDown", "ArrowRight"]);
+
+// Rows have no padding (they align with other form rows), so the highlight grows past them.
+const HOVER_INSET = { x: 8, y: 6 };
+const ITEM_SELECTOR = '[data-slot="radio-group-item"]';
+
+function inflate(rect: ItemRect | undefined): ItemRect | undefined {
+  return (
+    rect && {
+      left: rect.left - HOVER_INSET.x,
+      top: rect.top - HOVER_INSET.y,
+      width: rect.width + HOVER_INSET.x * 2,
+      height: rect.height + HOVER_INSET.y * 2,
+    }
+  );
+}
 const PREVIOUS_KEYS = new Set(["ArrowUp", "ArrowLeft"]);
 
 export function RadioGroup({
@@ -69,13 +89,33 @@ export function RadioGroup({
     [current, layoutId, setValue, disabled],
   );
 
+  const groupRef = useRef<HTMLDivElement>(null);
+  const hover = useFluidHover(groupRef, { axis: orientation === "vertical" ? "y" : "xy" });
+  const { from, indexOf } = useFluidHoverDomItems(hover, groupRef, ITEM_SELECTOR, "[data-checked]");
+  const { setActiveIndex } = hover;
+  const paddedHover = useMemo(
+    () => ({ ...hover, itemRects: hover.itemRects.map((rect) => inflate(rect) as ItemRect) }),
+    [hover],
+  );
+
   return (
     <RadioCtx.Provider value={contextValue}>
       <div
+        ref={groupRef}
         role="radiogroup"
         aria-orientation={orientation}
         aria-disabled={disabled || undefined}
         {...labelling}
+        {...hover.handlers}
+        // Arrow keys move focus and the choice together; a visible focus lights the highlight.
+        onFocus={(event) => {
+          if (event.target.matches(":focus-visible")) setActiveIndex(indexOf(event.target));
+        }}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            setActiveIndex(null);
+          }
+        }}
         onKeyDown={(event) => {
           const forward = NEXT_KEYS.has(event.key);
           if (
@@ -104,11 +144,12 @@ export function RadioGroup({
           target.click();
         }}
         className={cn(
-          "flex gap-3",
+          "relative flex gap-3",
           orientation === "vertical" ? "flex-col" : "flex-row flex-wrap",
           className,
         )}
       >
+        <FluidHoverHighlight hover={paddedHover} from={inflate(from ?? undefined)} />
         {children}
       </div>
     </RadioCtx.Provider>
@@ -118,7 +159,6 @@ export function RadioGroup({
 export interface RadioGroupItemProps {
   value: string;
   label?: string;
-  /** A line under the label explaining the choice. */
   description?: string;
   disabled?: boolean;
   className?: string;
@@ -137,14 +177,18 @@ export function RadioGroupItem({
   const autoId = useId();
   const id = idProp ?? autoId;
   const reduce = useReducedMotion();
+  const tokens = useSize();
   const selected = groupValue === value;
   const isDisabled = disabled || groupDisabled;
 
   return (
     <label
       htmlFor={id}
+      data-slot="radio-group-item"
+      // Keeps a disabled row out of the hover list.
+      data-disabled={isDisabled ? "" : undefined}
       className={cn(
-        "inline-flex items-center gap-3",
+        "relative inline-flex items-center gap-3",
         isDisabled ? "cursor-not-allowed" : "cursor-pointer",
         className,
       )}
@@ -155,16 +199,16 @@ export function RadioGroupItem({
         role="radio"
         aria-checked={selected}
         disabled={isDisabled}
-        // Roving focus: Tab lands on the selected radio (or any, before a choice) and arrows move within the group.
+        // Roving focus: Tab lands on the selected radio, or any radio before a choice.
         tabIndex={selected || !groupValue ? 0 : -1}
         onClick={() => !isDisabled && setValue(value)}
         whileTap={reduce || isDisabled ? undefined : { scale: 0.95 }}
-        transition={SPRING_PRESS}
+        transition={spring.fast}
         data-state={selected ? "checked" : "unchecked"}
         data-checked={selected ? "" : undefined}
         data-unchecked={selected ? undefined : ""}
         className={cn(
-          "relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-200 outline-none",
+          "relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-(--duration-fast) outline-none",
           "focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           "disabled:cursor-not-allowed disabled:opacity-60",
           selected ? "border-brand" : "border-muted-foreground/50 hover:border-muted-foreground",
@@ -174,20 +218,21 @@ export function RadioGroupItem({
           <motion.span
             layoutId={layoutId}
             className="absolute inset-1 rounded-full bg-primary"
-            transition={reduce ? { duration: 0 } : SPRING_LAYOUT}
+            transition={reducedTransition(spring.moderate, reduce)}
           />
         ) : null}
       </motion.button>
       {label ? (
         <span
           className={cn(
-            "flex flex-col text-sm text-foreground select-none",
+            "flex flex-col text-foreground select-none",
+            tokens.type.body,
             isDisabled && "opacity-60",
           )}
         >
           {label}
           {description ? (
-            <span className="text-xs leading-4 text-muted-foreground">{description}</span>
+            <span className={cn("text-muted-foreground", tokens.type.caption)}>{description}</span>
           ) : null}
         </span>
       ) : null}

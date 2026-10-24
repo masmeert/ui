@@ -3,6 +3,7 @@ import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cn";
+import { typeClass } from "@/lib/type-scale";
 
 import { Separator } from "@/components/separator";
 
@@ -29,7 +30,10 @@ function ItemSeparator({ className, ...props }: React.ComponentProps<typeof Sepa
 }
 
 const itemVariants = cva(
-  "group/item flex flex-wrap items-center rounded-lg border border-transparent text-sm transition-colors duration-100 outline-none focus-visible:ring-4 focus-visible:ring-ring [a]:transition-colors [a]:hover:bg-accent/50",
+  cn(
+    "group/item flex flex-wrap items-center rounded-lg border border-transparent transition-colors duration-(--duration-fast) outline-none focus-visible:ring-4 focus-visible:ring-ring [a]:hover:bg-hover",
+    typeClass("body"),
+  ),
   {
     variants: {
       variant: {
@@ -123,7 +127,7 @@ function ItemTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="item-title"
-      className={cn("flex w-fit items-center gap-2 text-sm leading-snug font-medium", className)}
+      className={cn("flex w-fit items-center gap-2 font-medium", typeClass("body"), className)}
       {...props}
     />
   );
@@ -134,7 +138,9 @@ function ItemDescription({ className, ...props }: React.ComponentProps<"p">) {
     <p
       data-slot="item-description"
       className={cn(
-        "line-clamp-2 text-sm leading-normal font-normal text-balance text-muted-foreground group-data-[size=xs]/item:text-xs [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-brand",
+        "line-clamp-2 font-normal text-balance text-muted-foreground [&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-brand",
+        typeClass("body"),
+        "group-data-[size=xs]/item:text-[length:var(--fs-caption,12px)] group-data-[size=xs]/item:leading-[var(--lh-caption,16px)]",
         className,
       )}
       {...props}

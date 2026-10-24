@@ -2,6 +2,7 @@
 
 import { PreviewCard as PreviewCardPrimitive } from "@base-ui/react/preview-card";
 import { cn } from "cn";
+import { SURFACE_OFFSET, SurfaceProvider, useElevation } from "@/lib/surface";
 
 function HoverCard({ ...props }: PreviewCardPrimitive.Root.Props) {
   return <PreviewCardPrimitive.Root data-slot="hover-card" {...props} />;
@@ -13,6 +14,7 @@ function HoverCardTrigger({ delay = 300, ...props }: PreviewCardPrimitive.Trigge
 
 function HoverCardContent({
   className,
+  children,
   side = "bottom",
   sideOffset = 4,
   align = "center",
@@ -20,6 +22,7 @@ function HoverCardContent({
   ...props
 }: PreviewCardPrimitive.Popup.Props &
   Pick<PreviewCardPrimitive.Positioner.Props, "align" | "alignOffset" | "side" | "sideOffset">) {
+  const surface = useElevation(SURFACE_OFFSET.popover, { shadowLevel: 4 });
   return (
     <PreviewCardPrimitive.Portal data-slot="hover-card-portal">
       <PreviewCardPrimitive.Positioner
@@ -27,16 +30,20 @@ function HoverCardContent({
         alignOffset={alignOffset}
         side={side}
         sideOffset={sideOffset}
-        className="isolate z-50"
+        className="isolate z-(--z-popup)"
       >
         <PreviewCardPrimitive.Popup
           data-slot="hover-card-content"
           className={cn(
-            "z-50 w-64 origin-(--transform-origin) rounded-xl border bg-popover p-4 text-popover-foreground shadow-panel outline-hidden data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:fill-mode-forwards data-closed:zoom-out-95",
+            "z-(--z-popup) w-64 origin-(--transform-origin) rounded-xl border p-4 text-popover-foreground outline-hidden",
+            surface.className,
+            "duration-(--duration-moderate) data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:duration-(--duration-exit-moderate) data-closed:ease-(--ease-exit) data-closed:fade-out-0 data-closed:fill-mode-forwards data-closed:zoom-out-95",
             className,
           )}
           {...props}
-        />
+        >
+          <SurfaceProvider value={surface.level}>{children}</SurfaceProvider>
+        </PreviewCardPrimitive.Popup>
       </PreviewCardPrimitive.Positioner>
     </PreviewCardPrimitive.Portal>
   );

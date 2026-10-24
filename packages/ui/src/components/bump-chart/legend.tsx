@@ -1,8 +1,10 @@
 import { cn } from "cn";
+import { useSize } from "@/lib/size";
 import { useBumpChart } from "./context";
 
 export function BumpChartLegend({ className }: { className?: string }) {
   const { rows, pinned, highlighted, select, setHovered, setFocused, canHover } = useBumpChart();
+  const { type } = useSize();
   return (
     <div className={cn("grid grid-cols-2 gap-x-5 gap-y-1 sm:grid-cols-3", className)}>
       {rows.map((row) => {
@@ -30,9 +32,10 @@ export function BumpChartLegend({ className }: { className?: string }) {
               }
             }}
             className={cn(
-              "flex min-w-0 items-center gap-2 rounded-md px-2 py-2.5 text-xs text-foreground transition-opacity duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+              "flex min-w-0 items-center gap-2 rounded-md px-2 py-2.5 text-foreground transition-[opacity,background-color] duration-(--duration-fast) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+              type.caption,
               highlighted && highlighted !== row.id && "opacity-35",
-              pinned === row.id && "bg-muted/60",
+              pinned === row.id && "bg-selected",
             )}
           >
             <span
@@ -45,7 +48,10 @@ export function BumpChartLegend({ className }: { className?: string }) {
               {last == null ? "—" : `#${last}`}
             </span>
             <span
-              className="min-w-5 text-right font-mono text-[10px] text-muted-foreground tabular-nums"
+              className={cn(
+                "min-w-5 text-right font-mono text-muted-foreground tabular-nums",
+                type.micro,
+              )}
               title={
                 gain == null
                   ? "Change unavailable"

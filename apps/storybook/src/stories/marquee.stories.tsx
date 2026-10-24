@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Marquee, type MarqueeProps } from "@masmeert/ui/marquee";
 import { CircleCheck, CircleX, GitCommitHorizontal, LoaderCircle } from "lucide-react";
+import { typeClass } from "@masmeert/ui/lib/type-scale";
 
 const deployments = [
   {
@@ -63,11 +64,13 @@ const meta = {
         {deployments.map((deployment) => (
           <div
             key={deployment.service}
-            className="flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-sm whitespace-nowrap"
+            className={`flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 whitespace-nowrap ${typeClass("body")}`}
           >
             {deployment.icon}
-            <span className="font-medium">{deployment.service}</span>
-            <span className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
+            <span className="font-semibold">{deployment.service}</span>
+            <span
+              className={`flex items-center gap-1 font-mono text-muted-foreground ${typeClass("caption")}`}
+            >
               <GitCommitHorizontal className="size-3.5" />
               {deployment.commit}
             </span>

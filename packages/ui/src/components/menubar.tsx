@@ -19,17 +19,103 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
+  MenuHoverContext,
+  useMenuHoverScope,
+  useMenuRowRef,
 } from "@/components/dropdown-menu";
-import { SPRING_LAYOUT } from "@/lib/ease";
+import { FluidHoverHighlight } from "@/components/fluid-hover-highlight";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { type Size, SizeProvider, useSize } from "@/lib/size";
+import { reducedTransition, spring } from "@/lib/springs";
 
-function Menubar({ className, ...props }: MenubarPrimitive.Props) {
+function Menubar({
+  className,
+  size: sizeProp,
+  children,
+  ref,
+  onPointerEnter,
+  onPointerMove,
+  onPointerLeave,
+  onClick,
+  onFocus,
+  onBlur,
+  ...props
+}: MenubarPrimitive.Props & {
+  ref?: React.Ref<HTMLDivElement>;
+  /** The menus' rows follow it. */
+  size?: Size;
+}) {
+  const size = useSize(sizeProp);
+  const barRef = React.useRef<HTMLDivElement | null>(null);
+  // The open menu's pill (in each trigger) is a separate layer from this hover highlight.
+  const hover = useFluidHover(barRef, { axis: "x" });
+  const { registerItem, setActiveIndex, handlers } = hover;
+  const { scope, indexOf } = useMenuHoverScope(registerItem);
+  const keyboardLit = React.useRef<number | null>(null);
+
+  const setBarRef = React.useCallback(
+    (element: HTMLDivElement | null) => {
+      barRef.current = element;
+      if (typeof ref === "function") ref(element);
+      else if (ref) ref.current = element;
+    },
+    [ref],
+  );
+  // Portalled menus' events bubble here through the React tree; ignore those outside the bar.
+  const inside = (event: React.SyntheticEvent) =>
+    barRef.current?.contains(event.target as Node) ?? false;
+
   return (
     <LayoutGroup id={React.useId()}>
       <MenubarPrimitive
+        ref={setBarRef}
         data-slot="menubar"
-        className={cn("inline-flex items-center gap-1 rounded-full bg-card p-1", className)}
+        className={cn(
+          "relative inline-flex items-center gap-1 rounded-full bg-card",
+          size.segmentPad,
+          className,
+        )}
+        onPointerEnter={(event) => {
+          onPointerEnter?.(event);
+          if (inside(event)) handlers.onPointerEnter(event);
+        }}
+        onPointerMove={(event) => {
+          onPointerMove?.(event);
+          if (inside(event)) handlers.onPointerMove(event);
+          else handlers.onPointerLeave(event);
+        }}
+        onPointerLeave={(event) => {
+          onPointerLeave?.(event);
+          handlers.onPointerLeave(event);
+        }}
+        onClick={(event) => {
+          onClick?.(event);
+          if (inside(event)) handlers.onClick(event);
+        }}
+        onFocus={(event) => {
+          onFocus?.(event);
+          if (!inside(event) || !(event.target as Element).matches(":focus-visible")) return;
+          const index = indexOf(event.target as Element);
+          if (index === undefined) return;
+          keyboardLit.current = index;
+          setActiveIndex(index);
+        }}
+        onBlur={(event) => {
+          onBlur?.(event);
+          if (keyboardLit.current === null || indexOf(event.target as Element) === undefined)
+            return;
+          if (hover.activeIndex === keyboardLit.current) setActiveIndex(null);
+          keyboardLit.current = null;
+        }}
         {...props}
-      />
+      >
+        <MenuHoverContext.Provider value={scope}>
+          <SizeProvider size={size.size}>
+            <FluidHoverHighlight hover={hover} className="rounded-full" />
+            {children}
+          </SizeProvider>
+        </MenuHoverContext.Provider>
+      </MenubarPrimitive>
     </LayoutGroup>
   );
 }
@@ -46,24 +132,32 @@ function MenubarPortal({ ...props }: React.ComponentProps<typeof DropdownMenuPor
   return <DropdownMenuPortal data-slot="menubar-portal" {...props} />;
 }
 
-function MenubarTrigger({ className, ...props }: React.ComponentProps<typeof DropdownMenuTrigger>) {
+function MenubarTrigger({
+  className,
+  ref,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuTrigger> & { ref?: React.Ref<HTMLElement> }) {
   const reduce = useReducedMotion();
+  const size = useSize();
+  const triggerRef = useMenuRowRef(ref);
   return (
     <DropdownMenuTrigger
+      ref={triggerRef}
       data-slot="menubar-trigger"
       className={cn(
-        "relative inline-flex items-center rounded-full px-3.5 py-1.5 text-sm font-medium whitespace-nowrap text-muted-foreground outline-hidden transition-colors select-none hover:text-foreground focus-visible:text-foreground data-popup-open:text-foreground",
+        "relative inline-flex items-center rounded-full px-3.5 font-medium whitespace-nowrap text-muted-foreground outline-hidden transition-colors duration-(--duration-fast) select-none hover:text-foreground focus-visible:text-foreground data-popup-open:text-foreground",
+        size.segmentItem,
+        size.text,
         className,
       )}
-      // One highlight per bar, handed between triggers by layoutId so it slides as you move across open menus.
       render={(triggerProps, state) => (
         <button {...triggerProps}>
           {state.open ? (
             <motion.span
               layoutId="menubar-highlight"
-              transition={reduce ? { duration: 0 } : SPRING_LAYOUT}
+              transition={reducedTransition(spring.moderate, reduce)}
               style={{ borderRadius: 9999 }}
-              className="absolute inset-0 bg-muted"
+              className="absolute inset-0 bg-selected"
             />
           ) : null}
           <span className="relative z-10">{triggerProps.children}</span>

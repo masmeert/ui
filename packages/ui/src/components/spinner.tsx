@@ -22,7 +22,6 @@ export type SpinnerVariant =
   | "helix"
   | "percent";
 
-// Terminal-style frame sets — the loaders CLI AI agents cycle through.
 const ASCII_SETS: Partial<Record<SpinnerVariant, string[]>> = {
   ascii: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
   "ascii-line": ["|", "/", "-", "\\"],
@@ -32,17 +31,15 @@ const ASCII_SETS: Partial<Record<SpinnerVariant, string[]>> = {
 };
 
 export interface SpinnerProps {
-  /** Which animation to render. */
   variant?: SpinnerVariant;
-  /** Base square size in px. Everything scales from this. */
+  /** Square size in px; everything scales from it. */
   size?: number;
   cycleSeconds?: number;
-  /** Accessible label announced to screen readers. */
   label?: string;
   className?: string;
 }
 
-// Reduced motion keeps a calm opacity pulse and drops every transform.
+// Loader timings are loop cycles, not UI transitions, so they sit outside the spring tiers.
 const REDUCED = {
   animate: { opacity: [1, 0.4, 1] },
   transition: { duration: 1.4, ease: EASE_IN_OUT, repeat: Infinity },
@@ -227,8 +224,7 @@ function Ascii({
 }: PartProps & { frames: string[] }) {
   const [frame, setFrame] = useState(0);
   useEffect(() => {
-    // Reduced motion slows the cycle rather than stopping it — it's a glyph
-    // swap, not on-screen movement.
+    // Reduced motion only slows it: a glyph swap isn't on-screen movement.
     const step =
       ((prefersReducedMotion ? cycleSeconds * 2.5 : cycleSeconds) / frames.length) * 1000;
     const id = setInterval(() => setFrame((f) => (f + 1) % frames.length), step);
@@ -242,10 +238,8 @@ function Ascii({
   );
 }
 
-// Each shape is sampled at the same number of points and emitted as an SVG
-// path with identical command structure, so framer tweens the `d` attribute
-// point-to-point — a real morph, not a snap. (clip-path polygon strings don't
-// interpolate reliably in framer, which left the shapes broken.)
+// Same point count and command structure per shape, so `d` tweens point-to-point.
+// clip-path polygons don't interpolate reliably.
 const MORPH_POINTS = 24;
 
 function ngonRadius(ang: number, n: number, phase = 0) {
@@ -275,11 +269,8 @@ const MORPH_PATHS = [
   morphPath((a) => ngonRadius(a, 4)), // diamond
 ];
 
-// Each shape appears twice in a row so it fully forms and HOLDS before the
-// next morph. Even keyframe spacing then alternates hold / morph segments.
+// Each shape appears twice so even keyframe spacing alternates hold / morph.
 const MORPH_SEQ = [...MORPH_PATHS.flatMap((p) => [p, p]), MORPH_PATHS[0]];
-// Rotation and scale only change across the morph segments, staying put on the
-// holds, so a settled shape sits still.
 const MORPH_ROT = [0, 0, 72, 72, 144, 144, 216, 216, 288, 288, 360];
 const MORPH_SCALE = [1, 1, 0.88, 0.88, 1, 1, 0.88, 0.88, 1, 1, 1];
 
@@ -384,6 +375,7 @@ function Scramble({ size, cycleSeconds, prefersReducedMotion }: PartProps) {
   }, [cycleSeconds, prefersReducedMotion]);
 
   return (
+    // Letter-spacing is deliberate: these are scrambling cells, not a text label.
     <span
       className="font-mono font-medium tracking-[0.2em] tabular-nums"
       style={{ fontSize: size * 0.42 }}
@@ -429,9 +421,7 @@ const NEWTON_BALLS = [0, 1, 2, 3, 4];
 function Newton({ size, cycleSeconds, prefersReducedMotion }: PartProps) {
   const d = size * 0.2;
   const out = d * 1.1;
-  // Only the end balls move: the left slides out and back on the first half,
-  // then the right on the second half — the impact appears to jump the three
-  // still middle balls. Pure horizontal slide, no swing, no strings.
+  // Only the end balls move, left on the first half, right on the second.
   const moves = new Map([
     [0, { x: [0, -out, 0, 0], times: [0, 0.28, 0.5, 1] }],
     [4, { x: [0, 0, out, 0], times: [0, 0.5, 0.78, 1] }],
@@ -616,8 +606,7 @@ function DotMatrix({ size, cycleSeconds, prefersReducedMotion }: PartProps) {
   );
 }
 
-// Ordered Bayer 4x4 matrix — the classic dithering threshold pattern. Cells
-// light in this order, so the fill shimmers like a dissolving halftone.
+// Bayer 4x4 threshold order.
 const BAYER_4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 
 function Dither({ size, cycleSeconds, prefersReducedMotion }: PartProps) {

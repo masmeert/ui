@@ -6,13 +6,13 @@ import { Button } from "@masmeert/ui/button";
 const meta = {
   title: "Display/Badge",
   component: Badge,
-  args: { status: "success", size: "md", children: "Deployed", showIcon: true },
+  args: { status: "success", size: "default", children: "Deployed", showIcon: true },
   argTypes: {
     status: {
       control: "select",
       options: ["neutral", "info", "success", "warning", "danger", "loading"],
     },
-    size: { control: "inline-radio", options: ["sm", "md"] },
+    size: { control: "inline-radio", options: ["compact", "default"] },
     showIcon: { control: "boolean" },
     pulse: { control: "boolean" },
   },
@@ -49,7 +49,7 @@ function DeployLifecycle() {
     <div className="flex items-center gap-4">
       <Badge status={status}>{label}</Badge>
       <Button
-        size="sm"
+        size="compact"
         variant="outline"
         onClick={() => setStepIndex((index) => (index + 1) % deployStatuses.length)}
       >
@@ -60,7 +60,9 @@ function DeployLifecycle() {
 }
 
 export const Default: Story = {};
-export const Small: Story = { args: { size: "sm", status: "loading", children: "Building" } };
+export const Compact: Story = {
+  args: { size: "compact", status: "loading", children: "Building" },
+};
 export const WithoutIcon: Story = {
   args: { status: "neutral", showIcon: false, children: "v0.1.11" },
 };

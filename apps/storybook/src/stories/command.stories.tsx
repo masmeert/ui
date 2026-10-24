@@ -47,7 +47,7 @@ const commands: CommandItem[] = [
     group: "Projects",
     keywords: ["desktop", "electron"],
     icon: FolderGit2,
-    badge: <Badge size="sm">4 running</Badge>,
+    badge: <Badge size="compact">4 running</Badge>,
     onSelect: fn(),
   },
   {
@@ -99,9 +99,11 @@ const meta = {
     shortcut: "k",
     placeholder: "Type a command or search…",
     emptyMessage: "No results found.",
+    size: "default",
     onOpenChange: fn(),
   },
   argTypes: {
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
     items: { control: false },
     open: { control: false },
   },
@@ -139,6 +141,11 @@ export const WithoutIcons: Story = {
     items: commands.map(({ icon: _icon, badge: _badge, ...command }) => command),
     placeholder: "Jump to…",
   },
+  render: (args) => <CommandPalette {...args} />,
+};
+
+export const Compact: Story = {
+  args: { size: "compact" },
   render: (args) => <CommandPalette {...args} />,
 };
 

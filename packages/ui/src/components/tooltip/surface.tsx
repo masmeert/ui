@@ -1,9 +1,11 @@
 import { motion, useReducedMotion } from "motion/react";
 import type { ComponentProps, ReactNode, Ref } from "react";
-import { EASE_OUT } from "@/lib/ease";
+import { spring, springExit } from "@/lib/springs";
+import { SURFACE_OFFSET, SurfaceProvider, useElevation } from "@/lib/surface";
+import { typeClass } from "@/lib/type-scale";
 import { cn } from "cn";
 
-/** The shared visual surface for trigger tooltips and chart readouts. Positioning belongs to the caller. */
+/** Shared by trigger tooltips and chart readouts; the caller positions it. */
 export function TooltipSurface({
   children,
   className,
@@ -14,6 +16,8 @@ export function TooltipSurface({
   ref?: Ref<HTMLSpanElement>;
 }) {
   const reduce = useReducedMotion();
+  // Light fixed shadow: a label shouldn't read as a panel.
+  const surface = useElevation(SURFACE_OFFSET.popover, { shadowLevel: 3 });
   return (
     <motion.span
       ref={ref}
@@ -22,20 +26,20 @@ export function TooltipSurface({
         reduce
           ? {
               initial: { opacity: 0 },
-              animate: { opacity: 1, transition: { duration: 0.14, ease: EASE_OUT } },
-              exit: { opacity: 0, transition: { duration: 0.1, ease: EASE_OUT } },
+              animate: { opacity: 1, transition: spring.fast },
+              exit: { opacity: 0, transition: springExit.fast },
             }
           : {
               initial: { opacity: 0, transform: "scale(0.97)" },
               animate: {
                 opacity: 1,
                 transform: "scale(1)",
-                transition: { duration: 0.15, ease: EASE_OUT },
+                transition: spring.fast,
               },
               exit: {
                 opacity: 0,
                 transform: "scale(0.97)",
-                transition: { duration: 0.12, ease: EASE_OUT },
+                transition: springExit.fast,
               },
             }
       }
@@ -43,12 +47,14 @@ export function TooltipSurface({
       animate="animate"
       exit="exit"
       className={cn(
-        "block rounded-lg border border-border bg-popover px-2.5 py-1 text-xs font-medium whitespace-nowrap text-foreground shadow-panel",
+        "block rounded-lg border border-border px-2.5 py-1 font-medium whitespace-nowrap text-foreground",
+        surface.className,
+        typeClass("caption"),
         className,
       )}
       {...props}
     >
-      {children}
+      <SurfaceProvider value={surface.level}>{children}</SurfaceProvider>
     </motion.span>
   );
 }

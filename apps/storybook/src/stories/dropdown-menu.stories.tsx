@@ -30,12 +30,13 @@ import {
 const meta = {
   title: "Overlays/Dropdown Menu",
   component: DropdownMenuContent,
-  args: { side: "bottom", align: "start", sideOffset: 4, alignOffset: 0 },
+  args: { side: "bottom", align: "start", sideOffset: 4, alignOffset: 0, size: "default" },
   argTypes: {
     side: { control: "inline-radio", options: ["top", "right", "bottom", "left"] },
     align: { control: "inline-radio", options: ["start", "center", "end"] },
     sideOffset: { control: { type: "range", min: 0, max: 24, step: 1 } },
     alignOffset: { control: { type: "range", min: -24, max: 24, step: 1 } },
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
   },
 } satisfies Meta<typeof DropdownMenuContent>;
 
@@ -88,7 +89,7 @@ function ThreadListViewMenu(props: ComponentProps<typeof DropdownMenuContent>) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className={buttonVariants({ variant: "outline", size: "sm" })}>
+      <DropdownMenuTrigger className={buttonVariants({ variant: "outline", size: "compact" })}>
         View
         <ChevronDown className="size-3.5" />
       </DropdownMenuTrigger>
@@ -119,7 +120,7 @@ function ThreadListViewMenu(props: ComponentProps<typeof DropdownMenuContent>) {
 function MoveThreadMenu(props: ComponentProps<typeof DropdownMenuContent>) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className={buttonVariants({ variant: "outline", size: "sm" })}>
+      <DropdownMenuTrigger className={buttonVariants({ variant: "outline", size: "compact" })}>
         Thread
         <ChevronDown className="size-3.5" />
       </DropdownMenuTrigger>
@@ -160,4 +161,10 @@ export const CheckboxAndRadioItems: Story = {
 
 export const Submenu: Story = {
   render: (args) => <MoveThreadMenu {...args} />,
+};
+
+/** Rows on the compact step; submenus inherit it. Wrapping a region in `SizeProvider` does the same. */
+export const Compact: Story = {
+  args: { size: "compact" },
+  render: (args) => <ThreadListViewMenu {...args} />,
 };

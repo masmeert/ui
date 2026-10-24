@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { GitPullRequest } from "lucide-react";
 import { Avatar, AvatarFallback } from "@masmeert/ui/avatar";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@masmeert/ui/hover-card";
+import { typeClass } from "@masmeert/ui/lib/type-scale";
 
 const meta = {
   title: "Overlays/Hover Card",
@@ -20,7 +21,7 @@ type Story = StoryObj<typeof meta>;
 
 function MentionHoverCard(props: ComponentProps<typeof HoverCardContent>) {
   return (
-    <p className="text-sm text-muted-foreground">
+    <p className={`${typeClass("body")} text-muted-foreground`}>
       Assigned to{" "}
       <HoverCard>
         <HoverCardTrigger
@@ -31,13 +32,15 @@ function MentionHoverCard(props: ComponentProps<typeof HoverCardContent>) {
         </HoverCardTrigger>
         <HoverCardContent {...props}>
           <div className="flex gap-3">
-            <Avatar size="lg">
+            <Avatar size="large">
               <AvatarFallback>AL</AvatarFallback>
             </Avatar>
             <div className="flex flex-col gap-1">
-              <p className="text-sm font-medium text-foreground">Ada Lovelace</p>
-              <p className="text-xs text-muted-foreground">Maintainer · masscode</p>
-              <p className="text-xs text-muted-foreground">7 open threads</p>
+              <p className={`${typeClass("body")} font-medium text-foreground`}>Ada Lovelace</p>
+              <p className={`${typeClass("caption")} text-muted-foreground`}>
+                Maintainer · masscode
+              </p>
+              <p className={`${typeClass("caption")} text-muted-foreground`}>7 open threads</p>
             </div>
           </div>
         </HoverCardContent>
@@ -52,16 +55,18 @@ function PullRequestHoverCard(props: ComponentProps<typeof HoverCardContent>) {
     <HoverCard>
       <HoverCardTrigger
         href="#"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground underline-offset-4 hover:underline"
+        className={`inline-flex items-center gap-1.5 ${typeClass("body")} font-medium text-foreground underline-offset-4 hover:underline`}
       >
         <GitPullRequest className="size-4 text-muted-foreground" />
         #21
       </HoverCardTrigger>
       <HoverCardContent {...props} className="w-80">
         <div className="flex flex-col gap-2">
-          <p className="text-xs text-muted-foreground">masmeert/masscode</p>
-          <p className="text-sm font-medium text-foreground">chore(main): release 0.1.11</p>
-          <p className="text-xs text-muted-foreground">
+          <p className={`${typeClass("caption")} text-muted-foreground`}>masmeert/masscode</p>
+          <p className={`${typeClass("body")} font-medium text-foreground`}>
+            chore(main): release 0.1.11
+          </p>
+          <p className={`${typeClass("caption")} text-muted-foreground`}>
             Opened by release-please · 3 commits · checks passing
           </p>
         </div>

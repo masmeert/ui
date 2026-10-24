@@ -16,7 +16,7 @@ function PromoteDeploymentDialog() {
           <p className="text-sm font-medium">Deployment #1287</p>
           <p className="text-xs text-muted-foreground">Promoted {promotions} times</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+        <Button variant="outline" size="compact" onClick={() => setOpen(true)}>
           Promote
         </Button>
       </div>
@@ -51,11 +51,11 @@ function PromoteDeploymentDialog() {
                     buttons ignore clicks.
                   </p>
                   <div className="mt-4 flex justify-end gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => setOpen(false)}>
+                    <Button variant="ghost" size="compact" onClick={() => setOpen(false)}>
                       Cancel
                     </Button>
                     <Button
-                      size="sm"
+                      size="compact"
                       onClick={() => {
                         setPromotions((current) => current + 1);
                         setOpen(false);
@@ -80,7 +80,7 @@ function DeployToast() {
 
   return (
     <div className="relative flex h-64 w-96 flex-col items-center gap-2 overflow-hidden rounded-2xl border border-border bg-background p-4">
-      <Button variant="outline" size="sm" onClick={() => setVisible(true)}>
+      <Button variant="outline" size="compact" onClick={() => setVisible(true)}>
         Deploy web-app
       </Button>
       <p className="text-xs text-muted-foreground">Rollbacks: {undoCount}</p>
@@ -101,7 +101,7 @@ function DeployToast() {
                 <p className="min-w-0 flex-1 text-sm">web-app is live on production</p>
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="compact"
                   onClick={() => {
                     setUndoCount((current) => current + 1);
                     setVisible(false);
@@ -109,7 +109,7 @@ function DeployToast() {
                 >
                   Undo
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setVisible(false)}>
+                <Button variant="ghost" size="compact" onClick={() => setVisible(false)}>
                   Dismiss
                 </Button>
               </motion.div>

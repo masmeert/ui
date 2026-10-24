@@ -17,13 +17,18 @@ import {
   useContext,
   useEffect,
   useId,
+  useImperativeHandle,
   useRef,
   useState,
   useSyncExternalStore,
 } from "react";
 import { createPortal } from "react-dom";
-import { SharedLayoutBg } from "@/components/shared-layout-bg";
-import { EASE_DRAWER, EASE_OUT, SPRING_LAYOUT, SPRING_PRESS } from "@/lib/ease";
+import { FluidHoverHighlight } from "@/components/fluid-hover-highlight";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHoverDomItems } from "@/hooks/use-fluid-hover-dom-items";
+import { type Size, useSize } from "@/lib/size";
+import { INSTANT, reducedTransition, spring, springExit } from "@/lib/springs";
+import { SURFACE_OFFSET, SurfaceProvider, useElevation } from "@/lib/surface";
 import { cn } from "cn";
 
 type SidebarState = "expanded" | "collapsed";
@@ -34,44 +39,22 @@ type SidebarCollapsible = "offcanvas" | "icon" | "none";
 const MOBILE_QUERY = "(max-width: 767px)";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
-const PANEL_TRANSITION = {
-  duration: 0.36,
-  ease: EASE_DRAWER,
-} as const;
+const PANEL_ENTER_TRANSITION = spring.slow;
+const PANEL_EXIT_TRANSITION = springExit.slow;
 
-// The icon rail settles at a hard boundary. Keep the spring critically damped
-// so it cannot overshoot, pause against that boundary, and then snap back
-// during the final frame.
-const SIDEBAR_MORPH_TRANSITION = {
-  type: "spring",
-  stiffness: 380,
-  damping: 35,
-  mass: 0.75,
-} as const;
+// Must not bounce: the rail settles against a hard boundary and would snap back on the last frame.
+const SIDEBAR_MORPH_TRANSITION = spring.moderate;
 
-const LABEL_ENTER_TRANSITION = {
-  duration: 0.2,
-  delay: 0.08,
-  ease: EASE_OUT,
-} as const;
+const LABEL_ENTER_TRANSITION = { ...spring.moderate, delay: 0.08 };
 
-const LABEL_EXIT_TRANSITION = {
-  duration: 0.12,
-  ease: EASE_OUT,
-} as const;
-
-const SUBMENU_TRANSITION = {
-  duration: 0.18,
-  ease: EASE_OUT,
-} as const;
+const LABEL_EXIT_TRANSITION = springExit.fast;
 
 const SUBMENU_VARIANTS: Variants = {
   closed: {
     opacity: 0,
     clipPath: "inset(0 0 100% 0 round 8px)",
     transition: {
-      duration: 0.14,
-      ease: EASE_OUT,
+      ...springExit.moderate,
       staggerChildren: 0.025,
       staggerDirection: -1,
     },
@@ -80,9 +63,8 @@ const SUBMENU_VARIANTS: Variants = {
     opacity: 1,
     clipPath: "inset(0 0 0% 0 round 8px)",
     transition: {
-      duration: 0.2,
+      ...spring.moderate,
       delayChildren: 0.035,
-      ease: EASE_OUT,
       staggerChildren: 0.045,
     },
   },
@@ -93,19 +75,21 @@ const SUBMENU_ITEM_VARIANTS: Variants = {
     opacity: 0,
     y: -6,
     filter: "blur(3px)",
+    transition: springExit.fast,
   },
   open: {
     opacity: 1,
     y: 0,
     filter: "blur(0px)",
-    transition: SUBMENU_TRANSITION,
+    transition: spring.moderate,
   },
 };
 
-const REDUCED_TRANSITION = {
-  duration: 0.16,
-  ease: EASE_OUT,
-} as const;
+const STEP_DOWN: Record<Size, Size> = {
+  compact: "compact",
+  default: "compact",
+  large: "default",
+};
 
 const FOCUSABLE_SELECTOR = [
   "a[href]",
@@ -302,17 +286,13 @@ function MobileSidebar({
   side: SidebarSide;
 }) {
   const context = useSidebar();
+  const surface = useElevation(SURFACE_OFFSET.dialog);
   const panelRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
-  // The sheet is mounted for as long as the viewport is mobile, so it hides
-  // itself while closed rather than sitting there transparent and interactive.
-  // Opening shows it in the same commit that starts the slide — a delayed show
-  // would run the focus effect below against a still-hidden panel, and focus()
-  // on a hidden element is ignored. Closing waits for the slide to finish, and
-  // the panel's own exit tells us when that is: no duration to keep in sync.
+  // Show in the same commit as the slide starts: focus() on a still-hidden panel is ignored.
+  // Hide only when the panel's exit completes.
   const [hidden, setHidden] = useState(!context.openMobile);
-  // The completion callback fires for the open slide too, and it reads state
-  // from whenever motion settles: a ref keeps it on the current one.
+  // The completion callback also fires for the open slide; a ref gives it current state.
   const openMobileRef = useRef(context.openMobile);
 
   useEffect(() => setMounted(true), []);
@@ -361,15 +341,11 @@ function MobileSidebar({
 
   if (!mounted) return null;
 
-  // This container groups the sheet for hiding and the z-index and carries no
-  // box: both children are `fixed` and resolve against the viewport themselves.
-  // The scrim spans the viewport edges but paints a colour, and the panel is
-  // inset off one side and paints its own surface, so no layer here is a
-  // transparent edge-spanning one. See tests/fixed-overlay-edge-sampling.test.tsx.
+  // Zero-size wrapper so no transparent fixed layer spans the viewport edges.
   return createPortal(
     <div
       className={cn(
-        "pointer-events-none fixed top-0 left-0 z-50 size-0 md:hidden",
+        "pointer-events-none fixed top-0 left-0 z-(--z-overlay) size-0 md:hidden",
         hidden && !context.openMobile ? "invisible" : "visible",
       )}
     >
@@ -379,7 +355,10 @@ function MobileSidebar({
         tabIndex={context.openMobile ? 0 : -1}
         initial={false}
         animate={{ opacity: context.openMobile ? 1 : 0 }}
-        transition={context.reduce ? REDUCED_TRANSITION : PANEL_TRANSITION}
+        transition={reducedTransition(
+          context.openMobile ? PANEL_ENTER_TRANSITION : PANEL_EXIT_TRANSITION,
+          context.reduce,
+        )}
         onClick={() => context.setOpenMobile(false)}
         className={cn(
           "fixed inset-0 bg-black/40",
@@ -403,7 +382,10 @@ function MobileSidebar({
           opacity: context.reduce ? (context.openMobile ? 1 : 0) : 1,
           x: context.reduce ? 0 : context.openMobile ? "0%" : side === "left" ? "-100%" : "100%",
         }}
-        transition={context.reduce ? REDUCED_TRANSITION : PANEL_TRANSITION}
+        transition={reducedTransition(
+          context.openMobile ? PANEL_ENTER_TRANSITION : PANEL_EXIT_TRANSITION,
+          context.reduce,
+        )}
         onAnimationComplete={() => {
           if (!openMobileRef.current) setHidden(true);
         }}
@@ -437,15 +419,18 @@ function MobileSidebar({
         }}
         className={cn(
           "pointer-events-auto fixed inset-y-0 flex h-dvh w-(--sidebar-width-mobile) max-w-[88vw] flex-col overflow-hidden",
-          "border-border bg-background shadow-2xl will-change-transform",
+          "border-border will-change-transform",
+          surface.className,
           side === "left" ? "left-0 border-r" : "right-0 border-l",
           !context.openMobile && "pointer-events-none",
           className,
         )}
       >
-        <SidebarPanelContext.Provider value={{ collapsed: false, collapsible: "none", side }}>
-          {children}
-        </SidebarPanelContext.Provider>
+        <SurfaceProvider value={surface.level}>
+          <SidebarPanelContext.Provider value={{ collapsed: false, collapsible: "none", side }}>
+            {children}
+          </SidebarPanelContext.Provider>
+        </SurfaceProvider>
       </motion.div>
     </div>,
     document.body,
@@ -506,7 +491,7 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(function Sidebar(
       animate={{ width }}
       transition={
         context.reduce || context.instant || collapsible === "offcanvas"
-          ? { duration: 0 }
+          ? INSTANT
           : SIDEBAR_MORPH_TRANSITION
       }
       style={style}
@@ -529,10 +514,8 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(function Sidebar(
         }}
         transition={
           context.instant
-            ? { duration: 0 }
-            : context.reduce
-              ? REDUCED_TRANSITION
-              : { duration: 0.25, ease: EASE_OUT }
+            ? INSTANT
+            : reducedTransition(offcanvas ? springExit.moderate : spring.moderate, context.reduce)
         }
         className={cn(
           "sticky top-0 z-10 flex h-svh w-full flex-col overflow-hidden bg-background",
@@ -558,6 +541,7 @@ export interface SidebarTriggerProps extends ButtonHTMLAttributes<HTMLButtonElem
 export const SidebarTrigger = forwardRef<HTMLButtonElement, SidebarTriggerProps>(
   function SidebarTrigger({ className, onClick, type = "button", ...props }, forwardedRef) {
     const context = useSidebar();
+    const size = useSize();
     const expanded = context.isMobile ? context.openMobile : context.open;
 
     return (
@@ -578,7 +562,8 @@ export const SidebarTrigger = forwardRef<HTMLButtonElement, SidebarTriggerProps>
           if (!event.defaultPrevented) context.toggleSidebar({ instant: event.detail === 0 });
         }}
         className={cn(
-          "inline-flex size-10 shrink-0 items-center justify-center rounded-xl outline-none",
+          "inline-flex shrink-0 items-center justify-center rounded-xl outline-none",
+          size.square,
           "focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           className,
         )}
@@ -594,6 +579,7 @@ export const SidebarClose = forwardRef<HTMLButtonElement, SidebarCloseProps>(fun
   forwardedRef,
 ) {
   const context = useSidebar();
+  const size = useSize();
 
   return (
     <button
@@ -608,7 +594,8 @@ export const SidebarClose = forwardRef<HTMLButtonElement, SidebarCloseProps>(fun
         else context.setOpen(false);
       }}
       className={cn(
-        "inline-flex size-10 shrink-0 items-center justify-center rounded-xl outline-none",
+        "inline-flex shrink-0 items-center justify-center rounded-xl outline-none",
+        size.square,
         "focus-visible:ring-4 focus-visible:ring-ring",
         className,
       )}
@@ -640,7 +627,7 @@ export const SidebarRail = forwardRef<HTMLButtonElement, SidebarRailProps>(funct
       }}
       className={cn(
         "absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 outline-none md:block",
-        "after:absolute after:inset-y-0 after:left-1/2 after:w-px after:bg-transparent after:transition-colors hover:after:bg-border",
+        "after:absolute after:inset-y-0 after:left-1/2 after:w-px after:bg-transparent after:transition-colors after:duration-(--duration-fast) hover:after:bg-border",
         "data-[side=left]:left-full data-[side=right]:right-0 data-[side=right]:translate-x-1/2",
         className,
       )}
@@ -729,6 +716,7 @@ export const SidebarGroup = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEle
 export const SidebarGroupLabel = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   function SidebarGroupLabel({ children, className, ...props }, forwardedRef) {
     const { collapsed } = useSidebarPanel();
+    const size = useSize();
 
     return (
       <div
@@ -737,7 +725,8 @@ export const SidebarGroupLabel = forwardRef<HTMLDivElement, HTMLAttributes<HTMLD
         aria-hidden={collapsed}
         data-slot="sidebar-group-label"
         className={cn(
-          "mb-1 h-7 overflow-hidden px-2 text-[10px] font-medium tracking-[0.14em] text-muted-foreground uppercase transition-opacity",
+          "mb-1 flex h-7 items-center overflow-hidden px-2 text-muted-foreground transition-opacity duration-(--duration-fast)",
+          size.type.caption,
           collapsed ? "opacity-0" : "opacity-100",
           className,
         )}
@@ -761,33 +750,96 @@ export const SidebarGroupContent = forwardRef<HTMLDivElement, HTMLAttributes<HTM
   },
 );
 
+interface SidebarMenuHoverContextValue {
+  /** Call once a row's layout animation settles; transforms don't trigger a resize. */
+  refresh: () => void;
+}
+
+const SidebarMenuHoverContext = createContext<SidebarMenuHoverContextValue | null>(null);
+
+const SUB_MENU_SELECTOR = '[data-slot="sidebar-menu-sub"]';
+
+function isInSubMenu(target: EventTarget | null) {
+  return target instanceof Element && target.closest(SUB_MENU_SELECTOR) !== null;
+}
+
+/** A nested `SidebarMenuSub` has its own highlight, so this list releases its own while over one. */
 export const SidebarMenu = forwardRef<HTMLUListElement, HTMLAttributes<HTMLUListElement>>(
-  function SidebarMenu({ children, className, ...props }, forwardedRef) {
+  function SidebarMenu(
+    { children, className, onPointerEnter, onPointerMove, onPointerLeave, onClick, ...props },
+    forwardedRef,
+  ) {
+    const listRef = useRef<HTMLUListElement>(null);
+    useImperativeHandle(forwardedRef, () => listRef.current as HTMLUListElement);
+    const hover = useFluidHover(listRef);
+    const items = useFluidHoverDomItems(
+      hover,
+      listRef,
+      ':scope > li > [data-slot="sidebar-menu-button"]',
+      '[aria-current="page"]',
+    );
+    const inSubMenu = useRef(false);
+
     return (
-      <SharedLayoutBg
-        {...props}
-        ref={forwardedRef as React.Ref<HTMLElement>}
-        as="ul"
-        inset={0}
-        pillClassName="rounded-xl bg-muted/70"
-        pillContainerClassName="inset-y-auto top-0 h-9"
-        data-slot="sidebar-menu"
-        className={cn("flex w-full min-w-0 list-none flex-col gap-0.5", className)}
-      >
-        {children}
-      </SharedLayoutBg>
+      <SidebarMenuHoverContext.Provider value={{ refresh: items.refresh }}>
+        <ul
+          {...props}
+          ref={listRef}
+          data-slot="sidebar-menu"
+          className={cn("relative flex w-full min-w-0 list-none flex-col gap-0.5", className)}
+          onPointerEnter={(event) => {
+            onPointerEnter?.(event);
+            inSubMenu.current = isInSubMenu(event.target);
+            if (!inSubMenu.current) hover.handlers.onPointerEnter(event);
+          }}
+          onPointerMove={(event) => {
+            onPointerMove?.(event);
+            const inSub = isInSubMenu(event.target);
+            if (inSub) {
+              if (!inSubMenu.current) hover.setActiveIndex(null);
+              inSubMenu.current = true;
+              return;
+            }
+            if (inSubMenu.current) {
+              // Back from a submenu: treat as a fresh entry so it fades in instead of sliding.
+              inSubMenu.current = false;
+              hover.handlers.onPointerEnter(event);
+              return;
+            }
+            hover.handlers.onPointerMove(event);
+          }}
+          onPointerLeave={(event) => {
+            onPointerLeave?.(event);
+            inSubMenu.current = false;
+            hover.handlers.onPointerLeave(event);
+          }}
+          onClick={(event) => {
+            onClick?.(event);
+            // A submenu's gaps belong to the submenu's own list.
+            if (!isInSubMenu(event.target)) hover.handlers.onClick(event);
+          }}
+        >
+          <FluidHoverHighlight hover={hover} from={items.from} className="rounded-xl" />
+          {children}
+        </ul>
+      </SidebarMenuHoverContext.Provider>
     );
   },
 );
 
 export const SidebarMenuItem = forwardRef<HTMLLIElement, HTMLMotionProps<"li">>(
-  function SidebarMenuItem({ className, ...props }, forwardedRef) {
+  function SidebarMenuItem({ className, onLayoutAnimationComplete, ...props }, forwardedRef) {
+    const menu = useContext(SidebarMenuHoverContext);
     return (
       <motion.li
         {...props}
         ref={forwardedRef}
         layout="position"
-        transition={SPRING_LAYOUT}
+        transition={spring.moderate}
+        onLayoutAnimationComplete={() => {
+          onLayoutAnimationComplete?.();
+          menu?.refresh();
+        }}
         data-slot="sidebar-menu-item"
         className={cn("relative", className)}
       />
@@ -801,32 +853,84 @@ export interface SidebarMenuSubProps extends Omit<HTMLMotionProps<"ul">, "childr
 }
 
 export const SidebarMenuSub = forwardRef<HTMLUListElement, SidebarMenuSubProps>(
-  function SidebarMenuSub({ open, children, className, ...props }, forwardedRef) {
-    const context = useSidebar();
+  function SidebarMenuSub({ open, ...props }, forwardedRef) {
     const panel = useSidebarPanel();
 
     return (
       <AnimatePresence initial={false} mode="popLayout">
         {open && !panel.collapsed ? (
-          <motion.ul
-            {...props}
-            ref={forwardedRef}
-            key="sidebar-submenu"
-            variants={context.reduce ? undefined : SUBMENU_VARIANTS}
-            initial={context.reduce ? false : "closed"}
-            animate={context.reduce ? { opacity: 1 } : "open"}
-            exit={context.reduce ? { opacity: 0 } : "closed"}
-            transition={context.reduce ? { duration: 0.12 } : undefined}
-            data-slot="sidebar-menu-sub"
-            className={cn(
-              "relative mt-1 ml-5 flex min-w-0 flex-col gap-0.5 border-l border-border pl-3",
-              className,
-            )}
-          >
-            {children}
-          </motion.ul>
+          <SidebarMenuSubList key="sidebar-submenu" {...props} ref={forwardedRef} />
         ) : null}
       </AnimatePresence>
+    );
+  },
+);
+
+// Separate component so the fluid hover hook mounts with the list it observes.
+const SidebarMenuSubList = forwardRef<HTMLUListElement, Omit<SidebarMenuSubProps, "open">>(
+  function SidebarMenuSubList(
+    {
+      children,
+      className,
+      onAnimationComplete,
+      onPointerEnter,
+      onPointerMove,
+      onPointerLeave,
+      onClick,
+      ...props
+    },
+    forwardedRef,
+  ) {
+    const context = useSidebar();
+    const listRef = useRef<HTMLUListElement>(null);
+    useImperativeHandle(forwardedRef, () => listRef.current as HTMLUListElement);
+    const hover = useFluidHover(listRef);
+    const items = useFluidHoverDomItems(
+      hover,
+      listRef,
+      ':scope > li > [data-slot="sidebar-menu-sub-button"]',
+      '[aria-current="page"]',
+    );
+
+    return (
+      <motion.ul
+        {...props}
+        ref={listRef}
+        variants={context.reduce ? undefined : SUBMENU_VARIANTS}
+        initial={context.reduce ? false : "closed"}
+        animate={context.reduce ? { opacity: 1 } : "open"}
+        exit={context.reduce ? { opacity: 0 } : "closed"}
+        transition={context.reduce ? spring.fast : undefined}
+        // Rows rise in on a transform ResizeObserver can't see.
+        onAnimationComplete={(definition) => {
+          onAnimationComplete?.(definition);
+          items.refresh();
+        }}
+        onPointerEnter={(event) => {
+          onPointerEnter?.(event);
+          hover.handlers.onPointerEnter(event);
+        }}
+        onPointerMove={(event) => {
+          onPointerMove?.(event);
+          hover.handlers.onPointerMove(event);
+        }}
+        onPointerLeave={(event) => {
+          onPointerLeave?.(event);
+          hover.handlers.onPointerLeave(event);
+        }}
+        onClick={(event) => {
+          onClick?.(event);
+          hover.handlers.onClick(event);
+        }}
+        data-slot="sidebar-menu-sub"
+        className={cn(
+          "relative mt-1 ml-5 flex min-w-0 flex-col gap-0.5 border-l border-border pl-3",
+          className,
+        )}
+      >
+        <FluidHoverHighlight hover={hover} from={items.from} className="rounded-lg" />
+        {children}
+      </motion.ul>
     );
   },
 );
@@ -856,6 +960,8 @@ export interface SidebarMenuSubButtonProps {
   rel?: string;
   onSelect?: () => void;
   className?: string;
+  /** Defaults to one step below the surrounding `SizeProvider`. */
+  size?: Size;
 }
 
 export function SidebarMenuSubButton({
@@ -869,8 +975,11 @@ export function SidebarMenuSubButton({
   rel,
   onSelect,
   className,
+  size: sizeProp,
 }: SidebarMenuSubButtonProps) {
   const context = useSidebar();
+  const surrounding = useSize();
+  const size = useSize(sizeProp ?? STEP_DOWN[surrounding.size]);
 
   const select = (event: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
     if (disabled) {
@@ -891,10 +1000,13 @@ export function SidebarMenuSubButton({
   );
 
   const interactiveClassName = cn(
-    "flex min-h-8 w-full min-w-0 items-center gap-2 rounded-lg px-2 text-left text-xs outline-none",
-    "text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground",
-    "focus-visible:bg-muted/70 focus-visible:ring-4 focus-visible:ring-ring",
-    isActive && "bg-muted/70 text-foreground",
+    "flex w-full min-w-0 items-center gap-2 rounded-lg text-left outline-none",
+    size.row,
+    "px-2 py-0",
+    size.text,
+    "text-muted-foreground transition-colors duration-(--duration-fast) hover:text-foreground",
+    "focus-visible:bg-hover focus-visible:ring-4 focus-visible:ring-ring",
+    isActive && "bg-selected text-foreground",
     disabled && "cursor-not-allowed opacity-40",
     className,
   );
@@ -909,7 +1021,8 @@ export function SidebarMenuSubButton({
       tabIndex={disabled ? -1 : undefined}
       onClick={select}
       whileTap={context.reduce || disabled ? undefined : { scale: 0.98 }}
-      transition={SPRING_PRESS}
+      transition={spring.fast}
+      data-slot="sidebar-menu-sub-button"
       className={interactiveClassName}
     >
       {content}
@@ -919,9 +1032,10 @@ export function SidebarMenuSubButton({
       type="button"
       disabled={disabled}
       aria-current={isActive ? "page" : undefined}
+      data-slot="sidebar-menu-sub-button"
       onClick={select}
       whileTap={context.reduce || disabled ? undefined : { scale: 0.98 }}
-      transition={SPRING_PRESS}
+      transition={spring.fast}
       className={interactiveClassName}
     >
       {content}
@@ -942,6 +1056,7 @@ export interface SidebarMenuButtonProps {
   rel?: string;
   onSelect?: () => void;
   className?: string;
+  size?: Size;
 }
 
 export function SidebarMenuButton({
@@ -957,9 +1072,11 @@ export function SidebarMenuButton({
   rel,
   onSelect,
   className,
+  size: sizeProp,
 }: SidebarMenuButtonProps) {
   const context = useSidebar();
   const panel = useSidebarPanel();
+  const size = useSize(sizeProp);
   const textLabel = typeof children === "string" ? children : undefined;
 
   const select = (event: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => {
@@ -972,10 +1089,7 @@ export function SidebarMenuButton({
     if (context.isMobile && shouldCloseOnSelect) {
       context.setOpenMobile(false);
     }
-    // A submenu cannot render in the icon rail, so opening one from there
-    // leaves its children unreachable — a pointer can still fall back to the
-    // rail or the shortcut, a finger has nothing. Selecting a group unfolds
-    // the panel that is about to hold it.
+    // A submenu can't render in the icon rail, so opening one there unfolds the panel.
     if (ariaExpanded !== undefined && panel.collapsed && !context.isMobile) {
       context.setOpen(true);
     }
@@ -986,8 +1100,8 @@ export function SidebarMenuButton({
       {isActive ? (
         <motion.span
           layoutId={context.layoutId}
-          transition={context.reduce ? { duration: 0 } : SPRING_LAYOUT}
-          className="absolute inset-0 rounded-xl bg-muted"
+          transition={reducedTransition(spring.moderate, context.reduce)}
+          className="absolute inset-0 rounded-xl bg-selected"
         />
       ) : null}
       {icon ? (
@@ -1003,12 +1117,11 @@ export function SidebarMenuButton({
         }}
         transition={
           context.instant
-            ? { duration: 0 }
-            : context.reduce
-              ? REDUCED_TRANSITION
-              : panel.collapsed
-                ? LABEL_EXIT_TRANSITION
-                : LABEL_ENTER_TRANSITION
+            ? INSTANT
+            : reducedTransition(
+                panel.collapsed ? LABEL_EXIT_TRANSITION : LABEL_ENTER_TRANSITION,
+                context.reduce,
+              )
         }
         aria-hidden={panel.collapsed}
         className={cn(
@@ -1019,7 +1132,9 @@ export function SidebarMenuButton({
         {children}
       </motion.span>
       {badge && !panel.collapsed ? (
-        <span className="relative z-10 shrink-0 text-xs text-muted-foreground">{badge}</span>
+        <span className={cn("relative z-10 shrink-0 text-muted-foreground", size.type.caption)}>
+          {badge}
+        </span>
       ) : null}
       {ariaExpanded !== undefined ? (
         <motion.span
@@ -1030,7 +1145,7 @@ export function SidebarMenuButton({
             rotate: ariaExpanded ? 90 : 0,
             x: panel.collapsed ? 4 : 0,
           }}
-          transition={context.reduce ? { duration: 0 } : SPRING_LAYOUT}
+          transition={reducedTransition(spring.moderate, context.reduce)}
           className="relative z-10 grid size-4 shrink-0 place-items-center text-muted-foreground"
         >
           <ChevronRight className="size-3.5" />
@@ -1040,9 +1155,13 @@ export function SidebarMenuButton({
   );
 
   const interactiveClassName = cn(
-    "relative flex min-h-9 w-full min-w-0 items-center gap-2.5 overflow-hidden rounded-xl px-3 text-left text-sm font-medium outline-none",
-    "text-muted-foreground transition-colors hover:text-foreground",
-    "focus-visible:bg-muted/70 focus-visible:ring-4 focus-visible:ring-ring",
+    "relative flex w-full min-w-0 items-center gap-2.5 overflow-hidden rounded-xl text-left font-medium outline-none",
+    size.row,
+    // Centres the 20px icon in the 44px collapsed rail.
+    "px-3 py-0",
+    size.text,
+    "text-muted-foreground transition-colors duration-(--duration-fast) hover:text-foreground",
+    "focus-visible:bg-hover focus-visible:ring-4 focus-visible:ring-ring",
     isActive && "text-foreground",
     disabled && "cursor-not-allowed opacity-40",
     className,
@@ -1061,7 +1180,8 @@ export function SidebarMenuButton({
       tabIndex={disabled ? -1 : undefined}
       onClick={select}
       whileTap={context.reduce || disabled ? undefined : { scale: 0.98 }}
-      transition={SPRING_PRESS}
+      transition={spring.fast}
+      data-slot="sidebar-menu-button"
       className={interactiveClassName}
     >
       {content}
@@ -1072,11 +1192,12 @@ export function SidebarMenuButton({
       disabled={disabled}
       aria-current={isActive ? "page" : undefined}
       aria-expanded={ariaExpanded}
+      data-slot="sidebar-menu-button"
       aria-label={panel.collapsed ? textLabel : undefined}
       title={panel.collapsed ? textLabel : undefined}
       onClick={select}
       whileTap={context.reduce || disabled ? undefined : { scale: 0.98 }}
-      transition={SPRING_PRESS}
+      transition={spring.fast}
       className={interactiveClassName}
     >
       {content}

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { typeClass } from "@masmeert/ui/lib/type-scale";
 import { Spinner, type SpinnerVariant } from "@masmeert/ui/spinner";
 
 const variants: SpinnerVariant[] = [
@@ -46,7 +47,9 @@ function SpinnerGallery() {
           <div className="flex flex-1 items-center">
             <Spinner variant={variant} size={28} label={`Loading (${variant})`} />
           </div>
-          <span className="font-mono text-[11px] text-muted-foreground">{variant}</span>
+          <span className={`font-mono text-muted-foreground ${typeClass("caption", "compact")}`}>
+            {variant}
+          </span>
         </div>
       ))}
     </div>

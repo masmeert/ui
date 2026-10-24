@@ -1,9 +1,6 @@
 import { cn } from "cn";
 
-/**
- * A thin drag handle laid over an element's edge. Wider hit area than it looks;
- * the line lights up on hover and while dragging.
- */
+/** A thin drag handle laid over an element's edge, with a wider hit area than it looks. */
 function ResizeHandle({
   side,
   axis = "x",
@@ -47,7 +44,7 @@ function ResizeHandle({
     >
       <span
         className={cn(
-          "absolute transition-colors duration-150",
+          "absolute transition-colors duration-(--duration-fast)",
           axis === "x"
             ? "inset-y-0 left-1/2 w-px -translate-x-1/2"
             : "inset-x-0 top-1/2 h-px -translate-y-1/2",

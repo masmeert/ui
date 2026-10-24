@@ -11,7 +11,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { EASE_OUT, SPRING_LAYOUT } from "@/lib/ease";
+import { FluidHoverHighlight } from "@/components/fluid-hover-highlight";
+import { StableLabel } from "@/components/stable-label";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHoverDomItems } from "@/hooks/use-fluid-hover-dom-items";
+import { type Size, useSize } from "@/lib/size";
+import { reducedTransition, spring } from "@/lib/springs";
 import { cn } from "cn";
 
 type Variant = "pill" | "underline" | "segment";
@@ -21,6 +26,7 @@ type Ctx = {
   setValue: (v: string) => void;
   layoutId: string;
   variant: Variant;
+  size?: Size;
 };
 
 const TabsCtx = createContext<Ctx | null>(null);
@@ -36,6 +42,7 @@ export function Tabs({
   value,
   onValueChange,
   variant = "pill",
+  size,
   children,
   className,
 }: {
@@ -43,6 +50,7 @@ export function Tabs({
   value?: string;
   onValueChange?: (v: string) => void;
   variant?: Variant;
+  size?: Size;
   children: ReactNode;
   className?: string;
 }) {
@@ -59,15 +67,13 @@ export function Tabs({
     [controlled, onValueChange],
   );
   const contextValue = useMemo(
-    () => ({ value: current, setValue, layoutId, variant }),
-    [current, layoutId, setValue, variant],
+    () => ({ value: current, setValue, layoutId, variant, size }),
+    [current, layoutId, setValue, variant, size],
   );
   return (
-    <MotionConfig transition={reduce ? { duration: 0 } : SPRING_LAYOUT}>
+    <MotionConfig transition={reducedTransition(spring.moderate, reduce)}>
       <TabsCtx.Provider value={contextValue}>
-        {/* Not a layoutRoot: that cut the pill off from a resizing parent's layout
-            animation (a modal whose content changes with the tab), so it arced
-            against the list instead of sliding along it. */}
+        {/* Not a layoutRoot: that detaches the pill from a resizing parent's layout animation. */}
         <div className={className}>{children}</div>
       </TabsCtx.Provider>
     </MotionConfig>
@@ -75,10 +81,19 @@ export function Tabs({
 }
 
 const listClasses: Record<Variant, string> = {
-  pill: "inline-flex items-center gap-1 rounded-full bg-card p-1",
+  pill: "inline-flex items-center gap-1 rounded-full bg-card",
   underline: "inline-flex items-center gap-1 border-b border-border",
-  segment: "inline-flex items-center gap-0 rounded-lg bg-card p-0.5",
+  segment: "inline-flex items-center gap-0 rounded-lg bg-card",
 };
+
+const highlightClasses: Record<Variant, string> = {
+  pill: "rounded-full",
+  underline: "rounded-md",
+  segment: "rounded-md",
+};
+
+// Keeps the underline hover fill off the indicator line; uneven to match the tab's pt-1/pb-2.5.
+const UNDERLINE_INSET = { top: 3, bottom: 9 };
 
 export function TabsList({
   children,
@@ -89,13 +104,31 @@ export function TabsList({
   className?: string;
   wrapperClassName?: string;
 }) {
-  const { variant, value } = useTabs();
+  const { variant, value, size: sizeProp } = useTabs();
+  const size = useSize(sizeProp);
   const reduce = useReducedMotion();
   const rootRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const viewportId = useId();
   const [edges, setEdges] = useState({ overflow: false, left: false, right: false });
+  const hover = useFluidHover(listRef, { axis: "x" });
+  const items = useFluidHoverDomItems(hover, listRef, '[role="tab"]', '[aria-selected="true"]');
+  const highlightHover =
+    variant === "underline"
+      ? {
+          ...hover,
+          itemRects: hover.itemRects.map(
+            (rect) =>
+              rect && {
+                ...rect,
+                top: rect.top + UNDERLINE_INSET.top,
+                height: Math.max(0, rect.height - UNDERLINE_INSET.top - UNDERLINE_INSET.bottom),
+              },
+          ),
+        }
+      : hover;
+  const from = highlightHover.itemRects[items.fromIndex] ?? null;
 
   const measure = useCallback(() => {
     const root = rootRef.current;
@@ -192,8 +225,7 @@ export function TabsList({
     let previous: { left: number; right: number } | undefined;
     const syncClips = () => {
       const pill = (reduce ? target : indicator).getBoundingClientRect();
-      // Read ALL geometry before writing ANY masks. A loop per tab interleaved
-      // reads and writes, forcing the browser to flush styles repeatedly.
+      // Read all geometry before writing any masks to avoid forced style flushes.
       const clips = labels.map((label) => {
         const bounds = label.getBoundingClientRect();
         const left = Math.max(0, Math.min(bounds.width, pill.left - bounds.left));
@@ -215,8 +247,7 @@ export function TabsList({
       previous = { left: pill.left, right: pill.right };
       if (reduce || (frames > 2 && stillFrames >= 2)) cancelFrame(syncClips);
     };
-    // One shared pass after Motion paints the projected pill keeps every label
-    // in sync, including labels crossed during a long or interrupted glide.
+    // Runs after Motion paints the projected pill, so labels crossed mid-glide stay in sync.
     frame.postRender(syncClips, true);
     return () => cancelFrame(syncClips);
   }, [value, children, variant, reduce]);
@@ -275,7 +306,23 @@ export function TabsList({
             reveal(event.target);
         }}
       >
-        <div ref={listRef} role="tablist" className={cn(listClasses[variant], "w-max", className)}>
+        <div
+          ref={listRef}
+          role="tablist"
+          className={cn(
+            "relative",
+            listClasses[variant],
+            variant !== "underline" && size.segmentPad,
+            "w-max",
+            className,
+          )}
+          {...hover.handlers}
+        >
+          <FluidHoverHighlight
+            hover={highlightHover}
+            from={from}
+            className={highlightClasses[variant]}
+          />
           {children}
         </div>
       </motion.div>
@@ -318,7 +365,8 @@ export function TabsTrigger({
   className?: string;
   indicatorClassName?: string;
 }) {
-  const { value: current, setValue, layoutId, variant } = useTabs();
+  const { value: current, setValue, layoutId, variant, size: sizeProp } = useTabs();
+  const size = useSize(sizeProp);
   const active = current === value;
   // React owns the initial mask only; TabsList synchronizes subsequent masks.
   const [initialClip] = useState(() => (active ? "inset(0)" : "inset(0 100% 0 0)"));
@@ -331,12 +379,18 @@ export function TabsTrigger({
         aria-selected={active}
         onClick={() => setValue(value)}
         className={cn(
-          "relative isolate -mb-px inline-flex min-h-[44px] shrink-0 items-center px-3 pt-1 pb-2.5 text-sm font-medium whitespace-nowrap transition-colors",
-          active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+          "relative isolate -mb-px inline-flex min-h-[44px] shrink-0 items-center px-3 pt-1 pb-2.5 whitespace-nowrap transition-colors duration-(--duration-fast) outline-none",
+          "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+          size.text,
+          active
+            ? "font-semibold text-foreground"
+            : "font-medium text-muted-foreground hover:text-foreground",
           className,
         )}
       >
-        {children}
+        <StableLabel className="items-center [&>*]:inline-flex [&>*]:items-center [&>*]:[gap:inherit]">
+          {children}
+        </StableLabel>
         {active ? (
           <motion.span
             layoutId={layoutId}
@@ -368,8 +422,12 @@ export function TabsTrigger({
         data-tabs-value={value}
         onClick={() => setValue(value)}
         className={cn(
-          "relative z-10 inline-flex items-center justify-center bg-transparent px-3.5 py-1.5 text-sm font-medium whitespace-nowrap outline-none",
-          "text-muted-foreground hover:text-foreground",
+          // One weight in both states: the clipped selected copy must overlay this glyph for glyph.
+          "relative z-10 inline-flex items-center justify-center bg-transparent px-3.5 font-medium whitespace-nowrap outline-none",
+          "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring",
+          size.segmentItem,
+          size.text,
+          "text-muted-foreground transition-colors duration-(--duration-fast) hover:text-foreground",
           radius,
           className,
         )}
@@ -401,9 +459,7 @@ export function TabsContent({
   const { value: current } = useTabs();
   const reduce = useReducedMotion();
   const active = current === value;
-  // Inactive panels stay mounted but hidden, so their content (e.g. source
-  // code) is present in the server-rendered HTML for crawlers and assistive
-  // tech, instead of being dropped from the DOM.
+  // Inactive panels stay mounted (hidden) so their content is in the server-rendered HTML.
   if (!active) {
     return (
       <div hidden className={className}>
@@ -416,7 +472,7 @@ export function TabsContent({
       key={value}
       initial={{ opacity: 0, y: reduce ? 0 : 4 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.18, ease: EASE_OUT }}
+      transition={reducedTransition(spring.moderate, reduce)}
       className={cn("mt-4", className)}
     >
       {children}

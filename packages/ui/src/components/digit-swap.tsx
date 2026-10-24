@@ -1,19 +1,15 @@
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { EASE_OUT } from "@/lib/ease";
+import { AnimatePresence, motion, type Transition, useReducedMotion } from "motion/react";
+import { reducedTransition, spring, springExit } from "@/lib/springs";
 import { cn } from "cn";
 
 export type DigitSwapDirection = "up" | "down";
 
 export interface DigitSwapProps {
-  /** Numeric or masked value rendered in fixed character slots. */
   value: string | number;
-  /** Replays every glyph when the value itself contains unchanged characters. */
+  /** Change it to replay every glyph, including unchanged characters. */
   animationKey?: string | number;
-  /** Direction the next glyph enters from. */
   direction?: DigitSwapDirection;
-  /** Per-glyph transition duration in seconds. */
-  duration?: number;
-  /** Delay in seconds between neighboring glyphs. */
+  /** Seconds between neighboring glyphs. */
   stagger?: number;
   /** Number of final characters that receive `suffixClassName`. */
   suffixLength?: number;
@@ -25,6 +21,7 @@ export interface DigitSwapProps {
 type GlyphMotionContext = {
   direction: DigitSwapDirection;
   reduceMotion: boolean;
+  exitTransition: Transition;
 };
 
 const GLYPH_VARIANTS = {
@@ -36,18 +33,17 @@ const GLYPH_VARIANTS = {
     opacity: 1,
     transform: "translateY(0%)",
   },
-  exit: ({ direction, reduceMotion }: GlyphMotionContext) => ({
+  exit: ({ direction, reduceMotion, exitTransition }: GlyphMotionContext) => ({
     opacity: 0,
     transform: reduceMotion ? "none" : `translateY(${direction === "up" ? "-45%" : "45%"})`,
+    transition: exitTransition,
   }),
 };
 
-/** Fixed-slot digits and mask glyphs that roll when their value changes. */
 export function DigitSwap({
   value,
   animationKey,
   direction = "up",
-  duration = 0.18,
   stagger = 0.006,
   suffixLength = 0,
   className,
@@ -57,7 +53,11 @@ export function DigitSwap({
   const reduceMotion = useReducedMotion() ?? false;
   const text = String(value);
   const suffixStart = Math.max(0, text.length - Math.max(0, suffixLength));
-  const motionContext: GlyphMotionContext = { direction, reduceMotion };
+  const motionContext: GlyphMotionContext = {
+    direction,
+    reduceMotion,
+    exitTransition: reducedTransition(springExit.fast, reduceMotion),
+  };
   const glyphs = Array.from(text, (character, position) => ({
     character,
     id: `glyph-${position}`,
@@ -96,11 +96,11 @@ export function DigitSwap({
                   initial="enter"
                   animate="visible"
                   exit="exit"
-                  transition={{
-                    duration: reduceMotion ? Math.min(duration, 0.12) : duration,
-                    delay: reduceMotion ? 0 : position * stagger,
-                    ease: EASE_OUT,
-                  }}
+                  transition={
+                    reduceMotion
+                      ? reducedTransition(spring.fast, true)
+                      : { ...spring.fast, delay: position * stagger }
+                  }
                   className={cn(
                     "absolute inset-0 flex items-center justify-center leading-none",
                     glyphClassName,

@@ -52,14 +52,14 @@ function WeekComparison(props: FunnelChartProps) {
     <div className="flex flex-col gap-4">
       <div className="flex gap-2">
         <Button
-          size="sm"
+          size="compact"
           variant={showingThisWeek ? "secondary" : "ghost"}
           onClick={() => setShowingThisWeek(true)}
         >
           This week
         </Button>
         <Button
-          size="sm"
+          size="compact"
           variant={showingThisWeek ? "ghost" : "secondary"}
           onClick={() => setShowingThisWeek(false)}
         >

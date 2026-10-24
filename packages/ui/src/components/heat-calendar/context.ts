@@ -15,18 +15,8 @@ import {
   startOfDay,
 } from "./utils";
 
-/**
- * Weeks of activity as a single-hue grid with month labels, so
- * magnitude reads as the strength of one color and the eye needs no legend
- * to find a date. Cells spring in on a diagonal wave. Hovering one lifts it
- * and its neighbours in a small ripple and glides a tooltip with its date and
- * exact count; clicking pins the cell so touch and keyboard get the same
- * readout; from there the grid dims and hovering previews the span from that
- * cell to the pointer with its total, a second click locks it and a third
- * clears it; hovering a legend step filters
- * the grid to that level. Hover lifts are gated to pointer devices, and
- * reduced motion keeps the fades only.
- */
+// Click pins a cell (so touch and keyboard get the readout), hovering then previews
+// the span to the pointer, a second click locks it and a third clears it.
 export function useHeatCalendarModel({
   unit = "commits",
   weeks = 16,
@@ -58,9 +48,7 @@ export function useHeatCalendarModel({
     return () => clearTimeout(t);
   }, [weeks, reduce]);
 
-  // "today" is read after mount: the server and a viewer on another calendar
-  // day must produce the same HTML, so the grid renders first and its dates
-  // fill in on the client. An explicit `endDate` is deterministic and skips this.
+  // Read after mount so the server and a viewer on another day render the same HTML.
   const [today, setToday] = useState<Date | null>(null);
   useEffect(() => setToday(startOfDay(new Date())), []);
   const end = useMemo(() => (endDate ? startOfDay(endDate) : today), [endDate, today]);
@@ -101,8 +89,7 @@ export function useHeatCalendarModel({
   const hover = storedHover && validCell(storedHover) ? storedHover : null;
   if (storedHover && !hover) setHover(null);
 
-  // one label per month, at its first column; the leading label yields if the
-  // next month starts within two columns, so two labels never overlap
+  // One label per month; the leading label yields if the next starts within two columns.
   const cols = useMemo(() => {
     const list = Array.from({ length: weeks }, (_, w) => {
       const date = start ? addDays(start, w * 7) : null;
@@ -117,9 +104,6 @@ export function useHeatCalendarModel({
     return list;
   }, [start, weeks]);
 
-  // one click anchors a span and dims everything else; hovering then previews
-  // the run from the anchor to the pointer and totals it live, and a second
-  // click locks it so the number stays on screen while the pointer moves on
   const idx = (c: HeatCalendarCell) => c.w * 7 + c.d;
   const clear = () => {
     setSelection(null);
@@ -211,7 +195,6 @@ export const HeatCalendarContext = createContext<ReturnType<typeof useHeatCalend
   null,
 );
 
-/** Read the shared data and selection from any descendant of HeatCalendar. */
 export function useHeatCalendar() {
   const context = useContext(HeatCalendarContext);
   if (!context) throw new Error("HeatCalendar parts must be inside HeatCalendar");

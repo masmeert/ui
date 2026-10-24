@@ -1,136 +1,121 @@
-import { type HTMLMotionProps, motion, PresenceContext, useReducedMotion } from "motion/react";
 import {
   Children,
   cloneElement,
   forwardRef,
   type HTMLAttributes,
   isValidElement,
-  type MouseEvent,
   type ReactElement,
   type ReactNode,
   type Ref,
-  useId,
-  useState,
+  type RefCallback,
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useRef,
 } from "react";
-import { EASE_OUT, SPRING_LAYOUT } from "@/lib/ease";
 import { cn } from "cn";
+import { FluidHoverHighlight } from "@/components/fluid-hover-highlight";
+import { type FluidHoverAxis, useFluidHover } from "@/hooks/use-fluid-hover";
 
 export interface SharedLayoutBgProps extends Omit<HTMLAttributes<HTMLElement>, "children"> {
   children: ReactNode;
-  /** Semantic container used for the children. */
   as?: "div" | "ul";
-  /** Tailwind class applied to the moving pill. Defaults to a subtle foreground tint. */
+  axis?: FluidHoverAxis;
   pillClassName?: string;
-  /** Horizontal inset of the pill relative to each row (px). Default 20. */
+  /** px the pill extends past each row horizontally. */
   inset?: number;
-  /** Optional positioning override for the pill wrapper inside each item. */
-  pillContainerClassName?: string;
+}
+
+function setRef<T>(ref: Ref<T> | undefined, value: T | null) {
+  if (typeof ref === "function") ref(value);
+  else if (ref) (ref as { current: T | null }).current = value;
 }
 
 export const SharedLayoutBg = forwardRef<HTMLElement, SharedLayoutBgProps>(function SharedLayoutBg(
   {
     children,
     as = "div",
+    axis = "y",
     className,
-    onMouseLeave,
     pillClassName,
-    pillContainerClassName,
     inset = 20,
+    onPointerEnter,
+    onPointerMove,
+    onPointerLeave,
+    onClick,
     ...props
   },
   forwardedRef,
 ) {
-  const [active, setActive] = useState<{
-    id: string;
-    session: number;
-    fresh: boolean;
-    visible: boolean;
-  } | null>(null);
-  const uid = useId();
-  const reduce = useReducedMotion();
+  const containerRef = useRef<HTMLElement>(null);
+  useImperativeHandle(forwardedRef, () => containerRef.current as HTMLElement);
+  const hover = useFluidHover(containerRef, { axis });
+  const { registerItem } = hover;
 
-  const renderedChildren = Children.toArray(children)
+  // Stable per index, so React doesn't re-run them every render.
+  const refCallbacks = useRef(new Map<number, RefCallback<HTMLElement>>());
+  const itemRef = useCallback(
+    (index: number, childRef: Ref<HTMLElement> | undefined) => {
+      let callback = refCallbacks.current.get(index);
+      if (!callback) {
+        callback = (element: HTMLElement | null) => registerItem(index, element);
+        refCallbacks.current.set(index, callback);
+      }
+      const register = callback;
+      if (!childRef) return register;
+      return (element: HTMLElement | null) => {
+        register(element);
+        setRef(childRef, element);
+      };
+    },
+    [registerItem],
+  );
+
+  const insetHover = useMemo(
+    () => ({
+      ...hover,
+      itemRects: hover.itemRects.map(
+        (rect) => rect && { ...rect, left: rect.left - inset, width: rect.width + inset * 2 },
+      ),
+    }),
+    [hover, inset],
+  );
+
+  const rendered = Children.toArray(children)
     .filter(isValidElement)
     .map((child, index) => {
-      const el = child as ReactElement<{
-        className?: string;
-        onMouseEnter?: () => void;
-        children?: ReactNode;
-      }>;
-      const childKey = el.key ? String(el.key) : `item-${index}`;
-      return cloneElement(
-        el,
-        {
-          key: childKey,
-          className: cn("relative", el.props.className),
-          onMouseEnter: () => {
-            el.props.onMouseEnter?.();
-            setActive((current) =>
-              current?.visible
-                ? { ...current, id: childKey, fresh: false }
-                : {
-                    id: childKey,
-                    session: (current?.session ?? 0) + 1,
-                    fresh: true,
-                    visible: true,
-                  },
-            );
-          },
-        },
-        <>
-          {active?.id === childKey ? (
-            <div
-              className={cn("pointer-events-none absolute inset-y-0", pillContainerClassName)}
-              style={{ left: -inset, right: -inset }}
-            >
-              <PresenceContext.Provider value={null}>
-                <motion.div
-                  layoutId={`shared-bg-${uid}-${active.session}`}
-                  initial={active.fresh ? { opacity: 0 } : false}
-                  animate={{ opacity: active.visible ? 1 : 0 }}
-                  transition={{
-                    opacity: { duration: 0.15, ease: EASE_OUT },
-                    layout: reduce ? { duration: 0 } : SPRING_LAYOUT,
-                  }}
-                  className={cn(
-                    "pointer-events-none h-full w-full rounded-2xl bg-muted/80",
-                    pillClassName,
-                  )}
-                />
-              </PresenceContext.Provider>
-            </div>
-          ) : null}
-          <div className="relative z-10">{el.props.children}</div>
-        </>,
-      );
+      const el = child as ReactElement<{ className?: string; ref?: Ref<HTMLElement> }>;
+      return cloneElement(el, {
+        className: cn("relative z-10", el.props.className),
+        ref: itemRef(index, el.props.ref),
+      });
     });
 
-  const handleMouseLeave = (event: MouseEvent<HTMLElement>) => {
-    setActive((current) => current && { ...current, visible: false });
-    onMouseLeave?.(event);
-  };
-
-  // layoutRoot scopes the pill's layout projection to this list, so fixed or
-  // scrolled ancestors can't smear scroll offsets into its movement.
-  return as === "ul" ? (
-    <motion.ul
-      {...(props as HTMLMotionProps<"ul">)}
-      ref={forwardedRef as Ref<HTMLUListElement>}
-      layoutRoot
-      onMouseLeave={handleMouseLeave}
-      className={cn("flex w-full flex-col", className)}
+  const Tag = as;
+  return (
+    <Tag
+      {...props}
+      ref={containerRef as Ref<HTMLDivElement & HTMLUListElement>}
+      className={cn("relative flex w-full flex-col", className)}
+      onPointerEnter={(event) => {
+        hover.handlers.onPointerEnter(event);
+        onPointerEnter?.(event);
+      }}
+      onPointerMove={(event) => {
+        hover.handlers.onPointerMove(event);
+        onPointerMove?.(event);
+      }}
+      onPointerLeave={(event) => {
+        hover.handlers.onPointerLeave(event);
+        onPointerLeave?.(event);
+      }}
+      onClick={(event) => {
+        onClick?.(event);
+        hover.handlers.onClick(event);
+      }}
     >
-      {renderedChildren}
-    </motion.ul>
-  ) : (
-    <motion.div
-      {...(props as HTMLMotionProps<"div">)}
-      ref={forwardedRef as Ref<HTMLDivElement>}
-      layoutRoot
-      onMouseLeave={handleMouseLeave}
-      className={cn("flex w-full flex-col", className)}
-    >
-      {renderedChildren}
-    </motion.div>
+      <FluidHoverHighlight hover={insetHover} className={cn("rounded-2xl", pillClassName)} />
+      {rendered}
+    </Tag>
   );
 });

@@ -9,6 +9,7 @@ const meta = {
   args: { variant: "pill", defaultValue: "threads", onValueChange: fn(), children: null },
   argTypes: {
     variant: { control: "inline-radio", options: ["pill", "underline", "segment"] },
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
     value: { control: false },
     children: { control: false },
   },
@@ -72,6 +73,11 @@ export const Underline: Story = {
 
 export const Segment: Story = {
   args: { variant: "segment" },
+  render: (args) => <ProjectTabs {...args} />,
+};
+
+export const CompactSegment: Story = {
+  args: { variant: "segment", size: "compact" },
   render: (args) => <ProjectTabs {...args} />,
 };
 

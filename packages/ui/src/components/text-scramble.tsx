@@ -1,21 +1,20 @@
-import { useReducedMotion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { spring } from "@/lib/springs";
 import { cn } from "cn";
 
 const DEFAULT_GLYPHS = "ABCDEFGHJKLMNPQRSTUVWXYZ0123456789#%&@$?/";
 
 export interface TextScrambleProps {
-  /** Final text revealed by the scramble animation. */
   text: string;
-  /** Maximum animation duration in milliseconds. */
+  /** Milliseconds. Defaults to 32ms per character, clamped to 420–760. */
   duration?: number;
-  /** Characters sampled while unresolved positions are scrambling. */
+  /** Characters sampled for unresolved positions. */
   glyphs?: string;
   className?: string;
   style?: CSSProperties;
 }
 
-/** Character scramble that resolves to `text` and respects reduced motion. */
 export function TextScramble({
   text,
   duration,
@@ -25,10 +24,11 @@ export function TextScramble({
 }: TextScrambleProps) {
   const reduce = useReducedMotion() ?? false;
   const [display, setDisplay] = useState(text);
-  // Compare against the last text rather than a "mounted" flag: StrictMode
-  // replays the mount effect, and a flag would make dev scramble on mount
-  // while production never does.
+  // Not a "mounted" flag: StrictMode replays the mount effect and would scramble in dev.
   const previousText = useRef(text);
+  // Counted during render: an effect would paint the new text at full opacity before the fade.
+  const [revision, setRevision] = useState({ text, count: 0 });
+  if (revision.text !== text) setRevision({ text, count: revision.count + 1 });
 
   useEffect(() => {
     const textChanged = previousText.current !== text;
@@ -40,6 +40,7 @@ export function TextScramble({
 
     const characters = text.split("");
     const startedAt = performance.now();
+    // Content-driven length, so not a tier.
     const animationDuration = duration ?? Math.min(760, Math.max(420, characters.length * 32));
     let frame = 0;
     let lastUpdate = 0;
@@ -73,13 +74,26 @@ export function TextScramble({
   return (
     <span className={cn("relative inline-block whitespace-pre", className)} style={style}>
       <span className="sr-only">{text}</span>
-      {/* The final text holds the width, so random glyphs of other widths can't jitter the layout. */}
+      {/* Holds the final width so random glyphs can't jitter the layout. */}
       <span aria-hidden="true" className="invisible">
         {text}
       </span>
-      <span aria-hidden="true" className="absolute top-0 left-0">
-        {reduce ? text : display}
-      </span>
+      {reduce ? (
+        <motion.span
+          key={revision.count}
+          aria-hidden="true"
+          className="absolute top-0 left-0"
+          initial={revision.count > 0 ? { opacity: 0 } : false}
+          animate={{ opacity: 1 }}
+          transition={spring.fast}
+        >
+          {text}
+        </motion.span>
+      ) : (
+        <span aria-hidden="true" className="absolute top-0 left-0">
+          {display}
+        </span>
+      )}
     </span>
   );
 }

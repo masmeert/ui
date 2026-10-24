@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useId } from "react";
-import { EASE_OUT, SPRING_PRESS } from "@/lib/ease";
+import { useSize } from "@/lib/size";
+import { INSTANT, reducedTransition, spring, springExit } from "@/lib/springs";
 import { cn } from "cn";
 
 const CHECK_PATH = "M5 13l4 4L19 7";
@@ -12,12 +13,10 @@ export interface CheckboxProps {
   disabled?: boolean;
   indeterminate?: boolean;
   label?: string;
-  /** A line under the label explaining the choice. */
   description?: string;
   className?: string;
   id?: string;
   "aria-label"?: string;
-  /** Associates an external message (e.g. a form error) with the control. */
   "aria-describedby"?: string;
 }
 
@@ -36,6 +35,7 @@ export function Checkbox({
   const autoId = useId();
   const id = idProp ?? autoId;
   const reduce = useReducedMotion();
+  const tokens = useSize();
   const showMark = checked || indeterminate;
   const path = indeterminate ? INDETERMINATE_PATH : CHECK_PATH;
 
@@ -58,13 +58,13 @@ export function Checkbox({
         disabled={disabled}
         onClick={() => !disabled && onCheckedChange(!checked)}
         whileTap={reduce || disabled ? undefined : { scale: 0.95 }}
-        transition={SPRING_PRESS}
+        transition={spring.fast}
         data-state={checked ? "checked" : indeterminate ? "indeterminate" : "unchecked"}
         data-checked={checked ? "" : undefined}
         data-unchecked={!checked && !indeterminate ? "" : undefined}
         data-indeterminate={indeterminate ? "" : undefined}
         className={cn(
-          "inline-grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 transition-colors duration-200 outline-none",
+          "inline-grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 transition-colors duration-(--duration-fast) outline-none",
           "focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           "disabled:cursor-not-allowed disabled:opacity-60",
           showMark
@@ -84,10 +84,14 @@ export function Checkbox({
               strokeWidth={3}
               strokeLinecap="round"
               strokeLinejoin="round"
-              initial={reduce ? { opacity: 1 } : { opacity: 0, scale: 0.5 }}
+              initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.5 }}
               animate={reduce ? { opacity: 1 } : { opacity: 1, scale: 1, filter: "blur(0px)" }}
-              exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.5, filter: "blur(4px)" }}
-              transition={reduce ? { duration: 0 } : { duration: 0.16, ease: EASE_OUT }}
+              exit={
+                reduce
+                  ? { opacity: 0, transition: springExit.fast }
+                  : { opacity: 0, scale: 0.5, filter: "blur(4px)", transition: springExit.fast }
+              }
+              transition={reducedTransition(spring.fast, reduce)}
               aria-hidden
               className="col-start-1 row-start-1"
             >
@@ -96,7 +100,7 @@ export function Checkbox({
                 d={path}
                 initial={reduce ? { pathLength: 1 } : { pathLength: 0 }}
                 animate={{ pathLength: 1 }}
-                transition={reduce ? { duration: 0 } : { duration: 0.2, ease: EASE_OUT }}
+                transition={reduce ? INSTANT : spring.moderate}
               />
             </motion.svg>
           ) : null}
@@ -105,13 +109,14 @@ export function Checkbox({
       {label ? (
         <span
           className={cn(
-            "flex flex-col text-sm text-foreground select-none",
+            "flex flex-col text-foreground select-none",
+            tokens.type.body,
             disabled && "opacity-60",
           )}
         >
           {label}
           {description ? (
-            <span className="text-xs leading-4 text-muted-foreground">{description}</span>
+            <span className={cn("text-muted-foreground", tokens.type.caption)}>{description}</span>
           ) : null}
         </span>
       ) : null}

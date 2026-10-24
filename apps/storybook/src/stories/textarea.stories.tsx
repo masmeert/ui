@@ -11,6 +11,7 @@ const meta = {
     "aria-invalid": false,
   },
   argTypes: {
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
     placeholder: { control: "text" },
     disabled: { control: "boolean" },
     "aria-invalid": { control: "boolean" },
@@ -37,6 +38,8 @@ export const WithValue: Story = {
       "- Move build cache to the new storage bucket\n- Retry flaky integration tests once\n- Bump Node to 22.18",
   },
 };
+
+export const Compact: Story = { args: { size: "compact" } };
 
 export const Invalid: Story = {
   args: { defaultValue: "wip", "aria-invalid": true },

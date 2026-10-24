@@ -7,12 +7,15 @@ import {
   type Variants,
 } from "motion/react";
 import type { ReactNode } from "react";
-import { EASE_OUT } from "@/lib/ease";
+import { type Size, useSizeContext } from "@/lib/size";
+import { spring, springExit } from "@/lib/springs";
+import { typeClass } from "@/lib/type-scale";
 import { cn } from "cn";
 
 export type BadgeStatus = "neutral" | "info" | "success" | "warning" | "danger" | "loading";
 
-export type BadgeSize = "sm" | "md";
+/** Unset, follows the nearest `SizeProvider`; a `large` region gets `default`. */
+export type BadgeSize = Extract<Size, "compact" | "default">;
 
 export interface BadgeProps extends Omit<HTMLMotionProps<"span">, "children"> {
   status?: BadgeStatus;
@@ -34,13 +37,13 @@ const STATUS_CLASS: Record<BadgeStatus, string> = {
 };
 
 const SIZE_CLASS: Record<BadgeSize, string> = {
-  sm: "h-6 gap-1.5 px-2 text-[11px]",
-  md: "h-8 gap-2 px-3 text-xs",
+  compact: cn("h-6 gap-1.5 px-2", typeClass("micro")),
+  default: cn("h-8 gap-2 px-3", typeClass("caption")),
 };
 
 const ICON_CLASS: Record<BadgeSize, string> = {
-  sm: "h-3 w-3",
-  md: "h-3.5 w-3.5",
+  compact: "size-3",
+  default: "size-3.5",
 };
 
 const ICONS: Record<BadgeStatus, LucideIcon> = {
@@ -52,31 +55,27 @@ const ICONS: Record<BadgeStatus, LucideIcon> = {
   loading: LoaderCircle,
 };
 
-// A crisp roll: no blur, since the roll window clips its edges and a blur there smears into hard-edged blocks.
+// No blur: the roll window clips it into hard-edged blocks.
 const ROLL_VARIANTS: Variants = {
   initial: { opacity: 0, y: "70%" },
   animate: {
     opacity: 1,
     y: "0%",
-    transition: {
-      y: { type: "spring", stiffness: 380, damping: 30, mass: 0.7 },
-      opacity: { duration: 0.18, ease: EASE_OUT },
-    },
+    transition: spring.fast,
   },
   exit: {
     opacity: 0,
     y: "-70%",
-    transition: { duration: 0.15, ease: EASE_OUT },
+    transition: springExit.fast,
   },
 };
 
-// Shared by the pill and its contents: the contents counter the pill's layout
-// scale, and only stay unsquished if both settle on the same curve.
-const LAYOUT_TRANSITION = { type: "spring", stiffness: 420, damping: 30, mass: 0.7 } as const;
+// Pill and contents must share a curve, or the contents' scale correction squishes them.
+const LAYOUT_TRANSITION = spring.moderate;
 
 export function Badge({
   status = "neutral",
-  size = "md",
+  size: sizeProp,
   children,
   icon,
   showIcon = true,
@@ -87,6 +86,7 @@ export function Badge({
   ...rest
 }: BadgeProps) {
   const reduce = useReducedMotion();
+  const size = sizeProp ?? (useSizeContext()?.size === "compact" ? "compact" : "default");
   const Icon = ICONS[status];
   const resolvedContentKey =
     contentKey ??
@@ -96,10 +96,12 @@ export function Badge({
     <motion.span
       layout
       transition={LAYOUT_TRANSITION}
+      data-size={size}
       style={{ borderRadius: 9999, ...style }}
       className={cn(
         "relative inline-flex shrink-0 items-center overflow-hidden border font-medium whitespace-nowrap tabular-nums",
-        "transition-colors duration-300",
+        // Same tier as the layout resize, so the status change lands as one.
+        "transition-colors duration-(--duration-moderate)",
         STATUS_CLASS[status],
         SIZE_CLASS[size],
         className,
@@ -111,6 +113,7 @@ export function Badge({
           aria-hidden
           className="absolute inset-0 rounded-full bg-current opacity-10"
           animate={{ opacity: [0.06, 0.16, 0.06] }}
+          // A slow breathing loop while loading, not a transition: no tier applies.
           transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
         />
       ) : null}
@@ -132,8 +135,7 @@ export function Badge({
               className="inline-flex"
             >
               {status === "loading" && !reduce && !icon ? (
-                // CSS rather than Motion: AnimatePresence's initial={false} makes Motion children start at their
-                // target, so a rotate-to-360 spinner present on first render never turned.
+                // CSS, not Motion: under initial={false} a Motion rotate starts at its target and never turns.
                 <span className="inline-flex animate-spin">
                   <Icon className={ICON_CLASS[size]} />
                 </span>

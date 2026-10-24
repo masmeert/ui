@@ -1,25 +1,23 @@
 import { AnimatePresence, animate, motion, useReducedMotion } from "motion/react";
 import { useEffect, useId, useRef, useState } from "react";
 import { EASE_OUT } from "@/lib/ease";
+import { INSTANT, reducedTransition, spring, springExit } from "@/lib/springs";
+import { typeClass } from "@/lib/type-scale";
 import { cn } from "cn";
 
 export type InputOTPStatus = "idle" | "error" | "success";
 
 export interface InputOTPProps {
-  /** Number of slots. Default 6. */
   length?: number;
   value?: string;
   defaultValue?: string;
   onChange?: (value: string) => void;
   /** Fires once every slot is filled. */
   onComplete?: (value: string) => void;
-  /** Optional label rendered above the slots. */
   label?: string;
   /** Helper text shown below the slots while idle. */
   hint?: string;
-  /** Message shown below the slots when status is "success". */
   successMessage?: string;
-  /** Message shown below the slots when status is "error". */
   errorMessage?: string;
   /** External validation feedback. "error" shakes, "success" draws a check. */
   status?: InputOTPStatus;
@@ -27,7 +25,6 @@ export interface InputOTPProps {
   mask?: boolean;
   disabled?: boolean;
   autoFocus?: boolean;
-  /** Accessible label for the underlying input. */
   "aria-label"?: string;
   className?: string;
 }
@@ -56,8 +53,7 @@ export function InputOTP({
 
   const controlled = controlledValue !== undefined;
 
-  // Source of truth is a fixed-length array, so a cleared middle slot stays an
-  // in-place hole instead of collapsing the digits after it to the left.
+  // A fixed-length array, so a cleared middle slot stays a hole instead of collapsing left.
   const [slots, setSlots] = useState<string[]>(() =>
     toSlots(controlled ? controlledValue : defaultValue, length),
   );
@@ -71,8 +67,7 @@ export function InputOTP({
     joinedRef.current = joined;
   }, [joined]);
 
-  // Pull in external value changes; skip when the parent is just echoing our own
-  // onChange, so internal holes survive the controlled round-trip.
+  // Skip when the parent echoes our own onChange, so holes survive the controlled round-trip.
   useEffect(() => {
     if (!controlled) return;
     const incoming = sanitize(controlledValue, length);
@@ -103,8 +98,6 @@ export function InputOTP({
     return length - 1;
   };
 
-  // Single insertion path: one digit overwrites the active slot and advances; a
-  // multi-digit chunk (paste / SMS autofill) fills forward from the active slot.
   const insert = (raw: string, from = active) => {
     const digits = raw.replace(/\D/g, "");
     if (!digits) return;
@@ -119,9 +112,8 @@ export function InputOTP({
     setActive(Math.min(i, length - 1));
   };
 
-  // The keyboard is the single source of truth: preventDefault on keydown
-  // reliably blocks native insertion (unlike beforeinput in React), so the hidden
-  // input never accumulates a competing string and slot holes survive.
+  // preventDefault on keydown reliably blocks native insertion (React's beforeinput doesn't),
+  // so the hidden input never accumulates a competing string.
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (disabled || e.metaKey || e.ctrlKey || e.altKey) return;
     const k = e.key;
@@ -130,7 +122,6 @@ export function InputOTP({
       insert(k);
     } else if (k === "Backspace") {
       e.preventDefault();
-      // A filled slot clears in place; an empty slot steps back and clears there.
       if (slots[active]) {
         clearSlot(active);
       } else if (active > 0) {
@@ -162,9 +153,7 @@ export function InputOTP({
     insert(e.clipboardData.getData("text"), active);
   };
 
-  // Autofill path: SMS one-time-code arrives as a whole value in one shot.
-  // Keystrokes go through onKeyDown and paste through onPaste, so only autofill
-  // reaches here — spread it across the slots from the start.
+  // Only SMS autofill reaches here: keys go through onKeyDown, paste through onPaste.
   const onChangeNative = (e: React.ChangeEvent<HTMLInputElement>) => {
     const digits = sanitize(e.target.value, length);
     if (!digits) return;
@@ -172,9 +161,10 @@ export function InputOTP({
     setActive(Math.min(digits.length, length - 1));
   };
 
-  // Error shake — imperative so it replays on every transition into "error".
+  // Imperative so it replays on every transition into "error".
   useEffect(() => {
     if (status !== "error" || reduce || !slotsRef.current) return;
+    // A keyframed shake, not travel to a target: its length is the gesture, not a tier.
     animate(slotsRef.current, { x: [0, -5, 5, -3, 3, -1, 0] }, { duration: 0.45, ease: EASE_OUT });
   }, [status, reduce]);
 
@@ -185,7 +175,10 @@ export function InputOTP({
   return (
     <div className={cn("inline-flex flex-col gap-2", className)}>
       {label ? (
-        <label htmlFor={`${uid}-input`} className="text-sm font-medium text-foreground">
+        <label
+          htmlFor={`${uid}-input`}
+          className={cn("font-medium text-foreground", typeClass("body"))}
+        >
           {label}
         </label>
       ) : null}
@@ -193,7 +186,7 @@ export function InputOTP({
         className="relative m-0 inline-flex w-max border-0 p-0"
         onMouseDown={(e) => {
           if (disabled) return;
-          // Suppress the native click-caret; we drive the active slot ourselves.
+          // Suppress the native caret; we drive the active slot.
           e.preventDefault();
           // Clamp to the first empty slot so a click can't jump ahead of progress.
           const firstEmpty = slots.indexOf("");
@@ -212,7 +205,7 @@ export function InputOTP({
           disabled={disabled}
           aria-label={ariaLabel}
           aria-invalid={status === "error"}
-          // Kept empty on purpose — our state owns the digits, native holds none.
+          // Always empty: state owns the digits.
           value=""
           maxLength={length}
           onKeyDown={onKeyDown}
@@ -220,8 +213,7 @@ export function InputOTP({
           onPaste={onPaste}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          // Transparent overlay owns focus, the soft keyboard, paste and autofill;
-          // the slots below are purely presentational.
+          // Transparent overlay owns focus, soft keyboard, paste and autofill; slots are presentational.
           className="absolute inset-0 z-20 h-full w-full cursor-text bg-transparent text-transparent caret-transparent opacity-0 outline-none disabled:cursor-not-allowed"
         />
 
@@ -236,7 +228,8 @@ export function InputOTP({
                 data-active={isActive}
                 data-filled={char !== ""}
                 className={cn(
-                  "relative grid h-14 w-12 place-items-center overflow-hidden rounded-xl border text-xl font-semibold tabular-nums transition-colors duration-200",
+                  "relative grid h-14 w-12 place-items-center overflow-hidden rounded-xl border font-semibold tabular-nums transition-colors duration-(--duration-fast)",
+                  typeClass("title"),
                   showSuccess
                     ? "border-emerald-500/60 text-foreground"
                     : status === "error"
@@ -244,13 +237,11 @@ export function InputOTP({
                       : char
                         ? "border-border-strong text-foreground"
                         : "border-border text-muted-foreground",
-                  // Active slot reads stronger; twMerge lets this win the border.
+                  // twMerge lets this win the border.
                   isActive && !showSuccess && status !== "error" && "border-foreground",
                   disabled && "opacity-50",
                 )}
               >
-                {/* Blinking caret marks the active slot — centered when empty,
-                    trailing the digit when the slot is already filled. */}
                 {isActive && !showSuccess ? (
                   <motion.span
                     aria-hidden
@@ -258,7 +249,8 @@ export function InputOTP({
                     transition={
                       reduce
                         ? undefined
-                        : { duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }
+                        : // Caret blink cadence: a loop, not a transition, so no tier applies.
+                          { duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }
                     }
                     className={cn(
                       "pointer-events-none absolute top-1/2 h-6 w-px -translate-y-1/2 bg-foreground",
@@ -267,16 +259,19 @@ export function InputOTP({
                   />
                 ) : null}
 
-                {/* Digits roll vertically. Each is absolutely centered so enter and
-                    exit overlap in place — no in-flow reflow, no sideways drift. */}
+                {/* Absolutely centered so enter and exit overlap in place. */}
                 <AnimatePresence initial={false}>
                   {char ? (
                     <motion.span
                       key={char}
                       initial={reduce ? { opacity: 0 } : { y: 14, opacity: 0, filter: "blur(4px)" }}
                       animate={reduce ? { opacity: 1 } : { y: 0, opacity: 1, filter: "blur(0px)" }}
-                      exit={reduce ? { opacity: 0 } : { y: -14, opacity: 0, filter: "blur(4px)" }}
-                      transition={reduce ? { duration: 0 } : { duration: 0.22, ease: EASE_OUT }}
+                      exit={
+                        reduce
+                          ? { opacity: 0, transition: springExit.fast }
+                          : { y: -14, opacity: 0, filter: "blur(4px)", transition: springExit.fast }
+                      }
+                      transition={spring.fast}
                       className="absolute inset-0 grid place-items-center leading-none"
                     >
                       {mask ? "•" : char}
@@ -293,10 +288,11 @@ export function InputOTP({
             <motion.span
               initial={reduce ? { opacity: 0 } : { scale: 0.6, opacity: 0 }}
               animate={reduce ? { opacity: 1 } : { scale: 1, opacity: 1 }}
-              exit={reduce ? { opacity: 0 } : { scale: 0.6, opacity: 0 }}
-              transition={
-                reduce ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 28 }
-              }
+              exit={{
+                ...(reduce ? { opacity: 0 } : { scale: 0.6, opacity: 0 }),
+                transition: springExit.moderate,
+              }}
+              transition={reducedTransition(spring.moderate, reduce)}
               className="pointer-events-none absolute top-1/2 -right-7 -translate-y-1/2 text-emerald-500"
               aria-hidden
             >
@@ -315,9 +311,8 @@ export function InputOTP({
                   d="M5 13l4 4L19 7"
                   initial={reduce ? { pathLength: 1 } : { pathLength: 0 }}
                   animate={{ pathLength: 1 }}
-                  transition={
-                    reduce ? { duration: 0 } : { duration: 0.35, ease: EASE_OUT, delay: 0.1 }
-                  }
+                  // Drawn once the badge has landed, so the stroke doesn't race the scale.
+                  transition={reduce ? INSTANT : { ...spring.moderate, delay: 0.1 }}
                 />
               </svg>
             </motion.span>
@@ -329,7 +324,7 @@ export function InputOTP({
         <p
           aria-live="polite"
           className={cn(
-            "text-sm",
+            typeClass("caption"),
             showSuccess
               ? "text-emerald-500"
               : status === "error"

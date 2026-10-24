@@ -15,24 +15,25 @@ import {
   useRef,
   useState,
 } from "react";
-import { EASE_IN_OUT, EASE_OUT, SPRING_PANEL, SPRING_SWAP } from "@/lib/ease";
+import { EASE_IN_OUT } from "@/lib/ease";
+import { spring, springExit } from "@/lib/springs";
+import { typeClass } from "@/lib/type-scale";
 import { capturePointer, TOUCH_GESTURE_CONTENT_CLASS } from "@/lib/touch";
 import { cn } from "cn";
 
 export type PullToRefreshStatus = "idle" | "pulling" | "ready" | "refreshing";
 
 export interface PullToRefreshProps {
-  /** Runs after the user pulls beyond the threshold and releases. */
   onRefresh: () => void | Promise<void>;
   children: ReactNode;
-  /** Keeps the indicator active while an externally managed refresh runs. */
+  /** Keeps the indicator active while an external refresh runs. */
   refreshing?: boolean;
   disabled?: boolean;
-  /** Resisted pull distance in pixels required to refresh. */
+  /** Resisted pull distance (px) required to refresh. */
   threshold?: number;
-  /** Maximum resisted pull distance in pixels. */
+  /** Max resisted pull distance (px). */
   maxPull?: number;
-  /** Content offset in pixels while refreshing. */
+  /** Content offset (px) while refreshing. */
   holdDistance?: number;
   pullingLabel?: ReactNode;
   releaseLabel?: ReactNode;
@@ -57,8 +58,7 @@ const EMPTY_GESTURE: Gesture = {
   pointerId: null,
 };
 
-// This character needs a compact repeating rhythm rather than a settling
-// spring: a small orbit and blink that read as activity without feeling busy.
+// Loop periods, not UI transitions, so they sit outside the motion tiers.
 const CHARACTER_LOOP = {
   duration: 0.9,
   ease: EASE_IN_OUT,
@@ -69,7 +69,6 @@ const CALM_PULSE = {
   ease: EASE_IN_OUT,
   repeat: Number.POSITIVE_INFINITY,
 } as const;
-const LABEL_SWAP = { duration: 0.16, ease: EASE_OUT } as const;
 
 function resistedDistance(distance: number, maxPull: number) {
   return maxPull * (1 - Math.exp(-Math.max(0, distance) / maxPull));
@@ -109,10 +108,9 @@ function RefreshBuddy({
               ? { opacity: 1 }
               : { y: 0, rotate: 0, scale: ready ? 1.08 : 1 }
         }
-        transition={refreshing ? (reduce ? CALM_PULSE : CHARACTER_LOOP) : SPRING_SWAP}
+        transition={refreshing ? (reduce ? CALM_PULSE : CHARACTER_LOOP) : spring.fast}
       >
-        {/* Motion defaults SVG children to `fill-box`, which would measure these
-            origins from each group's own bounds instead of the 36×36 face. */}
+        {/* Motion defaults SVG children to `fill-box`; origins here are in the 36×36 viewBox. */}
         <motion.g
           style={{ transformOrigin: "18px 18px", transformBox: "view-box" }}
           animate={
@@ -122,9 +120,9 @@ function RefreshBuddy({
                 ? undefined
                 : { rotate: ready ? 0 : -35 }
           }
-          transition={refreshing ? (reduce ? CALM_PULSE : CHARACTER_LOOP) : SPRING_SWAP}
+          transition={refreshing ? (reduce ? CALM_PULSE : CHARACTER_LOOP) : spring.fast}
           className={cn(
-            "transition-opacity duration-150",
+            "transition-opacity duration-(--duration-fast)",
             ready || refreshing ? "opacity-100" : "opacity-0",
           )}
         >
@@ -150,7 +148,7 @@ function RefreshBuddy({
                 ? { opacity: 1 }
                 : { scaleY: ready ? 1.18 : 1 }
           }
-          transition={refreshing && !reduce ? CHARACTER_LOOP : SPRING_SWAP}
+          transition={refreshing && !reduce ? CHARACTER_LOOP : spring.fast}
         >
           <circle cx="14.2" cy="16" r="1.45" className="fill-background" />
           <circle cx="21.8" cy="16" r="1.45" className="fill-background" />
@@ -163,7 +161,7 @@ function RefreshBuddy({
           strokeWidth="1.5"
           strokeLinecap="round"
           className={cn(
-            "text-background transition-opacity duration-150",
+            "text-background transition-opacity duration-(--duration-fast)",
             ready || refreshing ? "opacity-0" : "opacity-100",
           )}
         />
@@ -174,7 +172,7 @@ function RefreshBuddy({
           strokeWidth="1.5"
           strokeLinecap="round"
           className={cn(
-            "text-background transition-opacity duration-150",
+            "text-background transition-opacity duration-(--duration-fast)",
             ready ? "opacity-100" : "opacity-0",
           )}
         />
@@ -183,7 +181,7 @@ function RefreshBuddy({
           cy="21"
           r="1.6"
           className={cn(
-            "fill-background transition-opacity duration-150",
+            "fill-background transition-opacity duration-(--duration-fast)",
             refreshing ? "opacity-100" : "opacity-0",
           )}
         />
@@ -246,7 +244,7 @@ export function PullToRefresh({
         return;
       }
 
-      animationRef.current = animate(y, target, SPRING_PANEL);
+      animationRef.current = animate(y, target, spring.slow);
     },
     [reduce, y],
   );
@@ -275,8 +273,7 @@ export function PullToRefresh({
     } finally {
       setInternalRefreshing(false);
 
-      // A synchronous refresh can resolve before React commits the temporary
-      // internal state, so release here instead of relying only on the effect.
+      // A sync refresh can resolve before React commits the internal state; release here too.
       if (!externalRefreshingRef.current) {
         setStatus("idle");
         settle(0);
@@ -376,9 +373,8 @@ export function PullToRefresh({
   }, []);
 
   const startPointerPull = (event: ReactPointerEvent<HTMLElement>) => {
-    // Everything but touch: a finger is driven by the native listeners above,
-    // which can `preventDefault` the page scroll a passive React handler
-    // cannot. A pen fires no touch events at all, so this is its only route.
+    // Touch uses the native listeners above (a passive React handler can't preventDefault scroll).
+    // A pen fires no touch events, so this is its only route.
     if (
       event.pointerType === "touch" ||
       event.button !== 0 ||
@@ -410,8 +406,7 @@ export function PullToRefresh({
     updatePull(deltaY);
   };
 
-  // Idle and pulling share a label, so they share a key too: otherwise every
-  // pull would start by swapping the label out for itself.
+  // Shared key for idle and pulling, or every pull starts by swapping the label for itself.
   const labelKey = status === "idle" ? "pulling" : status;
   const label =
     status === "refreshing" ? refreshingLabel : status === "ready" ? releaseLabel : pullingLabel;
@@ -433,13 +428,8 @@ export function PullToRefresh({
       }}
       className={cn(
         "relative w-full overflow-y-auto overscroll-contain bg-background",
-        // No `touch-none` here — this element is the scroller, and the pull
-        // only takes over once the content is already at the top. The callout
-        // has to be off from the first frame though: iOS decides on it while
-        // the finger is still resting, long before the pull is recognised.
-        // Whatever the consumer renders inside stays selectable with a mouse;
-        // only the pull itself suppresses selection, and only while it runs,
-        // so dragging the page down cannot highlight it on the way.
+        // No `touch-none`: this is the scroller. The content class kills the iOS callout from the
+        // first frame (iOS decides before the pull is recognised); selection is off only mid-pull.
         TOUCH_GESTURE_CONTENT_CLASS,
         status === "pulling" || status === "ready" ? "cursor-grabbing select-none" : "cursor-grab",
         (disabled || isRefreshing) && "cursor-default",
@@ -455,7 +445,8 @@ export function PullToRefresh({
             : { opacity: indicatorOpacity, scale: indicatorScale }
         }
         className={cn(
-          "pointer-events-none absolute inset-x-0 top-0 z-20 flex h-[4.25rem] flex-col items-center justify-center gap-0.5 bg-gradient-to-b from-background via-background/95 to-transparent text-[11px] font-medium text-muted-foreground",
+          "pointer-events-none absolute inset-x-0 top-0 z-20 flex h-[4.25rem] flex-col items-center justify-center gap-0.5 bg-gradient-to-b from-background via-background/95 to-transparent font-medium text-muted-foreground",
+          typeClass("caption"),
           indicatorClassName,
         )}
       >
@@ -466,8 +457,11 @@ export function PullToRefresh({
               key={labelKey}
               initial={reduce ? { opacity: 0 } : { opacity: 0, y: 3 }}
               animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
-              exit={reduce ? { opacity: 0 } : { opacity: 0, y: -3 }}
-              transition={LABEL_SWAP}
+              exit={{
+                ...(reduce ? { opacity: 0 } : { opacity: 0, y: -3 }),
+                transition: springExit.fast,
+              }}
+              transition={spring.fast}
               className="absolute inset-x-0 whitespace-nowrap"
             >
               {label}

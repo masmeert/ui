@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Button } from "@masmeert/ui/button";
 import { NumberTicker, type NumberTickerProps } from "@masmeert/ui/number-ticker";
 import { useState } from "react";
+import { typeClass } from "@masmeert/ui/lib/type-scale";
 
 const meta = {
   title: "Motion/Number Ticker",
@@ -13,7 +14,7 @@ const meta = {
     startOnView: true,
     blur: false,
     locale: true,
-    className: "text-4xl font-semibold",
+    className: `${typeClass("display")} font-bold`,
   },
   argTypes: {
     value: { control: "number" },
@@ -32,7 +33,11 @@ const meta = {
     return (
       <div className="flex flex-col items-center gap-4">
         <NumberTicker {...args} value={args.value + increment} />
-        <Button variant="outline" size="sm" onClick={() => setIncrement((current) => current + 37)}>
+        <Button
+          variant="outline"
+          size="compact"
+          onClick={() => setIncrement((current) => current + 37)}
+        >
           Next
         </Button>
       </div>

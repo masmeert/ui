@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Button } from "@masmeert/ui/button";
 import { TextReveal, type TextRevealProps } from "@masmeert/ui/text-reveal";
 import { useState } from "react";
+import { typeClass } from "@masmeert/ui/lib/type-scale";
 
 const meta = {
   title: "Motion/Text Reveal",
@@ -15,7 +16,7 @@ const meta = {
     yOffset: "40%",
     once: true,
     whileInView: false,
-    className: "max-w-md text-center text-3xl font-semibold tracking-tight",
+    className: `max-w-md text-center font-bold ${typeClass("display")}`,
   },
   argTypes: {
     text: { control: "object" },
@@ -36,7 +37,7 @@ const meta = {
         <TextReveal key={replayCount} {...args} />
         <Button
           variant="outline"
-          size="sm"
+          size="compact"
           onClick={() => setReplayCount((current) => current + 1)}
         >
           Replay
@@ -57,7 +58,7 @@ export const Characters: Story = {
     split: "char",
     stagger: 0.03,
     blur: 8,
-    className: "font-mono text-4xl font-semibold",
+    className: `font-mono font-bold ${typeClass("display")}`,
   },
 };
 
@@ -66,7 +67,7 @@ export const MultipleLines: Story = {
     as: "h2",
     text: ["Review the diff.", "Merge the branch.", "Watch it go live."],
     stagger: 0.12,
-    className: "text-center text-2xl font-semibold tracking-tight",
+    className: `text-center font-semibold ${typeClass("title")}`,
   },
 };
 

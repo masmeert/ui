@@ -34,29 +34,20 @@ import {
   type Geometry,
   type Side,
 } from "@/lib/popover-geometry";
+import { INSTANT, spring, springExit } from "@/lib/springs";
+import { SURFACE_OFFSET, SurfaceProvider, useElevation } from "@/lib/surface";
 import { cn } from "cn";
 
 type TriggerMode = "click" | "hover";
 
-// This morph needs less bounce than layout motion: too much overshoot makes
-// the liquid neck balloon past the final panel edges.
-const GOO_OPEN_SPRING = {
-  type: "spring",
-  visualDuration: 0.3,
-  bounce: 0.15,
-} as const;
-const GOO_CLOSE_SPRING = {
-  type: "spring",
-  visualDuration: 0.21,
-  bounce: 0.15,
-} as const;
+// The slow tier's small bounce keeps the neck inside the panel edges; the exit tween never undershoots zero.
+const GOO_OPEN = spring.slow;
+const GOO_CLOSE = springExit.slow;
+// Hover intent: time allowed to cross the trigger–panel gap before closing.
 const HOVER_CLOSE_DELAY_MS = 120;
 
-// `onPointerEnter`/`onPointerLeave` rather than the mouse pair: a tap fires
-// compatibility mouseenter/mouseleave that carry no pointerType at all, and
-// they are what made the panel flicker open and shut under a finger. The
-// gesture pairs the two, so the panel a pen tap opened is not closed again by
-// the boundary event that ends the same tap.
+// Pointer events, not mouse ones: a tap's compat mouseenter/leave carry no pointerType and
+// flicker the panel. The gesture pairs enter/leave so a pen tap doesn't close what it opened.
 function makeHoverHandlers(hover: HoverGesture, enter: () => void, leave: () => void) {
   return {
     onPointerEnter: (event: React.PointerEvent) => {
@@ -98,22 +89,18 @@ function usePopoverContext(component: string) {
 
 export interface PopoverProps {
   children: ReactNode;
-  /** Controlled open state. */
   open?: boolean;
-  /** Uncontrolled initial open state. */
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
-  /** How the popover is summoned. Default "click". */
+  /** Default "click". */
   trigger?: TriggerMode;
-  /** Which side of the trigger the panel oozes out of. Default "bottom". */
   side?: Side;
-  /** Alignment along the trigger's edge. Default "center". */
   align?: Align;
-  /** Gap between trigger and panel, in px — the length of the gooey neck. Default 14. */
+  /** Length of the gooey neck, in px. Default 14. */
   sideOffset?: number;
-  /** Corner radius of the open panel, in px. Default 16. */
+  /** In px. Default 16. */
   panelRadius?: number;
-  /** Blur radius feeding the goo filter — higher melts more. Default 8. */
+  /** Goo filter blur radius; higher melts more. Default 8. */
   gooStrength?: number;
   className?: string;
 }
@@ -178,16 +165,12 @@ export function Popover({
     const animation = animate(
       progress,
       open ? 1 : 0,
-      prefersReducedMotion ? { duration: 0 } : open ? GOO_OPEN_SPRING : GOO_CLOSE_SPRING,
+      prefersReducedMotion ? INSTANT : open ? GOO_OPEN : GOO_CLOSE,
     );
     return () => animation.stop();
   }, [open, progress, prefersReducedMotion]);
 
-  // The panel is a `role="dialog"` and goes inert the moment it closes, so
-  // focus cannot be left sitting inside it: Escape hands it back to the
-  // trigger, the way the ARIA dialog pattern asks. A pointer dismissal takes
-  // the focus onward itself when it lands on something focusable — this only
-  // catches the case where it would otherwise be stranded.
+  // The panel goes inert on close, so return focus to the trigger if it would be stranded inside.
   const close = useCallback(() => {
     setOpen(false);
     const focused = document.activeElement;
@@ -199,10 +182,7 @@ export function Popover({
     (target: Element) => Boolean(contentRef.current?.contains(target)),
     [],
   );
-  // A hover trigger opens on tap as well now, so it needs the same outside
-  // dismissal the click trigger always had. The gesture passes through to
-  // whatever it landed on, which is the light-dismiss bargain the platform's
-  // own popovers strike.
+  // Hover triggers open on tap too, so they also need outside dismissal.
   useDismiss(open, close, rootRef, { ignore: ignoreContent });
 
   const context = useMemo<PopoverContextValue>(
@@ -285,11 +265,7 @@ function compose<Event extends { defaultPrevented: boolean }>(
   };
 }
 
-// Observation, not action. `compose` steps aside for a child that handled
-// the event itself, which is right for anything that *does* something — but
-// a child preventing the pointerdown default (to hold focus, say) has not
-// said the gesture didn't happen. Skipping the record there left the panel
-// reading whatever the gesture before it had put in.
+// Unlike `compose`, runs even if the child prevented default: that doesn't mean the gesture didn't happen.
 function observe<Event>(
   childHandler: ((event: Event) => void) | undefined,
   handler: (event: Event) => void,
@@ -302,8 +278,7 @@ function observe<Event>(
 
 export function PopoverTrigger({ children }: PopoverTriggerProps) {
   const context = usePopoverContext("PopoverTrigger");
-  // What the last gesture on the trigger was, and whether the panel was
-  // already open when it started. A click reports neither.
+  // The last gesture and whether the panel was open when it started.
   const tap = useTapGesture<boolean>();
 
   if (!isValidElement<React.HTMLProps<HTMLElement> & { "data-state"?: string }>(children))
@@ -312,14 +287,9 @@ export function PopoverTrigger({ children }: PopoverTriggerProps) {
   const childProps = children.props;
 
   return cloneElement(children, {
-    // The hover trigger keeps its hover path and *adds* a tap one, rather than
-    // swapping mode on a device that reports a touchscreen: a touchscreen laptop
-    // has both inputs and the mouse must keep working. A hovering pointer has
-    // already opened the panel on its way in, and a keyboard press arrives with
-    // no pointerdown behind it, so only a tap toggles here. Which panel state
-    // the tap acts on is read from the gesture's start, because a browser that
-    // focuses the trigger on contact would otherwise open it mid-gesture and let
-    // the click close it again.
+    // Hover mode adds a tap path (touchscreen laptops have both inputs). Only a non-mouse tap
+    // toggles, using the state at gesture start: focus-on-contact would otherwise open it
+    // mid-gesture and let the click close it again.
     ...(context.triggerMode === "hover"
       ? {
           onFocus: compose(childProps.onFocus, context.openHover),
@@ -361,6 +331,8 @@ export interface PopoverContentProps {
 
 export function PopoverContent({ children, className }: PopoverContentProps) {
   const context = usePopoverContext("PopoverContent");
+  // The goo body stays `bg-muted` (filter and clip would eat a shadow); only the level is used.
+  const surface = useElevation(SURFACE_OFFSET.popover);
   const [portalReady, setPortalReady] = useState(false);
   const {
     side,
@@ -405,11 +377,10 @@ export function PopoverContent({ children, className }: PopoverContentProps) {
     [layout, side, align, gap, panelRadius],
   );
 
-  // Morph the same clip on the goo body and the content, so the whole popover
-  // oozes as one and the text reveals with it.
+  // Same clip on the goo body and the content, so they ooze as one.
   const render = useCallback((currentGeometry: Geometry | null, progressValue: number) => {
     if (!currentGeometry || currentGeometry.layerWidth === 0) return;
-    // The spring overshoots 1, and a shape past the panel's edges loses its rounded corners to the layer's box.
+    // Clamp the spring's overshoot: a shape past the panel's edges loses its rounded corners.
     const clip = clipPathAtProgress(
       currentGeometry,
       Math.min(1, Math.max(0, progressValue)),
@@ -435,14 +406,13 @@ export function PopoverContent({ children, className }: PopoverContentProps) {
   const hoverHandlers =
     triggerMode === "hover" ? makeHoverHandlers(panelHover, openHover, scheduleClose) : {};
 
-  // Match the server and first client render, then attach the portal after
-  // hydration. This preserves SSR without regenerating the page on the client.
+  // Portal after hydration to match the server render.
   if (!portalReady) return null;
 
   return createPortal(
     <div
       data-popover-portal=""
-      className="pointer-events-none fixed top-0 left-0 isolate z-9999 size-0"
+      className="pointer-events-none fixed top-0 left-0 isolate z-(--z-popup) size-0"
       style={{
         visibility: layout ? "visible" : "hidden",
         transform: `translate3d(${layout?.trigger.left ?? 0}px, ${layout?.trigger.top ?? 0}px, 0)`,
@@ -466,7 +436,6 @@ export function PopoverContent({ children, className }: PopoverContentProps) {
         </defs>
       </svg>
 
-      {/* Goo body: static trigger pill + morphing blob. */}
       <div
         aria-hidden
         className="pointer-events-none absolute z-[-1]"
@@ -498,8 +467,6 @@ export function PopoverContent({ children, className }: PopoverContentProps) {
         />
       </div>
 
-      {/* Content is clipped by the same morph. The portal wrapper stays
-          pointer-transparent; only the fully open panel accepts interaction. */}
       <div
         className="pointer-events-none absolute z-10"
         style={{
@@ -534,7 +501,7 @@ export function PopoverContent({ children, className }: PopoverContentProps) {
               className,
             )}
           >
-            {children}
+            <SurfaceProvider value={surface.level}>{children}</SurfaceProvider>
           </div>
         </div>
       </div>

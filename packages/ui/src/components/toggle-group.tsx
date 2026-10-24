@@ -3,34 +3,32 @@
 import * as React from "react";
 import { Toggle as TogglePrimitive } from "@base-ui/react/toggle";
 import { ToggleGroup as ToggleGroupPrimitive } from "@base-ui/react/toggle-group";
-import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cn";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
 
-import { EASE_OUT, SPRING_LAYOUT } from "@/lib/ease";
+import { FluidHoverHighlight } from "@/components/fluid-hover-highlight";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHoverDomItems } from "@/hooks/use-fluid-hover-dom-items";
+import { type Size, useSize } from "@/lib/size";
+import { reducedTransition, spring, springExit } from "@/lib/springs";
 
-const toggleGroupItemVariants = cva(
-  "relative inline-flex shrink-0 items-center justify-center rounded-full font-medium whitespace-nowrap text-muted-foreground transition-colors outline-none select-none hover:text-foreground focus-visible:ring-4 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 data-pressed:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-  {
-    variants: {
-      size: {
-        default: "min-h-8 min-w-8 px-3.5 py-1.5 text-sm",
-        sm: "min-h-7 min-w-7 px-3 py-1 text-xs",
-        lg: "min-h-10 min-w-10 px-4 py-2 text-sm",
-      },
-    },
-    defaultVariants: { size: "default" },
-  },
-);
+// Height comes from `segmentItem` + `segmentPad`, so this only sets width.
+const ITEM_SIZE: Record<Size, string> = {
+  compact: "min-w-7 px-2.5",
+  default: "min-w-7 px-3",
+  large: "min-w-9 px-4",
+};
 
 type ToggleGroupVariant = "default" | "outline";
 
-const ToggleGroupContext = React.createContext<
-  VariantProps<typeof toggleGroupItemVariants> & {
-    variant?: ToggleGroupVariant;
-    multiple?: boolean;
-  }
->({ size: "default", variant: "default", multiple: false });
+const ToggleGroupContext = React.createContext<{
+  size?: Size;
+  variant?: ToggleGroupVariant;
+  multiple?: boolean;
+  orientation?: "horizontal" | "vertical";
+}>({ variant: "default", multiple: false, orientation: "horizontal" });
+
+const ITEM_SELECTOR = '[data-slot="toggle-group-item"]';
 
 function ToggleGroup({
   className,
@@ -40,33 +38,86 @@ function ToggleGroup({
   orientation = "horizontal",
   multiple,
   children,
+  onValueChange,
+  onFocus,
+  onBlur,
+  onPointerEnter,
+  onPointerMove,
+  onPointerLeave,
+  onClick,
   ...props
-}: ToggleGroupPrimitive.Props &
-  VariantProps<typeof toggleGroupItemVariants> & {
-    variant?: ToggleGroupVariant;
-    spacing?: number;
-    orientation?: "horizontal" | "vertical";
-  }) {
+}: ToggleGroupPrimitive.Props & {
+  size?: Size;
+  variant?: ToggleGroupVariant;
+  spacing?: number;
+  orientation?: "horizontal" | "vertical";
+}) {
+  const tokens = useSize(size);
+  const groupRef = React.useRef<HTMLDivElement>(null);
+
+  // The hover layer is separate from the pressed pill below.
+  const hover = useFluidHover(groupRef, { axis: orientation === "vertical" ? "y" : "x" });
+  const { from, indexOf } = useFluidHoverDomItems(hover, groupRef, ITEM_SELECTOR, "[data-pressed]");
+  const { setActiveIndex } = hover;
+
+  const context = React.useMemo(
+    () => ({ variant, size, multiple, orientation }),
+    [variant, size, multiple, orientation],
+  );
+
   return (
     <LayoutGroup id={React.useId()}>
       <ToggleGroupPrimitive
+        ref={groupRef}
         data-slot="toggle-group"
         data-variant={variant}
-        data-size={size}
+        data-size={tokens.size}
         data-spacing={spacing}
         data-orientation={orientation}
         orientation={orientation}
         multiple={multiple}
+        onValueChange={onValueChange}
+        onPointerEnter={(event) => {
+          hover.handlers.onPointerEnter(event);
+          onPointerEnter?.(event);
+        }}
+        onPointerMove={(event) => {
+          hover.handlers.onPointerMove(event);
+          onPointerMove?.(event);
+        }}
+        onPointerLeave={(event) => {
+          hover.handlers.onPointerLeave(event);
+          onPointerLeave?.(event);
+        }}
+        onClick={(event) => {
+          onClick?.(event);
+          hover.handlers.onClick(event);
+        }}
+        // Arrow keys rove focus; a visible focus lights the hover layer.
+        onFocus={(event) => {
+          if (event.target.matches(":focus-visible")) setActiveIndex(indexOf(event.target));
+          onFocus?.(event);
+        }}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            setActiveIndex(null);
+          }
+          onBlur?.(event);
+        }}
         style={{ "--gap": spacing } as React.CSSProperties}
         className={cn(
-          "group/toggle-group inline-flex w-fit flex-row items-center gap-[--spacing(var(--gap))] rounded-full bg-card p-1 data-[variant=outline]:border data-[variant=outline]:border-border data-[variant=outline]:bg-transparent data-vertical:flex-col data-vertical:items-stretch data-vertical:rounded-2xl",
+          "group/toggle-group relative inline-flex w-fit flex-row items-center gap-[--spacing(var(--gap))] rounded-full bg-card data-[variant=outline]:border data-[variant=outline]:border-border data-[variant=outline]:bg-transparent data-vertical:flex-col data-vertical:items-stretch data-vertical:rounded-2xl",
+          tokens.segmentPad,
           className,
         )}
         {...props}
       >
-        <ToggleGroupContext.Provider value={{ variant, size, multiple }}>
-          {children}
-        </ToggleGroupContext.Provider>
+        <FluidHoverHighlight
+          hover={hover}
+          from={from}
+          className={orientation === "vertical" ? "rounded-xl" : "rounded-full"}
+        />
+        <ToggleGroupContext.Provider value={context}>{children}</ToggleGroupContext.Provider>
       </ToggleGroupPrimitive>
     </LayoutGroup>
   );
@@ -77,15 +128,24 @@ function ToggleGroupItem({
   children,
   size,
   ...props
-}: TogglePrimitive.Props & VariantProps<typeof toggleGroupItemVariants>) {
+}: TogglePrimitive.Props & { size?: Size }) {
   const context = React.useContext(ToggleGroupContext);
   const reduce = useReducedMotion();
+  // The group's size wins over the item's.
+  const tokens = useSize(context.size ?? size);
 
   return (
     <TogglePrimitive
       data-slot="toggle-group-item"
-      data-size={context.size || size}
-      className={cn(toggleGroupItemVariants({ size: context.size || size }), className)}
+      data-size={tokens.size}
+      className={cn(
+        "relative inline-flex shrink-0 items-center justify-center rounded-full font-medium whitespace-nowrap text-muted-foreground transition-colors duration-(--duration-fast) outline-none select-none group-data-vertical/toggle-group:rounded-xl focus-visible:ring-4 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 data-fluid-hover-active:text-foreground data-pressed:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        tokens.segmentItem,
+        ITEM_SIZE[tokens.size],
+        tokens.text,
+        tokens.iconClass,
+        className,
+      )}
       render={(toggleProps, state) => (
         <button {...toggleProps}>
           {context.multiple ? (
@@ -95,22 +155,27 @@ function ToggleGroupItem({
                   key="highlight"
                   initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
-                  transition={{ duration: reduce ? 0 : 0.16, ease: EASE_OUT }}
-                  className="absolute inset-0 rounded-[inherit] bg-muted"
+                  exit={
+                    reduce
+                      ? { opacity: 0, transition: springExit.fast }
+                      : { opacity: 0, scale: 0.9, transition: springExit.fast }
+                  }
+                  transition={reducedTransition(spring.fast, reduce)}
+                  className="absolute inset-0 rounded-[inherit] bg-selected"
                 />
               ) : null}
             </AnimatePresence>
           ) : state.pressed ? (
-            // Single selection hands one highlight between items by layoutId, so it slides like the tabs indicator.
+            // Single selection shares one indicator via layoutId so it slides between items.
             <motion.span
               layoutId="toggle-group-highlight"
-              transition={reduce ? { duration: 0 } : SPRING_LAYOUT}
-              style={{ borderRadius: 9999 }}
-              className="absolute inset-0 bg-muted"
+              transition={reducedTransition(spring.moderate, reduce)}
+              // Radius as a style so layout animation corrects it while the pill stretches.
+              style={{ borderRadius: context.orientation === "vertical" ? 12 : 9999 }}
+              className="absolute inset-0 bg-selected"
             />
           ) : null}
-          <span className="relative z-10 inline-flex items-center gap-2">
+          <span className={cn("relative z-10 inline-flex items-center", tokens.gap)}>
             {toggleProps.children}
           </span>
         </button>

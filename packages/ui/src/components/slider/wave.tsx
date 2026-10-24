@@ -2,32 +2,35 @@ import { motion, useReducedMotion } from "motion/react";
 import { useMemo } from "react";
 
 import { type SliderOptions, useSlider } from "@/hooks/use-slider";
+import { type Size, useSize } from "@/lib/size";
+import { INSTANT } from "@/lib/springs";
 import { TOUCH_GESTURE_CLASS } from "@/lib/touch";
 import { cn } from "cn";
 
-// Per-bar spring: soft enough that the crest wobbles as it travels.
+// Physics, not a tier: retargeted on every drag step, soft enough that the crest wobbles.
 const SPRING_BAR = { type: "spring", stiffness: 420, damping: 20, mass: 0.5 } as const;
-/** Bar count that reads as a wave without turning into a stripe pattern. */
 const BARS = 32;
-/** Width of the crest in bars — bigger spreads the bell wider. */
+/** Crest width in bars. */
 const SPREAD = 2.6;
 
 export interface WaveSliderProps extends SliderOptions {
-  /** Number of bars drawn across the track. */
   bars?: number;
+  size?: Size;
   className?: string;
 }
 
-/**
- * Equalizer slider: bars rise into a crest around the handle position and fall
- * back as it passes, so the value reads as a travelling wave. Bars up to the
- * value are filled, the rest stay muted.
- */
-export function WaveSlider({ bars = BARS, className, ...options }: WaveSliderProps) {
+const HEIGHT: Record<Size, { track: string; bar: string }> = {
+  compact: { track: "h-14", bar: "h-10" },
+  default: { track: "h-20", bar: "h-14" },
+  large: { track: "h-24", bar: "h-18" },
+};
+
+/** Equalizer slider: bars rise into a crest around the value. */
+export function WaveSlider({ bars = BARS, size, className, ...options }: WaveSliderProps) {
   const reduce = useReducedMotion();
+  const height = HEIGHT[useSize(size).size];
   const { percent, dragging, trackProps, sliderProps } = useSlider(options);
 
-  // Keys only change when the bar count does — the list never reorders.
   const keys = useMemo(() => Array.from({ length: bars }, (_, i) => `bar-${i}`), [bars]);
 
   const head = (percent / 100) * (bars - 1);
@@ -36,7 +39,6 @@ export function WaveSlider({ bars = BARS, className, ...options }: WaveSliderPro
     return {
       key,
       distance,
-      // Gaussian crest centred on the handle.
       crest: Math.exp(-(distance ** 2) / (2 * SPREAD ** 2)),
       filled: i <= Math.round(head),
     };
@@ -46,7 +48,8 @@ export function WaveSlider({ bars = BARS, className, ...options }: WaveSliderPro
     <div
       {...trackProps}
       className={cn(
-        "relative flex h-20 w-full touch-none items-center justify-between gap-1",
+        "relative flex w-full touch-none items-center justify-between gap-1",
+        height.track,
         TOUCH_GESTURE_CLASS,
         options.disabled ? "pointer-events-none opacity-50" : "cursor-grab active:cursor-grabbing",
         className,
@@ -56,20 +59,18 @@ export function WaveSlider({ bars = BARS, className, ...options }: WaveSliderPro
         <motion.span
           key={lane.key}
           className={cn(
-            "h-14 flex-1 origin-center rounded-full",
-            // /45 keeps the unfilled track above the 3:1 non-text contrast
-            // floor in both themes (measured 4.16 dark / 3.13 light)
+            "flex-1 origin-center rounded-full",
+            height.bar,
+            // /45 clears the 3:1 non-text contrast floor in both themes.
             lane.filled ? "bg-foreground" : "bg-foreground/45",
           )}
           animate={{
             scaleY: reduce ? 0.4 : 0.22 + lane.crest * (dragging ? 0.78 : 0.6),
           }}
-          // The ripple delay only suits a one-off jump. A drag retargets every
-          // bar on each step, and a delayed retarget holds the bar still until
-          // the delay ends, so far bars froze and stuttered behind the crest.
+          // No ripple delay while dragging: a delayed retarget freezes far bars behind the crest.
           transition={
             reduce
-              ? { duration: 0 }
+              ? INSTANT
               : { ...SPRING_BAR, delay: dragging ? 0 : Math.min(lane.distance * 0.012, 0.12) }
           }
         />

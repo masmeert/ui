@@ -10,6 +10,8 @@ import {
 } from "react";
 
 import { SPRING_GLIDE } from "@/lib/ease";
+import { type Size, useSize } from "@/lib/size";
+import { spring } from "@/lib/springs";
 import { type SliderOptions, snapSliderValue, useSlider } from "@/hooks/use-slider";
 import { capturePointer, releasePointer, TOUCH_GESTURE_CLASS } from "@/lib/touch";
 import { cn } from "cn";
@@ -18,8 +20,7 @@ const STOP_COUNT = 10;
 const HANDLE_START = 8;
 const HANDLE_END_INSET = 12;
 const TEXT_INSET = 20;
-// Matches RangeSlider's bouncy grab and release feedback.
-const SPRING_BOUNCY = { type: "spring", stiffness: 500, damping: 14, mass: 0.7 } as const;
+const HANDLE_HEIGHT: Record<Size, string> = { compact: "h-5", default: "h-6", large: "h-8" };
 
 type Stop = { value: number; x: number };
 
@@ -42,25 +43,26 @@ function nearestStop(stops: Stop[], x: number) {
 export interface InlineSliderProps extends SliderOptions {
   /** Rounds snap-stop values. While dragging, the readout keeps this step's decimal precision. */
   step?: number;
-  /** Compact label inside the left edge of the track. */
   label: string;
-  /** Formats the inline value without changing its precision. */
+  /** Formats the readout without changing its precision. */
   format?: (value: number) => string;
-  /** Show markers for the ten evenly spaced snap stops, except where they overlap inline text. */
+  /** Markers for the ten snap stops, hidden where they overlap text. */
   showTicks?: boolean;
+  size?: Size;
   className?: string;
 }
 
-/** An always-visible inline slider with an inset fill and a thumb that parts
- * around its labels, keeping their text readable as the handle passes them. */
+/** A slider whose thumb parts around its inline labels as it passes them. */
 export function InlineSlider({
   label,
   format = String,
   showTicks = true,
+  size,
   className,
   ...options
 }: InlineSliderProps) {
   const reduce = useReducedMotion();
+  const tokens = useSize(size);
   const step = options.step && options.step > 0 ? options.step : 1;
   const precision = step.toFixed(6).replace(/0+$/, "").split(".")[1]?.length ?? 0;
   const { current, min, max, commit, trackProps, sliderProps } = useSlider({
@@ -115,9 +117,7 @@ export function InlineSlider({
     return () => observer.disconnect();
   }, [trackProps.ref]);
 
-  // Each stop owns both a value and a physical position. As in RangeSlider,
-  // the stops span the entire track at even intervals; text only affects
-  // whether a marker is painted, never whether its stop remains interactive.
+  // Stops span the track evenly; text only hides a marker, never disables its stop.
   const endX = Math.max(HANDLE_START, geometry.width - HANDLE_END_INSET);
   const stops = useMemo(() => {
     const values = [
@@ -136,9 +136,8 @@ export function InlineSlider({
     }));
   }, [min, max, step, endX]);
   const restingX = mapBetweenStops(stops, current, "value", "x");
-  // One motion value owns the thumb for the entire gesture. Pointer movement
-  // writes pixels directly; only release/click/keyboard changes use a spring.
-  // Never derive dragging pixels from a rounded value or swap to a lagging spring.
+  // Drag writes pixels directly; only release/click/keyboard use a spring. Never
+  // derive drag pixels from a rounded value or swap to a lagging spring.
   const handleX = useMotionValue(restingX);
   const restingTarget = useRef(restingX);
   const settleTo = useCallback(
@@ -150,8 +149,7 @@ export function InlineSlider({
     },
     [handleX, reduce],
   );
-  // A new track width (the first measurement, or a resize) moves every stop
-  // with it, so the thumb follows at once instead of gliding in on mount.
+  // On a new track width the thumb jumps rather than gliding in on mount.
   const settledWidth = useRef(geometry.width);
   useLayoutEffect(() => {
     const resized = settledWidth.current !== geometry.width;
@@ -172,12 +170,9 @@ export function InlineSlider({
     [handleX],
   );
   const fillRight = useTransform(handleX, (x) => (x >= endX ? geometry.width - 2 : x + 8));
-  // Slide a fixed-size fill inside the inset clipping window. The labels and
-  // dots stay above it, and only transforms animate.
+  // Slide a fixed-size fill inside the inset clip so only transforms animate.
   const fillX = useTransform(fillRight, (right) => right - geometry.width + 2);
-  // Part progressively over six pixels at each text edge instead of
-  // toggling the stem on/off in a single pointer frame. The thumb uses the
-  // same two-dot treatment across both the label and numeric readout.
+  // Part over six pixels at each text edge rather than toggling in one frame.
   const split = useTransform(handleX, (x) => {
     const overlap = (start: number, end: number) =>
       Math.max(0, Math.min(1, (x + 4 - start) / 6, (end - x) / 6));
@@ -246,8 +241,7 @@ export function InlineSlider({
         event.preventDefault();
         const pointerX = event.clientX - rect.left;
         const thumbX = handleX.get();
-        // Grabbing the thumb preserves the exact grab point. A track click
-        // waits for release, so it glides to a dot without an intermediate jump.
+        // Grabbing the thumb keeps the grab point; a track click waits for release.
         const offset = Math.abs(pointerX - thumbX - 2) <= 12 ? pointerX - thumbX : 2;
         gesture.current = { id: event.pointerId, left: rect.left, offset, x: thumbX };
         setDragging(true);
@@ -267,15 +261,15 @@ export function InlineSlider({
         );
         active.x = x;
         handleX.set(x);
-        // Use the same piecewise map as the resting stops, so value and
-        // position agree throughout the drag.
+        // Same piecewise map as the resting stops, so value and position agree.
         queueDragCommit(mapBetweenStops(stops, x, "x", "value"));
       }}
       onPointerUp={endGesture}
       onPointerCancel={endGesture}
       onLostPointerCapture={endGesture}
       className={cn(
-        "relative h-10 w-full touch-none overflow-hidden rounded-lg bg-muted select-none",
+        "relative w-full touch-none overflow-hidden rounded-lg bg-muted select-none",
+        tokens.control,
         TOUCH_GESTURE_CLASS,
         options.disabled ? "pointer-events-none opacity-50" : "cursor-grab active:cursor-grabbing",
         className,
@@ -290,13 +284,19 @@ export function InlineSlider({
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 text-foreground">
         <span
           ref={labelRef}
-          className="absolute top-1/2 left-5 max-w-[40%] -translate-y-1/2 truncate text-sm leading-5 font-medium"
+          className={cn(
+            "absolute top-1/2 left-5 max-w-[40%] -translate-y-1/2 truncate font-medium",
+            tokens.text,
+          )}
         >
           {label}
         </span>
         <span
           ref={readoutRef}
-          className="absolute top-1/2 right-5 max-w-[40%] -translate-y-1/2 truncate text-[13px] leading-[18px] font-semibold tracking-tight tabular-nums"
+          className={cn(
+            "absolute top-1/2 right-5 max-w-[40%] -translate-y-1/2 truncate font-semibold tabular-nums",
+            tokens.text,
+          )}
         >
           {format(current)}
         </span>
@@ -311,8 +311,11 @@ export function InlineSlider({
       <motion.div
         aria-hidden="true"
         animate={reduce ? undefined : { scaleY: dragging ? 1.35 : 1 }}
-        transition={SPRING_BOUNCY}
-        className="pointer-events-none absolute top-2 left-0 h-6 w-1 text-foreground"
+        transition={spring.fast}
+        className={cn(
+          "pointer-events-none absolute top-1.5 left-0 w-1 text-foreground",
+          HANDLE_HEIGHT[tokens.size],
+        )}
         style={{ x: handleX }}
       >
         <motion.span

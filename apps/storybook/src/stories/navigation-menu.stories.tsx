@@ -10,12 +10,14 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@masmeert/ui/navigation-menu";
+import { typeClass } from "@masmeert/ui/lib/type-scale";
 
 const meta = {
   title: "Navigation/Navigation Menu",
   component: NavigationMenu,
-  args: { align: "start", delay: 50, closeDelay: 50 },
+  args: { align: "start", delay: 50, closeDelay: 50, size: "default" },
   argTypes: {
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
     align: { control: "inline-radio", options: ["start", "center", "end"] },
     delay: { control: { type: "number", min: 0, step: 50 } },
     closeDelay: { control: { type: "number", min: 0, step: 50 } },
@@ -59,7 +61,9 @@ function SiteNavigation(props: ComponentProps<typeof NavigationMenu>) {
                         <Icon />
                         {title}
                       </span>
-                      <span className="text-xs text-muted-foreground">{description}</span>
+                      <span className={`${typeClass("caption")} text-muted-foreground`}>
+                        {description}
+                      </span>
                     </NavigationMenuLink>
                   </li>
                 ))}

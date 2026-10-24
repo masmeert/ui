@@ -14,6 +14,7 @@ import {
 } from "react";
 import { cn } from "cn";
 import { useActiveOption } from "@/hooks/use-active-option";
+import type { Size } from "@/lib/size";
 
 export type RegisteredItem = {
   value: string;
@@ -47,13 +48,8 @@ export type ComboboxContextValue = {
   select: (value: string) => void;
   query: string;
   setQuery: (query: string) => void;
-  /** The option the list is currently pointing at, resolved during render. */
   activeValue: string | null;
-  /**
-   * Records where the pointer or keyboard moved to. The recorded value is
-   * dropped when the query or the result set changes, so it does not always
-   * survive to the next `activeValue`.
-   */
+  /** Dropped when the query or result set changes, so it may not reach the next `activeValue`. */
   setActiveValue: (value: string | null) => void;
   moveActive: (direction: 1 | -1 | "first" | "last") => void;
   selectActive: () => void;
@@ -72,7 +68,10 @@ export type ComboboxContextValue = {
   triggerRef: MutableRefObject<HTMLDivElement | null>;
   contentRef: MutableRefObject<HTMLDivElement | null>;
   inputRef: MutableRefObject<HTMLInputElement | null>;
-  activeLayoutId: string;
+  /** Registration order, stable while a query hides rows. -1 for an unknown value. */
+  indexOf: (value: string) => number;
+  valueAt: (index: number) => string | undefined;
+  size: Size | undefined;
 };
 
 export const ComboboxContext = createContext<ComboboxContextValue | null>(null);
@@ -106,6 +105,7 @@ export interface ComboboxProps {
   onQueryChange?: (query: string) => void;
   filter?: ComboboxFilter;
   disabled?: boolean;
+  size?: Size;
   className?: string;
 }
 
@@ -122,6 +122,7 @@ export function Combobox({
   onQueryChange,
   filter = defaultFilter,
   disabled = false,
+  size,
   className,
 }: ComboboxProps) {
   const reduce = useReducedMotion() ?? false;
@@ -190,10 +191,8 @@ export function Combobox({
     });
   }, []);
 
-  // The query the list filters by. Closing clears `query`, but the panel is
-  // still on screen for its exit, so it keeps filtering by the query it was
-  // open with rather than repopulating mid-collapse. The input already reads
-  // `query` only while open, so nothing the user can see reads the other one.
+  // Closing clears `query`, but the exiting panel keeps filtering by the query it
+  // was open with so it doesn't repopulate mid-collapse.
   const [openQuery, setOpenQuery] = useState(query);
   if (open && openQuery !== query) setOpenQuery(query);
   const listQuery = open ? query : openQuery;
@@ -281,6 +280,12 @@ export function Combobox({
     };
   }, [open, updateOpen]);
 
+  const order = useMemo(() => Array.from(items.keys()), [items]);
+  const slots = useMemo(
+    () => new Map(order.map((itemValue, index) => [itemValue, index])),
+    [order],
+  );
+
   const activeItem = activeValue ? items.get(activeValue) : undefined;
   const context = useMemo<ComboboxContextValue>(
     () => ({
@@ -309,7 +314,9 @@ export function Combobox({
       triggerRef,
       contentRef,
       inputRef,
-      activeLayoutId: `${baseId}-active`,
+      indexOf: (itemValue) => slots.get(itemValue) ?? -1,
+      valueAt: (index) => order[index],
+      size,
     }),
     [
       activeItem?.id,
@@ -320,12 +327,15 @@ export function Combobox({
       listQuery,
       moveActive,
       open,
+      order,
       query,
       reduce,
       registerItem,
       select,
       selectActive,
       setActiveValue,
+      size,
+      slots,
       unregisterItem,
       updateOpen,
       updateQuery,

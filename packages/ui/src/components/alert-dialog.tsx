@@ -3,6 +3,11 @@ import { AlertDialog as AlertDialogPrimitive } from "@base-ui/react/alert-dialog
 import { cn } from "cn";
 
 import { buttonVariants, type ButtonSize, type ButtonVariant } from "@/components/button";
+import { useSize, useSizeContext } from "@/lib/size";
+import { SURFACE_OFFSET, SurfaceProvider, useElevation } from "@/lib/surface";
+
+const OVERLAY_MOTION =
+  "data-open:duration-(--duration-slow) data-open:ease-out data-closed:duration-(--duration-exit-slow) data-closed:ease-(--ease-exit)";
 
 function AlertDialog({ ...props }: AlertDialogPrimitive.Root.Props) {
   return <AlertDialogPrimitive.Root data-slot="alert-dialog" {...props} />;
@@ -21,7 +26,8 @@ function AlertDialogOverlay({ className, ...props }: AlertDialogPrimitive.Backdr
     <AlertDialogPrimitive.Backdrop
       data-slot="alert-dialog-overlay"
       className={cn(
-        "fixed inset-0 z-50 bg-black/30 [backdrop-filter:blur(24px)_saturate(140%)] duration-200 [-webkit-backdrop-filter:blur(24px)_saturate(140%)] data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 data-closed:fill-mode-forwards",
+        "fixed inset-0 z-(--z-overlay) bg-black/30 [backdrop-filter:blur(24px)_saturate(140%)] [-webkit-backdrop-filter:blur(24px)_saturate(140%)] data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0 data-closed:fill-mode-forwards",
+        OVERLAY_MOTION,
         className,
       )}
       {...props}
@@ -32,10 +38,13 @@ function AlertDialogOverlay({ className, ...props }: AlertDialogPrimitive.Backdr
 function AlertDialogContent({
   className,
   size = "default",
+  children,
   ...props
 }: AlertDialogPrimitive.Popup.Props & {
-  size?: "default" | "sm";
+  /** Width: `compact` is a narrow confirm with side-by-side actions. */
+  size?: "default" | "compact";
 }) {
+  const surface = useElevation(SURFACE_OFFSET.dialog);
   return (
     <AlertDialogPortal>
       <AlertDialogOverlay />
@@ -43,11 +52,15 @@ function AlertDialogContent({
         data-slot="alert-dialog-content"
         data-size={size}
         className={cn(
-          "group/alert-dialog-content fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-2xl border border-border bg-background p-6 shadow-panel duration-200 outline-none data-[size=sm]:max-w-xs data-[size=default]:sm:max-w-lg data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:fill-mode-forwards data-closed:zoom-out-95",
+          "group/alert-dialog-content fixed top-[50%] left-[50%] z-(--z-overlay) grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-2xl border border-border p-6 outline-none data-[size=compact]:max-w-xs data-[size=default]:sm:max-w-lg data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:fill-mode-forwards data-closed:zoom-out-95",
+          surface.className,
+          OVERLAY_MOTION,
           className,
         )}
         {...props}
-      />
+      >
+        <SurfaceProvider value={surface.level}>{children}</SurfaceProvider>
+      </AlertDialogPrimitive.Popup>
     </AlertDialogPortal>
   );
 }
@@ -70,7 +83,7 @@ function AlertDialogFooter({ className, ...props }: React.ComponentProps<"div">)
     <div
       data-slot="alert-dialog-footer"
       className={cn(
-        "flex flex-col-reverse gap-2 group-data-[size=sm]/alert-dialog-content:grid group-data-[size=sm]/alert-dialog-content:grid-cols-2 sm:flex-row sm:justify-end",
+        "flex flex-col-reverse gap-2 group-data-[size=compact]/alert-dialog-content:grid group-data-[size=compact]/alert-dialog-content:grid-cols-2 sm:flex-row sm:justify-end",
         className,
       )}
       {...props}
@@ -95,11 +108,13 @@ function AlertDialogTitle({
   className,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Title>) {
+  const { type } = useSize();
   return (
     <AlertDialogPrimitive.Title
       data-slot="alert-dialog-title"
       className={cn(
-        "text-base font-medium sm:group-data-[size=default]/alert-dialog-content:group-has-data-[slot=alert-dialog-media]/alert-dialog-content:col-start-2",
+        type.title,
+        "font-semibold sm:group-data-[size=default]/alert-dialog-content:group-has-data-[slot=alert-dialog-media]/alert-dialog-content:col-start-2",
         className,
       )}
       {...props}
@@ -111,10 +126,11 @@ function AlertDialogDescription({
   className,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Description>) {
+  const { type } = useSize();
   return (
     <AlertDialogPrimitive.Description
       data-slot="alert-dialog-description"
-      className={cn("text-sm text-muted-foreground", className)}
+      className={cn(type.body, "text-muted-foreground", className)}
       {...props}
     />
   );
@@ -123,16 +139,18 @@ function AlertDialogDescription({
 function AlertDialogAction({
   className,
   variant = "primary",
-  size = "md",
+  size,
   ...props
 }: AlertDialogPrimitive.Close.Props & {
   variant?: ButtonVariant;
   size?: ButtonSize;
 }) {
+  // `buttonVariants` can't read a SizeProvider; an unset size follows the nearest one.
+  const context = useSizeContext();
   return (
     <AlertDialogPrimitive.Close
       data-slot="alert-dialog-action"
-      className={cn(buttonVariants({ variant, size }), className)}
+      className={cn(buttonVariants({ variant, size: size ?? context?.size }), className)}
       {...props}
     />
   );
@@ -141,16 +159,17 @@ function AlertDialogAction({
 function AlertDialogCancel({
   className,
   variant = "outline",
-  size = "md",
+  size,
   ...props
 }: AlertDialogPrimitive.Close.Props & {
   variant?: ButtonVariant;
   size?: ButtonSize;
 }) {
+  const context = useSizeContext();
   return (
     <AlertDialogPrimitive.Close
       data-slot="alert-dialog-cancel"
-      className={cn(buttonVariants({ variant, size }), className)}
+      className={cn(buttonVariants({ variant, size: size ?? context?.size }), className)}
       {...props}
     />
   );

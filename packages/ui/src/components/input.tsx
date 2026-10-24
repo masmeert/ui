@@ -8,6 +8,8 @@ import {
   type InputHTMLAttributes,
   type ReactNode,
 } from "react";
+import { type Size, useSize } from "@/lib/size";
+import { spring, springExit } from "@/lib/springs";
 import { cn } from "cn";
 
 export type InputClassNames = {
@@ -23,15 +25,17 @@ export type InputClassNames = {
 
 export interface InputProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
-  "value" | "defaultValue" | "onChange"
+  "value" | "defaultValue" | "onChange" | "size"
 > {
+  size?: Size;
+  /** The native `size` attribute (visible width in characters). */
+  htmlSize?: number;
   label?: string;
   value?: string;
   defaultValue?: string;
   onChange?: (value: string) => void;
   /** Truthy error triggers a shake, red border and (if a string) a message. */
   error?: string | boolean;
-  /** Reserve one message line so validation does not shift nearby content. */
   reserveErrorLine?: boolean;
   success?: boolean;
   leftIcon?: ReactNode;
@@ -39,6 +43,57 @@ export interface InputProps extends Omit<
   className?: string;
   classNames?: InputClassNames;
 }
+
+// A 20px radius on a 36px field would read as a pill.
+const FIELD_RADIUS: Record<Size, string> = {
+  compact: "rounded-lg",
+  default: "rounded-lg",
+  large: "rounded-xl",
+};
+
+// `controlPx` split per side so it can't override the icon clearance.
+const ICON_INSET: Record<
+  Size,
+  { left: string; right: string; padLeft: string; padRight: string; pl: string; pr: string }
+> = {
+  compact: {
+    left: "left-2.5",
+    right: "right-2.5",
+    padLeft: "pl-8",
+    padRight: "pr-8",
+    pl: "pl-2.5",
+    pr: "pr-2.5",
+  },
+  default: {
+    left: "left-3",
+    right: "right-3",
+    padLeft: "pl-9",
+    padRight: "pr-9",
+    pl: "pl-3",
+    pr: "pr-3",
+  },
+  large: {
+    left: "left-4",
+    right: "right-4",
+    padLeft: "pl-11",
+    padRight: "pr-11",
+    pl: "pl-4",
+    pr: "pr-4",
+  },
+};
+
+const ICON_SIZE: Record<Size, string> = {
+  compact: "[&_svg]:size-3.5",
+  default: "[&_svg]:size-4",
+  large: "[&_svg]:size-[18px]",
+};
+
+// A button in the right slot is a full-height square, so its hit area is the whole edge.
+const SLOT_BUTTON: Record<Size, string> = {
+  compact: "[&_button]:size-8",
+  default: "[&_button]:size-9",
+  large: "[&_button]:size-11",
+};
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   {
@@ -58,10 +113,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     disabled,
     id: idProp,
     type,
+    size,
+    htmlSize,
     ...rest
   },
   ref,
 ) {
+  const tokens = useSize(size);
   const reactId = useId();
   const id = idProp ?? reactId;
   const reduce = useReducedMotion();
@@ -77,12 +135,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const hasError = Boolean(error);
   const errorMessage = typeof error === "string" ? error : null;
 
-  // Right edge shows the success check, otherwise the caller's right icon.
   const rightSlot = success ? null : rightIcon;
 
-  // Shake the field when an error appears.
   useEffect(() => {
     if (!fieldRef.current || reduce || !hasError) return;
+    // A keyframed shake, not travel to a target: its length is the gesture, not a tier.
     animate(fieldRef.current, { x: [0, -6, 6, -4, 4, -2, 0] }, { duration: 0.45 });
   }, [hasError, reduce]);
 
@@ -96,7 +153,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       {label ? (
         <label
           htmlFor={id}
-          className={cn("px-1 text-sm font-medium text-foreground", classNames?.label)}
+          className={cn("px-1 font-medium text-foreground", tokens.type.body, classNames?.label)}
         >
           {label}
         </label>
@@ -106,7 +163,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         ref={fieldRef}
         data-state={hasError ? "error" : success ? "success" : focused ? "focused" : "idle"}
         className={cn(
-          "relative h-11 overflow-hidden rounded-xl border transition-colors duration-200",
+          "relative overflow-hidden border transition-colors duration-(--duration-fast)",
+          tokens.control,
+          FIELD_RADIUS[tokens.size],
           "border-border",
           focused && !hasError && "border-brand/40",
           hasError && "border-destructive ring-2 ring-destructive/25",
@@ -117,7 +176,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         {leftIcon ? (
           <span
             className={cn(
-              "pointer-events-none absolute top-1/2 left-3 flex -translate-y-1/2 items-center text-muted-foreground [&_svg]:h-4 [&_svg]:w-4",
+              "pointer-events-none absolute top-1/2 flex -translate-y-1/2 items-center text-muted-foreground",
+              ICON_INSET[tokens.size].left,
+              ICON_SIZE[tokens.size],
               classNames?.leftIcon,
             )}
           >
@@ -129,6 +190,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           ref={ref}
           id={id}
           type={type}
+          size={htmlSize}
           value={value}
           disabled={disabled}
           aria-invalid={hasError || undefined}
@@ -144,10 +206,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             onBlur?.(event);
           }}
           className={cn(
-            "peer h-full w-full bg-transparent text-base leading-6 text-foreground caret-foreground outline-none",
-            "placeholder:text-muted-foreground/60",
-            leftIcon ? "pl-10" : "pl-3.5",
-            rightSlot || success ? "pr-10" : "pr-3.5",
+            "peer h-full w-full bg-transparent text-foreground caret-foreground outline-none",
+            "placeholder:text-muted-foreground",
+            tokens.field,
+            leftIcon ? ICON_INSET[tokens.size].padLeft : ICON_INSET[tokens.size].pl,
+            rightSlot || success ? ICON_INSET[tokens.size].padRight : ICON_INSET[tokens.size].pr,
             disabled && "cursor-not-allowed",
             classNames?.input,
           )}
@@ -158,7 +221,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             viewBox="0 0 24 24"
             fill="none"
             className={cn(
-              "absolute top-1/2 right-3.5 h-5 w-5 -translate-y-1/2 text-(--color-success)",
+              "absolute top-1/2 -translate-y-1/2 text-(--color-success)",
+              ICON_INSET[tokens.size].right,
+              tokens.size === "compact" ? "size-4" : "size-5",
               classNames?.successIcon,
             )}
           >
@@ -170,13 +235,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
               strokeLinejoin="round"
               initial={reduce ? { pathLength: 1 } : { pathLength: 0 }}
               animate={{ pathLength: 1 }}
-              transition={{ duration: 0.35, ease: "easeOut" }}
+              transition={spring.moderate}
             />
           </motion.svg>
         ) : rightSlot ? (
           <span
             className={cn(
-              "absolute top-0 right-0 flex h-full items-center text-muted-foreground [&_button]:grid [&_button]:size-11 [&_button]:place-items-center [&_svg]:h-4 [&_svg]:w-4",
+              "absolute top-0 right-0 flex h-full items-center text-muted-foreground [&_button]:grid [&_button]:place-items-center",
+              SLOT_BUTTON[tokens.size],
+              ICON_SIZE[tokens.size],
               classNames?.rightIcon,
             )}
           >
@@ -193,9 +260,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
               role="alert"
               initial={reduce ? { opacity: 0 } : { opacity: 0, y: -4, filter: "blur(4px)" }}
               animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={reduce ? { opacity: 0 } : { opacity: 0, y: -4, filter: "blur(4px)" }}
-              transition={{ duration: 0.2 }}
-              className={cn("px-1 text-xs text-destructive", classNames?.errorMessage)}
+              exit={
+                reduce
+                  ? { opacity: 0, transition: springExit.fast }
+                  : { opacity: 0, y: -4, filter: "blur(4px)", transition: springExit.fast }
+              }
+              transition={spring.fast}
+              className={cn("px-1 text-destructive", tokens.type.caption, classNames?.errorMessage)}
             >
               {errorMessage}
             </motion.p>

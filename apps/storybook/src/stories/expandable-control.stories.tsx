@@ -11,9 +11,11 @@ const meta = {
     label: "Explain this build failure",
     defaultExpanded: false,
     disabled: false,
+    size: "default",
     onExpandedChange: fn(),
   },
   argTypes: {
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
     label: { control: "text" },
     disabled: { control: "boolean" },
     icon: { control: false },
@@ -27,6 +29,8 @@ export const Collapsed: Story = {};
 
 export const Expanded: Story = { args: { defaultExpanded: true } };
 
+export const Compact: Story = { args: { size: "compact", defaultExpanded: true } };
+
 export const Disabled: Story = { args: { disabled: true } };
 
 export const Chip: Story = {
@@ -36,6 +40,7 @@ export const Chip: Story = {
       actionIcon={<X className="size-4" />}
       actionLabel="Remove production filter"
       disabled={args.disabled}
+      size={args.size}
       onExpandedChange={args.onExpandedChange}
       onAction={fn()}
     />

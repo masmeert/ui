@@ -18,20 +18,33 @@ import {
   useRef,
   useState,
 } from "react";
+import { FluidHoverHighlight } from "@/components/fluid-hover-highlight";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHoverDomItems } from "@/hooks/use-fluid-hover-dom-items";
+import { type Size, useSize } from "@/lib/size";
+import { reducedTransition, spring, springExit } from "@/lib/springs";
+import { SURFACE_OFFSET, SurfaceProvider, useElevation } from "@/lib/surface";
 import { cn } from "cn";
 
-// Shared-layout morph: trigger box grows into the panel and back, one surface.
-const MORPH: Transition = { type: "spring", duration: 0.5, bounce: 0.22 };
-// Trigger and panel header share this row so the morph stays seamless.
-const ROW = "flex w-full items-center justify-between gap-2 px-3.5 py-2.5 text-sm";
+const MORPH_OPEN: Transition = spring.slow;
+const MORPH_CLOSE: Transition = springExit.slow;
+
+// The header sits inside the panel's border, so it's the control height minus 2px.
+const ROW = "flex w-full items-center justify-between";
+const HEADER_HEIGHT: Record<Size, string> = {
+  compact: "h-[30px]",
+  default: "h-[34px]",
+  large: "h-[42px]",
+};
 
 const LIST: Variants = {
   hidden: {},
+  // Orchestration offsets, not durations.
   show: { transition: { staggerChildren: 0.035, delayChildren: 0.08 } },
 };
 const ITEM: Variants = {
   hidden: { opacity: 0, y: -6, filter: "blur(3px)" },
-  show: { opacity: 1, y: 0, filter: "blur(0px)" },
+  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: spring.moderate },
 };
 
 interface MorphContextValue {
@@ -49,6 +62,7 @@ interface MorphContextValue {
   triggerId: string;
   listId: string;
   disabled: boolean;
+  size: Size | undefined;
 }
 
 const MorphContext = createContext<MorphContextValue | null>(null);
@@ -64,20 +78,18 @@ export interface MorphingSelectProps {
   defaultValue?: string;
   onValueChange?: (value: string) => void;
   disabled?: boolean;
+  size?: Size;
   className?: string;
   children: ReactNode;
 }
 
-/**
- * Select whose trigger morphs into the panel via a shared layoutId — instead of
- * a separate dropdown opening, the trigger itself grows into the menu and
- * shrinks back, never detaching. Composable like `Select` (the gooey variant).
- */
+/** A select whose trigger morphs into the panel via a shared layoutId. */
 export function MorphingSelect({
   value,
   defaultValue,
   onValueChange,
   disabled = false,
+  size,
   className,
   children,
 }: MorphingSelectProps) {
@@ -86,8 +98,7 @@ export function MorphingSelect({
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [internal, setInternal] = useState(defaultValue);
-  // ref-counted: items render twice (hidden registrar + open panel), so a
-  // label is only dropped once every copy with that value has unmounted.
+  // Ref-counted: items render twice (hidden registrar + open panel).
   const [labels, setLabels] = useState<Map<string, { label: string; count: number }>>(new Map());
   const [placeholder, setPlaceholder] = useState("Select");
 
@@ -151,8 +162,21 @@ export function MorphingSelect({
       triggerId: `${baseId}-trigger`,
       listId: `${baseId}-list`,
       disabled,
+      size,
     }),
-    [current, open, select, register, unregister, labels, placeholder, reduce, baseId, disabled],
+    [
+      current,
+      open,
+      select,
+      register,
+      unregister,
+      labels,
+      placeholder,
+      reduce,
+      baseId,
+      disabled,
+      size,
+    ],
   );
 
   return (
@@ -171,7 +195,7 @@ export interface MorphingSelectValueProps {
 
 export function MorphingSelectValue({ placeholder, className }: MorphingSelectValueProps) {
   const ctx = useMorphContext("MorphingSelectValue");
-  // surface the placeholder so the morph header (rendered by content) matches
+  // The panel header renders in content and needs the placeholder.
   const { setPlaceholder } = ctx;
   useEffect(() => {
     if (placeholder) setPlaceholder(placeholder);
@@ -191,13 +215,14 @@ export interface MorphingSelectTriggerProps {
 
 export function MorphingSelectTrigger({ className, children }: MorphingSelectTriggerProps) {
   const ctx = useMorphContext("MorphingSelectTrigger");
+  const tokens = useSize(ctx.size);
+  const row = cn(ROW, tokens.control, tokens.controlPx, tokens.text, tokens.gap);
   return (
     <>
-      {/* invisible sizer reserves the closed height (the morph surface is
-          absolute, so this keeps surrounding layout from shifting) */}
-      <div aria-hidden inert className={cn(ROW, "invisible rounded-xl border border-border")}>
+      {/* Reserves the closed height; the morph surface is absolute. */}
+      <div aria-hidden inert className={cn(row, "invisible rounded-xl border border-border")}>
         {children}
-        <ChevronDown className="h-4 w-4" />
+        <ChevronDown size={tokens.icon} />
       </div>
 
       <AnimatePresence initial={false} mode="popLayout">
@@ -212,11 +237,12 @@ export function MorphingSelectTrigger({ className, children }: MorphingSelectTri
             aria-expanded={ctx.open}
             aria-controls={ctx.listId}
             onClick={() => ctx.setOpen(true)}
-            transition={ctx.reduce ? { duration: 0 } : MORPH}
+            // Plays when the trigger takes the shared layout back, i.e. on close.
+            transition={reducedTransition(MORPH_CLOSE, ctx.reduce)}
             style={{ borderRadius: 12 }}
             className={cn(
-              ROW,
-              "absolute inset-x-0 top-0 z-10 border border-border bg-background text-foreground transition-colors outline-none",
+              row,
+              "absolute inset-x-0 top-0 z-10 border border-border bg-background text-foreground transition-colors duration-(--duration-fast) outline-none",
               "hover:border-border-strong focus-visible:ring-4 focus-visible:ring-ring",
               "disabled:pointer-events-none disabled:opacity-50",
               className,
@@ -226,7 +252,7 @@ export function MorphingSelectTrigger({ className, children }: MorphingSelectTri
               {children}
             </motion.span>
             <motion.span layout="position" className="text-muted-foreground">
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown size={tokens.icon} />
             </motion.span>
           </motion.button>
         ) : null}
@@ -242,11 +268,21 @@ export interface MorphingSelectContentProps {
 
 export function MorphingSelectContent({ className, children }: MorphingSelectContentProps) {
   const ctx = useMorphContext("MorphingSelectContent");
+  const tokens = useSize(ctx.size);
+  const surface = useElevation(SURFACE_OFFSET.popover, { shadowLevel: 3 });
   const label = ctx.labelFor(ctx.value);
+  const listRef = useRef<HTMLUListElement>(null);
+  const hover = useFluidHover(listRef);
+  const { from, indexOf, refresh } = useFluidHoverDomItems(
+    hover,
+    listRef,
+    '[role="option"]',
+    '[aria-selected="true"]',
+  );
+  const { setActiveIndex } = hover;
   return (
     <>
-      {/* always-mounted, hidden — keeps item label registrations alive while
-          closed so the trigger shows the selected value before first open */}
+      {/* Keeps label registrations alive so the trigger shows the value before first open. */}
       <div className="hidden">{children}</div>
 
       <AnimatePresence initial={false} mode="popLayout">
@@ -257,21 +293,27 @@ export function MorphingSelectContent({ className, children }: MorphingSelectCon
             id={ctx.listId}
             role="listbox"
             aria-labelledby={ctx.triggerId}
-            transition={ctx.reduce ? { duration: 0 } : MORPH}
+            transition={reducedTransition(MORPH_OPEN, ctx.reduce)}
             style={{ borderRadius: 12 }}
             className={cn(
-              "absolute inset-x-0 top-0 z-30 overflow-hidden border border-border bg-background shadow-panel",
+              "absolute inset-x-0 top-0 z-(--z-popup) overflow-hidden border border-border",
+              surface.className,
               className,
             )}
           >
-            {/* header mirrors the trigger (continuous morph) and collapses the
-                panel back into the trigger when clicked */}
             <motion.button
               type="button"
               layout="position"
               aria-expanded
               onClick={() => ctx.setOpen(false)}
-              className={cn(ROW, "outline-none")}
+              className={cn(
+                ROW,
+                HEADER_HEIGHT[tokens.size],
+                tokens.controlPx,
+                tokens.text,
+                tokens.gap,
+                "outline-none",
+              )}
             >
               <span
                 className={cn(
@@ -283,25 +325,39 @@ export function MorphingSelectContent({ className, children }: MorphingSelectCon
               </span>
               <motion.span
                 animate={{ rotate: 180 }}
-                transition={ctx.reduce ? { duration: 0 } : MORPH}
+                transition={reducedTransition(spring.moderate, ctx.reduce)}
                 className="text-muted-foreground"
               >
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown size={tokens.icon} />
               </motion.span>
             </motion.button>
 
-            {/* `layout="position"` counter-scales these against the surface's
-                size morph, which otherwise squashes the rows and the rule. */}
+            {/* `layout="position"` keeps the surface's size morph from squashing these. */}
             <motion.div layout="position" className="h-px bg-border" />
 
+            {/* The stagger and morph run on transforms, which ResizeObserver misses: refresh once they land. */}
             <motion.ul
+              ref={listRef}
               layout="position"
               initial="hidden"
               animate="show"
               variants={ctx.reduce ? undefined : LIST}
-              className="p-1"
+              onAnimationComplete={refresh}
+              onLayoutAnimationComplete={refresh}
+              {...hover.handlers}
+              // Only a visible focus moves the highlight; a click's focus is already lit by the pointer.
+              onFocus={(event) => {
+                if (event.target.matches(":focus-visible")) setActiveIndex(indexOf(event.target));
+              }}
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                  setActiveIndex(null);
+                }
+              }}
+              className="relative p-1"
             >
-              {children}
+              <FluidHoverHighlight hover={hover} from={from} />
+              <SurfaceProvider value={surface.level}>{children}</SurfaceProvider>
             </motion.ul>
           </motion.div>
         ) : null}
@@ -324,6 +380,7 @@ export function MorphingSelectItem({
   children,
 }: MorphingSelectItemProps) {
   const ctx = useMorphContext("MorphingSelectItem");
+  const tokens = useSize(ctx.size);
   const selected = ctx.value === value;
   const label = typeof children === "string" ? children : value;
 
@@ -334,7 +391,7 @@ export function MorphingSelectItem({
   }, [register, unregister, value, label]);
 
   return (
-    <motion.li variants={ctx.reduce ? undefined : ITEM}>
+    <motion.li variants={ctx.reduce ? undefined : ITEM} className="relative">
       <button
         type="button"
         role="option"
@@ -342,16 +399,19 @@ export function MorphingSelectItem({
         disabled={disabled}
         onClick={() => ctx.select(value)}
         className={cn(
-          "flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors outline-none",
+          "flex w-full items-center justify-between rounded-lg text-left transition-colors duration-(--duration-fast) outline-none",
+          tokens.row,
+          tokens.text,
+          tokens.gap,
           selected
-            ? "bg-muted text-foreground"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:bg-muted",
+            ? "bg-selected text-foreground"
+            : "text-muted-foreground data-fluid-hover-active:text-foreground",
           "disabled:pointer-events-none disabled:opacity-50",
           className,
         )}
       >
         {children}
-        {selected ? <Check className="h-3.5 w-3.5 shrink-0" /> : null}
+        {selected ? <Check aria-hidden size={tokens.icon} className="shrink-0" /> : null}
       </button>
     </motion.li>
   );

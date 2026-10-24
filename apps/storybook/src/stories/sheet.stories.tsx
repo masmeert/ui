@@ -57,10 +57,10 @@ function ThreadDetailsSheet({ onOpenChange, ...props }: SheetProps) {
           <dd className="text-foreground">4</dd>
         </dl>
         <div className="mt-auto flex justify-end gap-2 border-t border-border p-4">
-          <Button variant="ghost" size="sm" onClick={() => changeOpen(false)}>
+          <Button variant="ghost" size="compact" onClick={() => changeOpen(false)}>
             Close
           </Button>
-          <Button size="sm">Open pull request</Button>
+          <Button size="compact">Open pull request</Button>
         </div>
       </Sheet>
     </>

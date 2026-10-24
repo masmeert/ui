@@ -52,12 +52,12 @@ function InviteTeammatesModal(props: ComponentProps<typeof UnfoldModalContent>) 
           />
           <div className="flex justify-end gap-2">
             <UnfoldModalClose>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="compact">
                 Cancel
               </Button>
             </UnfoldModalClose>
             <UnfoldModalClose>
-              <Button size="sm" disabled={!email.includes("@")}>
+              <Button size="compact" disabled={!email.includes("@")}>
                 Send invite
               </Button>
             </UnfoldModalClose>
@@ -91,7 +91,7 @@ function ReleaseNotesModal(props: ComponentProps<typeof UnfoldModalContent>) {
             </ul>
             <div className="flex justify-end">
               <UnfoldModalClose>
-                <Button size="sm">Got it</Button>
+                <Button size="compact">Got it</Button>
               </UnfoldModalClose>
             </div>
           </div>

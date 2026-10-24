@@ -21,7 +21,9 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { EASE_OUT, SPRING_GLIDE, SPRING_PRESS } from "@/lib/ease";
+import { SPRING_GLIDE } from "@/lib/ease";
+import { INSTANT, reducedTransition, spring, springExit } from "@/lib/springs";
+import { typeClass } from "@/lib/type-scale";
 import { TOUCH_GESTURE_CLASS, capturePointer } from "@/lib/touch";
 import { cn } from "cn";
 
@@ -49,7 +51,7 @@ export interface MorphingTabsProps {
   value?: string | null;
   defaultValue?: string | null;
   onValueChange?: (id: string | null) => void;
-  /** Called once after a pointer drag or keyboard reorder completes. */
+  /** Fires once per completed pointer drag or keyboard reorder. */
   onOrderChange?: (ids: string[]) => void;
   /** Enables the close affordance on every tab when provided. */
   onClose?: (id: string) => void;
@@ -96,8 +98,7 @@ type SpringTabProps = {
 };
 
 const DRAG_THRESHOLD = 5;
-// The design width of a tab, and the narrowest it may shrink to before the
-// label stops reading. See `tabWidth` in MorphingTabs.
+// Design width, and the floor below which a truncated label stops reading.
 const MAX_TAB_WIDTH = 176;
 const MIN_TAB_WIDTH = 96;
 const TAB_HEIGHT = 56;
@@ -107,6 +108,10 @@ const RAIL_HEIGHT = 80;
 const SURFACE_INSET = 16;
 const LIQUID_JOIN = 24;
 const PANEL_RADIUS = 28;
+
+// The inverted rail has no muted token; an opaque mix reads the same over notch, hover and rail.
+const ON_RAIL_MUTED =
+  "text-[color:color-mix(in_oklab,var(--primary-foreground)_70%,var(--primary))]";
 
 function sameOrder(a: string[], b: string[]) {
   return a.length === b.length && a.every((id, index) => id === b[index]);
@@ -184,8 +189,6 @@ function SpringTab({
 }: SpringTabProps) {
   const target = useMotionValue(targetLeft);
   const position = useSpring(target, SPRING_GLIDE);
-  // Slots re-divide the panel when a tab opens or closes; gliding the width
-  // with the position keeps the tab and its notch from snapping to size.
   const width = useSpring(tabWidth, SPRING_GLIDE);
   const settledTransform = useTransform(
     reduce ? target : position,
@@ -309,8 +312,7 @@ export function MorphingTabs({
   const surfaceLeft = useMotionValue(SURFACE_INSET);
   const surfacePlacedRef = useRef(false);
 
-  // Before paint: for one painted frame the rendered items and `order` would
-  // disagree, and tabs would start gliding toward the wrong slots.
+  // Layout effect: otherwise one frame paints with stale `order` and tabs glide to wrong slots.
   useLayoutEffect(() => {
     setOrder((current) => {
       const available = new Set(itemIds);
@@ -338,15 +340,8 @@ export function MorphingTabs({
       : firstEnabledItem;
   const activeId = activeItem?.id ?? null;
 
-  // The rail cannot scroll: the liquid surface is one continuous shape spanning
-  // the panel, so its notch has to stay over the tab that cut it. Slots narrow
-  // to fit the panel instead, in that order of sacrifice:
-  //   1. the design width, down to a floor where a truncated label still reads;
-  //   2. the gap between slots, so the floor survives one panel narrower;
-  //   3. the floor itself — a cramped tab is still tappable, a clipped one is
-  //      not reachable at all.
-  // Every tier fits inside the panel by construction, so no tab is ever cut off
-  // and the notch never has to be clamped away from the tab that cut it.
+  // The rail can't scroll (the notch must stay over its tab), so slots shrink to fit:
+  // first the width down to MIN_TAB_WIDTH, then the gap, then below the floor.
   const { tabWidth, slotGap } = useMemo(() => {
     const count = order.length;
     if (!surfaceWidth || count === 0) {
@@ -441,8 +436,6 @@ export function MorphingTabs({
 
     if (draggingId) return;
 
-    // The notch starts under the active tab rather than gliding in from the
-    // first slot.
     if (!surfacePlacedRef.current) {
       surfaceLeft.jump(slotLefts[activeVisualIndex]);
       surfacePlacedRef.current = surfaceWidth > 0;
@@ -452,7 +445,7 @@ export function MorphingTabs({
     surfaceAnimationRef.current = animateValue(
       surfaceLeft,
       slotLefts[activeVisualIndex],
-      reduce ? { duration: 0 } : SPRING_GLIDE,
+      reduce ? INSTANT : SPRING_GLIDE,
     );
   }, [activeId, activeVisualIndex, draggingId, reduce, slotLefts, surfaceLeft, surfaceWidth]);
 
@@ -561,7 +554,7 @@ export function MorphingTabs({
 
       drag.finishing = true;
       const targetLeft = drag.slotLefts[drag.targetIndex];
-      const controls = animateValue(dragLeft, targetLeft, reduce ? { duration: 0 } : SPRING_GLIDE);
+      const controls = animateValue(dragLeft, targetLeft, reduce ? INSTANT : SPRING_GLIDE);
       dragAnimationRef.current = controls;
 
       void controls.then(async () => {
@@ -676,8 +669,7 @@ export function MorphingTabs({
           aria-orientation="horizontal"
           className={cn("relative z-30 flex h-full gap-3 md:gap-4", classNames?.rail)}
         >
-          {/* Tabs wait for the first measurement, or they mount at the
-              unmeasured design width and glide into their real slots. */}
+          {/* Wait for measurement, or tabs mount at design width and glide into place. */}
           {surfaceWidth > 0 &&
             orderedItems.map((item, index) => {
               const isActive = item.id === activeId;
@@ -703,8 +695,7 @@ export function MorphingTabs({
                   surfaceClassName={classNames?.activeTab}
                   zIndex={isDragging ? 30 : isActive ? 20 : 1}
                   className={cn(
-                    // The drag is ours end to end, so iPadOS must not answer the
-                    // press with its callout or a native drag of the label.
+                    // Suppress the iPadOS callout and native label drag.
                     "group absolute top-0 left-0 flex touch-pan-y items-stretch",
                     TOUCH_GESTURE_CLASS,
                     item.disabled && "cursor-not-allowed",
@@ -715,14 +706,8 @@ export function MorphingTabs({
                   onPointerMove={moveDrag}
                   onPointerUp={(event) => finishDrag(event.pointerId)}
                   onPointerCancel={(event) => finishDrag(event.pointerId)}
-                  // A touch is implicitly captured by whatever it landed on —
-                  // here the label inside the tab — so the moment the drag takes
-                  // the capture for the tab itself, that child *loses* it, and
-                  // the notification bubbles straight back up to this handler.
-                  // Ending the drag on it kills the gesture on the frame it
-                  // starts. Only the tab losing its own capture means the
-                  // platform took the pointer away. A mouse has no implicit
-                  // capture, which is why this only ever bit on a real finger.
+                  // Touch implicitly captures to the child label, which loses it (and bubbles here)
+                  // when the drag captures the tab. Only the tab's own loss ends the drag.
                   onLostPointerCapture={(event) => {
                     if (event.target !== event.currentTarget) return;
                     finishDrag(event.pointerId);
@@ -735,11 +720,12 @@ export function MorphingTabs({
                     }}
                     className="relative flex w-full items-stretch"
                   >
+                    {/* Per-tab hover: tabs move on transforms, and bg-hover vanishes on the inverted rail. */}
                     {!isActive ? (
                       <span
                         aria-hidden
                         className={cn(
-                          "absolute inset-x-0 top-0 bottom-2 rounded-[1.25rem] transition-colors duration-200",
+                          "absolute inset-x-0 top-0 bottom-2 rounded-[1.25rem] transition-colors duration-(--duration-fast)",
                           isDragging
                             ? "bg-primary-foreground/[0.12]"
                             : "bg-transparent group-hover:bg-primary-foreground/[0.06]",
@@ -766,17 +752,19 @@ export function MorphingTabs({
                       }}
                       onKeyDown={(event) => handleTabKeyDown(item.id, event)}
                       className={cn(
-                        "group relative z-10 flex h-full w-full min-w-0 items-center gap-2 overflow-hidden rounded-t-[1.5rem] px-3 text-left transition-colors outline-none",
+                        "group relative z-10 flex h-full w-full min-w-0 items-center gap-2 overflow-hidden rounded-t-[1.5rem] px-3 text-left transition-colors duration-(--duration-fast) outline-none",
                         isActive
                           ? "text-foreground"
-                          : "pb-2 text-primary-foreground/70 hover:text-primary-foreground",
+                          : cn("pb-2 hover:text-primary-foreground", ON_RAIL_MUTED),
+                        // Clear the close button overlaid on the right edge.
+                        onClose && "pr-9",
                         classNames?.tab,
                       )}
                     >
                       <span
                         aria-hidden
                         className={cn(
-                          "pointer-events-none absolute inset-x-1 top-1 opacity-0 transition-opacity group-focus-visible:opacity-100",
+                          "pointer-events-none absolute inset-x-1 top-1 opacity-0 transition-opacity duration-(--duration-fast) group-focus-visible:opacity-100",
                           isActive
                             ? "bottom-0 rounded-t-[1.25rem] border-x-2 border-t-2 border-foreground/20"
                             : "bottom-2 rounded-[1rem] border-2 border-primary-foreground/60",
@@ -795,7 +783,9 @@ export function MorphingTabs({
                       ) : null}
                       <span
                         className={cn(
-                          "min-w-0 truncate text-base leading-none font-medium tracking-[-0.025em] whitespace-nowrap",
+                          "min-w-0 truncate font-medium whitespace-nowrap",
+                          typeClass("subtitle"),
+                          "leading-none",
                           classNames?.label,
                         )}
                       >
@@ -813,9 +803,12 @@ export function MorphingTabs({
                           onClose(item.id);
                         }}
                         className={cn(
-                          "absolute top-1/2 right-2 z-20 grid size-6 -translate-y-1/2 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:ring-4 focus-visible:ring-current focus-visible:outline-none",
+                          "absolute top-1/2 right-2 z-20 grid size-6 -translate-y-1/2 place-items-center rounded-full text-muted-foreground transition-colors duration-(--duration-fast) hover:bg-hover hover:text-foreground focus-visible:ring-4 focus-visible:ring-current focus-visible:outline-none",
                           !isActive &&
-                            "top-[calc(50%-4px)] text-primary-foreground/45 hover:bg-primary-foreground/[0.08] hover:text-primary-foreground/80",
+                            cn(
+                              "top-[calc(50%-4px)] hover:bg-primary-foreground/[0.08] hover:text-primary-foreground",
+                              ON_RAIL_MUTED,
+                            ),
                           classNames?.close,
                         )}
                       >
@@ -846,18 +839,15 @@ export function MorphingTabs({
               animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
               exit={
                 reduce
-                  ? {
-                      opacity: 0,
-                      transition: { duration: 0.08, ease: EASE_OUT },
-                    }
+                  ? { opacity: 0, transition: springExit.fast }
                   : {
                       opacity: 0,
                       y: -5,
                       filter: "blur(5px)",
-                      transition: { duration: 0.12, ease: EASE_OUT },
+                      transition: springExit.moderate,
                     }
               }
-              transition={reduce ? { duration: 0.12, ease: EASE_OUT } : SPRING_PRESS}
+              transition={reducedTransition(spring.fast, reduce)}
               className="min-h-64"
             >
               {activeItem.content}

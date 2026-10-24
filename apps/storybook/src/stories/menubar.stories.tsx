@@ -21,7 +21,10 @@ import {
 const meta = {
   title: "Navigation/Menubar",
   component: Menubar,
-  args: { modal: true, loopFocus: true, disabled: false },
+  args: { modal: true, loopFocus: true, disabled: false, size: "default" },
+  argTypes: {
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
+  },
 } satisfies Meta<typeof Menubar>;
 
 export default meta;
@@ -116,5 +119,11 @@ export const Default: Story = {
 
 export const Disabled: Story = {
   args: { disabled: true },
+  render: (args) => <AppMenubar {...args} />,
+};
+
+/** The bar and every menu it opens on the compact step. */
+export const Compact: Story = {
+  args: { size: "compact" },
   render: (args) => <AppMenubar {...args} />,
 };

@@ -29,7 +29,7 @@ const meta = {
   },
   argTypes: {
     checked: { control: "boolean" },
-    size: { control: "inline-radio", options: ["default", "sm"] },
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
     disabled: { control: "boolean" },
     label: { control: "text" },
   },
@@ -44,9 +44,11 @@ export const Default: Story = {};
 
 export const Checked: Story = { args: { checked: true } };
 
-export const Small: Story = {
-  args: { size: "sm", checked: true, label: "Show build logs inline" },
+export const Compact: Story = {
+  args: { size: "compact", checked: true, label: "Show build logs inline" },
 };
+
+export const Large: Story = { args: { size: "large", checked: true } };
 
 export const WithoutLabel: Story = {
   args: { label: undefined, ariaLabel: "Enable preview deployments" },

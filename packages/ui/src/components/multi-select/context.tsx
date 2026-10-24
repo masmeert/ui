@@ -13,6 +13,7 @@ import {
   useState,
 } from "react";
 import { useActiveOption } from "@/hooks/use-active-option";
+import type { Size } from "@/lib/size";
 import { cn } from "cn";
 
 export type RegisteredMultiSelectItem = {
@@ -67,7 +68,10 @@ export type MultiSelectContextValue = {
   triggerRef: MutableRefObject<HTMLDivElement | null>;
   contentRef: MutableRefObject<HTMLDivElement | null>;
   inputRef: MutableRefObject<HTMLInputElement | null>;
-  activeLayoutId: string;
+  /** Registration order, stable while a query hides rows. -1 for an unknown value. */
+  indexOf: (value: string) => number;
+  valueAt: (index: number) => string | undefined;
+  size: Size | undefined;
 };
 
 export const MultiSelectContext = createContext<MultiSelectContextValue | null>(null);
@@ -105,6 +109,7 @@ export interface MultiSelectProps {
   onQueryChange?: (query: string) => void;
   filter?: MultiSelectFilter;
   disabled?: boolean;
+  size?: Size;
   className?: string;
 }
 
@@ -121,6 +126,7 @@ export function MultiSelect({
   onQueryChange,
   filter = defaultFilter,
   disabled = false,
+  size,
   className,
 }: MultiSelectProps) {
   const reduce = useReducedMotion() ?? false;
@@ -190,6 +196,8 @@ export function MultiSelect({
     });
   }, []);
 
+  // Closing clears `query`, but the exiting panel keeps filtering by the query it
+  // was open with so it doesn't repopulate mid-collapse.
   const [openQuery, setOpenQuery] = useState(query);
   if (open && openQuery !== query) setOpenQuery(query);
   const listQuery = open ? query : openQuery;
@@ -297,6 +305,12 @@ export function MultiSelect({
     };
   }, [open, updateOpen]);
 
+  const order = useMemo(() => Array.from(items.keys()), [items]);
+  const slots = useMemo(
+    () => new Map(order.map((itemValue, index) => [itemValue, index])),
+    [order],
+  );
+
   const activeItem = activeValue ? items.get(activeValue) : undefined;
   const context = useMemo<MultiSelectContextValue>(
     () => ({
@@ -326,7 +340,9 @@ export function MultiSelect({
       triggerRef,
       contentRef,
       inputRef,
-      activeLayoutId: `${baseId}-active`,
+      indexOf: (itemValue) => slots.get(itemValue) ?? -1,
+      valueAt: (index) => order[index],
+      size,
     }),
     [
       activeItem?.id,
@@ -337,11 +353,14 @@ export function MultiSelect({
       listQuery,
       moveActive,
       open,
+      order,
       query,
       reduce,
       registerItem,
       remove,
       setActiveValue,
+      size,
+      slots,
       toggle,
       toggleActive,
       unregisterItem,

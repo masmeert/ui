@@ -1,6 +1,7 @@
 import { animate, motion, useMotionValue, useReducedMotion, type PanInfo } from "motion/react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { TOUCH_GESTURE_CONTENT_CLASS } from "@/lib/touch";
+import { useSize } from "@/lib/size";
 import { cn } from "cn";
 
 export type SwipeSide = "left" | "right";
@@ -60,8 +61,7 @@ export interface SwipeableListProps {
   renderItem?: (item: SwipeableListItem) => ReactNode;
 }
 
-// Distance-based release spring keeps short rebounds and full reveals feeling
-// equally direct, closer to native mobile list interactions.
+// Physics, not a tier: it inherits the finger's release velocity.
 const ROW_SETTLE = {
   type: "spring",
   stiffness: 560,
@@ -152,7 +152,7 @@ function SwipeActionButton({
     >
       <span
         className={cn(
-          "grid h-9 w-9 place-items-center rounded-full transition-[background-color,color,transform] duration-150 group-hover:bg-background group-active:scale-95",
+          "grid h-9 w-9 place-items-center rounded-full transition-[background-color,color,transform] duration-(--duration-fast) group-hover:bg-hover group-active:scale-95",
           ACTION_TONE_CLASS[action.tone ?? "neutral"],
         )}
       >
@@ -185,6 +185,7 @@ function SwipeableListRow({
   renderItem?: (item: SwipeableListItem) => ReactNode;
 }) {
   const reduce = useReducedMotion();
+  const { type } = useSize();
   const x = useMotionValue(0);
   const animationRef = useRef<{ stop: () => void } | null>(null);
   const commandedTargetRef = useRef(0);
@@ -314,20 +315,30 @@ function SwipeableListRow({
       ) : null}
       <div className={cn("min-w-0 flex-1", classNames?.content)}>
         {item.title ? (
-          <div className={cn("truncate text-sm font-medium text-foreground", classNames?.title)}>
+          <div className={cn("truncate font-medium text-foreground", type.body, classNames?.title)}>
             {item.title}
           </div>
         ) : null}
         {item.description ? (
           <div
-            className={cn("mt-0.5 truncate text-xs text-muted-foreground", classNames?.description)}
+            className={cn(
+              "mt-0.5 truncate text-muted-foreground",
+              type.caption,
+              classNames?.description,
+            )}
           >
             {item.description}
           </div>
         ) : null}
       </div>
       {item.meta ? (
-        <div className={cn("shrink-0 text-xs font-medium text-muted-foreground", classNames?.meta)}>
+        <div
+          className={cn(
+            "shrink-0 font-medium text-muted-foreground",
+            type.caption,
+            classNames?.meta,
+          )}
+        >
           {item.meta}
         </div>
       ) : null}
@@ -384,12 +395,9 @@ function SwipeableListRow({
         onDragEnd={onDragEnd}
         style={{ x }}
         className={cn(
-          // `touch-pan-y`, not `touch-none`: the row owns the horizontal
-          // swipe, the page keeps the vertical scroll through it.
+          // `touch-pan-y`, not `touch-none`: the page keeps vertical scroll through the row.
           "relative z-10 min-h-[72px] cursor-grab touch-pan-y rounded-2xl border border-border bg-card px-4 py-3 active:cursor-grabbing",
-          // The swipe is the row's, but what it carries is the consumer's:
-          // selection is only suppressed where the platform runs its own press
-          // gestures, so a mouse can still select and copy the row's text.
+          // Content class, so a mouse can still select the row's text.
           TOUCH_GESTURE_CONTENT_CLASS,
           classNames?.surface,
         )}

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { TextShimmer } from "@masmeert/ui/text-shimmer";
 import { LoaderCircle } from "lucide-react";
+import { typeClass } from "@masmeert/ui/lib/type-scale";
 
 const meta = {
   title: "Motion/Text Shimmer",
@@ -8,7 +9,7 @@ const meta = {
   args: {
     children: "Deploying web-app to production…",
     duration: 2.5,
-    className: "text-sm font-medium",
+    className: typeClass("body"),
   },
   argTypes: {
     children: { control: "text" },
@@ -30,7 +31,7 @@ export const Heading: Story = {
   args: {
     as: "h2",
     children: "Building preview environment",
-    className: "text-2xl font-semibold tracking-tight",
+    className: `${typeClass("title")} font-semibold`,
   },
 };
 

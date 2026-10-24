@@ -19,6 +19,7 @@ const meta = {
   args: {
     className: "w-72",
     disabled: false,
+    size: "default",
     onValueChange: fn(),
     onOpenChange: fn(),
     children: (
@@ -61,6 +62,7 @@ const meta = {
   },
   argTypes: {
     disabled: { control: "boolean" },
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
     children: { control: false },
   },
   decorators: [
@@ -84,5 +86,7 @@ export const WithValue: Story = { args: { defaultValue: "acme/web" } };
 export const Filtered: Story = { args: { defaultOpen: true, defaultQuery: "infra" } };
 
 export const NoResults: Story = { args: { defaultOpen: true, defaultQuery: "kubernetes" } };
+
+export const Compact: Story = { args: { defaultValue: "acme/web", size: "compact" } };
 
 export const Disabled: Story = { args: { defaultValue: "acme/api", disabled: true } };

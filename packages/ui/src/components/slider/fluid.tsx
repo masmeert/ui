@@ -8,33 +8,34 @@ import {
 } from "motion/react";
 import { useEffect } from "react";
 
-import { SPRING_GLIDE, SPRING_PRESS } from "@/lib/ease";
+import { SPRING_GLIDE } from "@/lib/ease";
+import { type Size, useSize } from "@/lib/size";
+import { spring } from "@/lib/springs";
 import { type SliderOptions, useSlider } from "@/hooks/use-slider";
 import { TOUCH_GESTURE_CLASS } from "@/lib/touch";
 import { cn } from "cn";
 
 export interface FluidSliderProps extends SliderOptions {
-  /** Text shown on the left of the track. */
   label?: string;
-  /** Formats the value shown on the right. */
   format?: (value: number) => string;
+  size?: Size;
   className?: string;
 }
 
-/**
- * Thumbless slider: the whole pill is the control. The fill glides to the new
- * value behind a rounded liquid cap, and the label reads inverted wherever the
- * fill has covered it.
- */
+// The whole pill is the control, so it sits a step above the bounded controls.
+const PILL_HEIGHT: Record<Size, string> = { compact: "h-10", default: "h-12", large: "h-14" };
+
+/** Thumbless slider: the whole pill is the control, and the label inverts under the fill. */
 export function FluidSlider({
   label,
-  // The value arrives already snapped to the step. Rounding it again would
-  // only make the label and the announcement disagree with aria-valuenow.
+  // Already snapped to the step; rounding would disagree with aria-valuenow.
   format = (v) => `${v}%`,
+  size,
   className,
   ...options
 }: FluidSliderProps) {
   const reduce = useReducedMotion();
+  const tokens = useSize(size);
   const { percent, current, dragging, trackProps, sliderProps } = useSlider({
     ...options,
     formatValueText: options.formatValueText ?? format,
@@ -46,9 +47,7 @@ export function FluidSlider({
   }, [percent, target]);
   const smooth = useSpring(target, SPRING_GLIDE);
   const pos = reduce ? target : smooth;
-  // Reveal the fill by clipping a full-width layer rather than animating its
-  // width: at 0% the clip is empty, so no hairline of a sub-pixel-wide box is
-  // left behind, and the label inside is never scaled or re-laid out.
+  // Clip rather than animate width: no sub-pixel hairline at 0%, and the label never re-lays out.
   const uncovered = useTransform(pos, (v) => 100 - v);
   const clipPath = useMotionTemplate`inset(0 ${uncovered}% 0 0 round 9999px)`;
 
@@ -63,31 +62,38 @@ export function FluidSlider({
     <motion.div
       {...trackProps}
       animate={reduce ? undefined : { scale: dragging ? 1.03 : 1 }}
-      transition={SPRING_PRESS}
+      transition={spring.fast}
       className={cn(
-        "relative flex h-12 w-full touch-none overflow-hidden rounded-full bg-muted",
+        "relative flex w-full touch-none overflow-hidden rounded-full bg-muted",
+        PILL_HEIGHT[tokens.size],
         TOUCH_GESTURE_CLASS,
         options.disabled ? "pointer-events-none opacity-50" : "cursor-grab active:cursor-grabbing",
         className,
       )}
     >
-      {/* uncovered label — sits on the muted track */}
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-5 text-sm font-medium text-foreground">
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-0 flex items-center justify-between px-5 font-medium text-foreground",
+          tokens.text,
+        )}
+      >
         {row}
       </div>
 
-      {/* fill + the same label, both clipped to the value, so the text inverts
-          as the fill covers it and lines up glyph for glyph with the copy
-          underneath. The clip's rounded right edge is the liquid cap. */}
+      {/* The same label clipped with the fill, so it inverts glyph for glyph. */}
       <motion.div className="absolute inset-0" style={{ clipPath }}>
         <div className="absolute inset-0 bg-foreground" />
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-5 text-sm font-medium text-background">
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-0 flex items-center justify-between px-5 font-medium text-background",
+            tokens.text,
+          )}
+        >
           {row}
         </div>
       </motion.div>
 
-      {/* focusable, keyboard-controlled handle surface. The ring is inset — an
-          outset one is clipped away by the track's overflow-hidden. */}
+      {/* Inset ring: an outset one is clipped by the track's overflow-hidden. */}
       <button
         type="button"
         {...sliderProps}

@@ -1,27 +1,31 @@
 import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "motion/react";
 import { useEffect, useLayoutEffect, useState } from "react";
 
-import { SPRING_GLIDE, SPRING_PRESS } from "@/lib/ease";
+import { SPRING_GLIDE } from "@/lib/ease";
+import { type Size, useSize } from "@/lib/size";
+import { spring } from "@/lib/springs";
 import { type SliderOptions, useSlider } from "@/hooks/use-slider";
 import { TOUCH_GESTURE_CLASS } from "@/lib/touch";
 import { cn } from "cn";
 
 export interface RangeSliderProps extends SliderOptions {
-  /** Render a tick dot at each step. */
   showTicks?: boolean;
+  size?: Size;
   className?: string;
 }
 
-export function RangeSlider({ showTicks = true, className, ...options }: RangeSliderProps) {
+const HANDLE_HEIGHT: Record<Size, string> = { compact: "h-5", default: "h-6", large: "h-8" };
+
+export function RangeSlider({ showTicks = true, size, className, ...options }: RangeSliderProps) {
   const reduce = useReducedMotion();
+  const tokens = useSize(size);
   const { percent, dragging, min, max, step, trackProps, sliderProps } = useSlider(options);
   const [trackWidth, setTrackWidth] = useState(292);
   useLayoutEffect(() => {
     const track = trackProps.ref.current;
     if (!track) return;
-    // Layout width, not getBoundingClientRect: a parent scaling in (e.g. a popover
-    // opening at 0.96) would shrink the rect, and ResizeObserver never re-fires
-    // for transforms, so the thumb would stay short of its ticks.
+    // Layout width, not getBoundingClientRect: a parent scaling in shrinks the rect,
+    // and ResizeObserver never re-fires for transforms.
     const measure = () => {
       const width = track.offsetWidth;
       if (width > 0) setTrackWidth(width);
@@ -32,7 +36,6 @@ export function RangeSlider({ showTicks = true, className, ...options }: RangeSl
     return () => observer.disconnect();
   }, [trackProps.ref]);
 
-  // Spring-smoothed position drives both the thumb and the fill.
   const target = useMotionValue(percent);
   useEffect(() => {
     target.set(percent);
@@ -40,17 +43,14 @@ export function RangeSlider({ showTicks = true, className, ...options }: RangeSl
   const smooth = useSpring(target, SPRING_GLIDE);
   const pos = reduce ? target : smooth;
   const thumbX = useTransform(pos, (p) => 8 + (Math.max(0, trackWidth - 20) * p) / 100);
-  // Match InlineSlider: the 4px handle starts 8px inside the track, and
-  // the rounded fill extends 8px past its left edge. Translate a full-size
-  // fill inside the 2px inset clip so its corner never stretches.
+  // The 4px handle starts 8px inside the track and the fill extends 8px past it.
+  // Translating a full-size fill inside the inset clip keeps its corner from stretching.
   const fillX = useTransform(pos, (p) =>
     p >= 100 ? "0%" : `calc(${p - 100}% + ${14 - 0.16 * p}px)`,
   );
 
-  // Floor rather than round, so a range the step does not divide (0 to 10 by 4)
-  // stops its dots at the last whole step instead of drawing one past max.
-  // toFixed comes first because 0.3/0.1 is 2.9999999999999996, which would
-  // floor to 2 and drop the last dot.
+  // Floor so an undivided range stops at the last whole step; toFixed first because
+  // 0.3/0.1 is 2.9999999999999996.
   const steps = Math.floor(Number(((max - min) / step).toFixed(6)));
   const ticks =
     showTicks && steps > 0 && steps <= 50
@@ -61,7 +61,8 @@ export function RangeSlider({ showTicks = true, className, ...options }: RangeSl
     <div
       {...trackProps}
       className={cn(
-        "relative flex h-10 w-full touch-none items-center overflow-hidden rounded-lg bg-muted",
+        "relative flex w-full touch-none items-center overflow-hidden rounded-lg bg-muted",
+        tokens.control,
         TOUCH_GESTURE_CLASS,
         options.disabled ? "pointer-events-none opacity-50" : "cursor-grab active:cursor-grabbing",
         className,
@@ -88,12 +89,14 @@ export function RangeSlider({ showTicks = true, className, ...options }: RangeSl
         })}
       </div>
 
-      {/* Keep the handle inside the rounded progress fill at both ends. */}
       <motion.div
         {...sliderProps}
         animate={reduce ? undefined : { scaleY: dragging ? 1.15 : 1 }}
-        transition={SPRING_PRESS}
-        className="absolute top-1/2 left-0 h-6 w-1 rounded-full bg-foreground ring-foreground/30 outline-none ring-inset focus-visible:ring-4"
+        transition={spring.fast}
+        className={cn(
+          "absolute top-1/2 left-0 w-1 rounded-full bg-foreground ring-foreground/30 outline-none ring-inset focus-visible:ring-4",
+          HANDLE_HEIGHT[tokens.size],
+        )}
         style={{ x: thumbX, y: "-50%" }}
       />
     </div>

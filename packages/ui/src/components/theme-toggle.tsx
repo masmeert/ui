@@ -17,17 +17,10 @@ export type RevealOrigin =
   | "bottom-up";
 
 export interface ThemeToggleOptions {
-  /** Whether the dark theme is showing. */
   dark: boolean;
-  /**
-   * Switches the theme. Runs inside the view transition and is flushed
-   * synchronously, so the new theme has to reach the DOM by the time React
-   * commits (a class set in an effect does).
-   */
+  /** Runs inside the view transition under flushSync: the theme must reach the DOM by commit. */
   onDarkChange: (dark: boolean) => void;
-  /** Animation variant. Default: "rectangle". */
   variant?: ThemeVariant;
-  /** Origin direction for the reveal. Default: "bottom-up". */
   origin?: RevealOrigin;
 }
 
@@ -38,15 +31,12 @@ export interface ThemeToggleProps
 
 const VT_STYLE_ID = "theme-toggle-vt";
 
-// A toggle during a running transition skips it, and the skipped one still
-// settles: only the latest may clear the variant, or the new reveal loses its
-// styles mid-flight and flashes the default crossfade.
+// A skipped transition still settles; only the latest may clear the variant,
+// or the new reveal loses its styles mid-flight.
 let latestViewTransition: unknown = null;
 
-// View transitions animate in CSS, not motion springs, so easing here is
-// either EASE_OUT_CSS or a keyword. The circle variants keep the Material
-// standard curve because their reveal expands symmetrically rather than
-// decelerating. Durations differ per variant to match native OS mode switches.
+// View transitions run in CSS, outside the spring tiers. Durations match native OS
+// mode switches; circles use the Material curve since they expand symmetrically.
 const VT_CSS = `
 html[data-theme-vt="rect"]::view-transition-old(root) {
   animation: none;
@@ -73,16 +63,8 @@ html[data-theme-vt="blinds"]::view-transition-old(root) {
   animation: none;
   mix-blend-mode: normal;
 }
-/* Slats: a masked band widens inside every 72px tile, so the new theme opens
-   across the page like a shutter. The band edge has to be a registered custom
-   property — mask-image itself is not animatable, but it re-resolves every
-   frame the property ticks. mask-size fixes the tile at 72px rather than
-   letting a repeating gradient's last stop define it, which is what keeps the
-   20px soft edge from dragging the tile wider than the slat and leaving a
-   feathered gap that never closes; it also means both ends land clean, fully
-   transparent at -20px and fully opaque at 72px. Falling back to no mask
-   (unregistered property, so the var is invalid) reveals the page in one
-   step. */
+/* mask-image isn't animatable but re-resolves as the registered property ticks.
+   mask-size pins the tile at 72px so the 20px soft edge can't widen it and leave a gap. */
 @property --theme-vt-slat {
   syntax: "<length>";
   inherits: false;
@@ -164,7 +146,6 @@ export function useThemeToggle({
       root.style.setProperty("--theme-vt-from", RECTANGLE_CLIP_FROM[origin]);
       root.dataset.themeVt = "rect";
     } else if (variant === "blinds") {
-      // Slats sweep the whole viewport; there is no origin point to set.
       root.dataset.themeVt = "blinds";
     } else {
       root.style.setProperty("--theme-vt-origin", CIRCLE_ORIGIN[origin]);

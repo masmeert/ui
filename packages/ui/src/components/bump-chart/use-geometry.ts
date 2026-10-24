@@ -1,6 +1,6 @@
 import { animate, motionValue, type MotionValue } from "motion/react";
 import { useLayoutEffect, useState } from "react";
-import { SPRING_LAYOUT } from "@/lib/ease";
+import { spring } from "@/lib/springs";
 
 export type BumpPosition = { x: MotionValue<number>; y: MotionValue<number> };
 export type BumpTarget = { key: string; x: number; y: number };
@@ -32,7 +32,7 @@ export function useBumpGeometry(targets: BumpTarget[], reduce: boolean) {
       if (!position) continue;
       for (const axis of ["x", "y"] as const) {
         if (reduce) position[axis].jump(target[axis]);
-        else controls.push(animate(position[axis], target[axis], SPRING_LAYOUT));
+        else controls.push(animate(position[axis], target[axis], spring.moderate));
       }
     }
     return () => {

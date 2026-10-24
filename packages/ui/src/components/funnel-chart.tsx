@@ -2,7 +2,8 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { NumberTicker } from "@/components/number-ticker";
 import { Tooltip } from "@/components/tooltip";
-import { EASE_OUT } from "@/lib/ease";
+import { useSize } from "@/lib/size";
+import { reducedTransition, spring } from "@/lib/springs";
 import { cn } from "cn";
 import { buildFunnel, funnelPath, type FunnelStage } from "./funnel-chart/model";
 
@@ -67,9 +68,10 @@ export function FunnelChart({
 export function FunnelChartPlot({ className }: { className?: string }) {
   const { rows, direction, unit, formatValue } = useFunnelChart();
   const reduced = useReducedMotion();
+  const { type } = useSize();
   if (!rows.length)
     return (
-      <p className={cn("py-16 text-center text-sm text-muted-foreground", className)}>
+      <p className={cn("py-16 text-center text-muted-foreground", type.body, className)}>
         No funnel data
       </p>
     );
@@ -96,9 +98,9 @@ export function FunnelChartPlot({ className }: { className?: string }) {
                 key={stage.id}
                 fill={stage.color ?? colors[index % colors.length]}
                 initial={false}
-                // A shared path interpolation keeps adjacent curved boundaries connected.
                 animate={{ d: funnelPath(proportions, index, direction) }}
-                transition={{ duration: reduced ? 0 : 0.28, ease: EASE_OUT }}
+                // Every stage shares one critically damped spring, so seams stay joined mid-reshape.
+                transition={reducedTransition(spring.moderate, reduced)}
               />
             ))}
           </svg>
@@ -116,7 +118,7 @@ export function FunnelChartPlot({ className }: { className?: string }) {
                 <Tooltip
                   wrapperClassName="block h-full w-full"
                   content={
-                    <span className="flex flex-col gap-1.5 text-xs">
+                    <span className={cn("flex flex-col gap-1.5", type.caption)}>
                       <span className="text-muted-foreground">{stage.label}</span>
                       <NumberTicker
                         value={stage.value}
@@ -143,10 +145,15 @@ export function FunnelChartPlot({ className }: { className?: string }) {
                 >
                   <button
                     type="button"
-                    className="flex h-full w-full items-center justify-center transition-colors outline-none hover:bg-foreground/5 focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-inset"
+                    className="flex h-full w-full items-center justify-center transition-colors duration-(--duration-fast) outline-none hover:bg-hover focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-inset"
                     aria-label={`${stage.label}: ${formatValue(stage.value)} ${unit}, ${percentage(stage.conversion)} of starting total`}
                   >
-                    <span className="rounded bg-background/85 px-2 py-1 font-mono text-xs font-medium tabular-nums">
+                    <span
+                      className={cn(
+                        "rounded bg-background/85 px-2 py-1 font-mono font-semibold tabular-nums",
+                        type.caption,
+                      )}
+                    >
                       {formatValue(stage.value)}
                     </span>
                   </button>
@@ -158,16 +165,14 @@ export function FunnelChartPlot({ className }: { className?: string }) {
       </div>
       <div className="flex flex-wrap justify-center gap-x-6 gap-y-3">
         {rows.map((stage, index) => (
-          <span key={stage.id} className="inline-flex items-center gap-2 text-xs">
+          <span key={stage.id} className={cn("inline-flex items-center gap-2", type.caption)}>
             <span
               aria-hidden="true"
               className="size-2 shrink-0 rounded-full"
               style={{ backgroundColor: stage.color ?? colors[index % colors.length] }}
             />
             <span>{stage.label}</span>
-            <span className="font-mono text-[10px] text-muted-foreground">
-              {percentage(stage.conversion)}
-            </span>
+            <span className="font-mono text-muted-foreground">{percentage(stage.conversion)}</span>
           </span>
         ))}
       </div>
@@ -176,11 +181,13 @@ export function FunnelChartPlot({ className }: { className?: string }) {
 }
 export function FunnelChartSummary({ className }: { className?: string }) {
   const { rows, first, last, conversion, formatValue, unit } = useFunnelChart();
+  const { type } = useSize();
   if (!rows.length) return null;
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4 text-xs",
+        "flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4",
+        type.caption,
         className,
       )}
     >
@@ -189,7 +196,7 @@ export function FunnelChartSummary({ className }: { className?: string }) {
       </span>
       <span className="flex items-center gap-2">
         <span className="text-muted-foreground">Overall conversion</span>
-        <span className="font-mono font-medium tabular-nums">{percentage(conversion)}</span>
+        <span className="font-mono font-semibold tabular-nums">{percentage(conversion)}</span>
       </span>
     </div>
   );

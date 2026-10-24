@@ -52,7 +52,7 @@ function ReviewRequestedAlert(props: AlertProps) {
       <AlertTitle>Review requested</AlertTitle>
       <AlertDescription>Ana asked you to review #482 “Stream thread output”.</AlertDescription>
       <AlertAction>
-        <Button size="sm" variant="outline">
+        <Button size="compact" variant="outline">
           Open
         </Button>
       </AlertAction>

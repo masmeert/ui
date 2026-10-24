@@ -12,7 +12,12 @@ import {
   useRef,
   useState,
 } from "react";
-import { EASE_OUT } from "@/lib/ease";
+import { FluidHoverHighlight } from "@/components/fluid-hover-highlight";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHoverDomItems } from "@/hooks/use-fluid-hover-dom-items";
+import { type Size, useSize } from "@/lib/size";
+import { reducedTransition, spring, springExit } from "@/lib/springs";
+import { SURFACE_OFFSET, SurfaceProvider, useElevation } from "@/lib/surface";
 import { cn } from "cn";
 
 type Placement = "bottom" | "top";
@@ -31,6 +36,7 @@ interface SelectContextValue {
   disabled: boolean;
   placement: Placement;
   setPlacement: (p: Placement) => void;
+  size: Size | undefined;
 }
 
 const SelectContext = createContext<SelectContextValue | null>(null);
@@ -45,21 +51,12 @@ export interface SelectProps {
   value?: string;
   defaultValue?: string;
   onValueChange?: (value: string) => void;
-  /**
-   * Controlled open state of the panel. A layout that stacks selects can hold
-   * this to keep exactly one panel open — the panel is absolutely positioned
-   * inside its field, so two open at once paint over each other's options.
-   */
+  /** The panel is positioned inside the field, so stacked selects should keep only one open. */
   open?: boolean;
-  /** Uncontrolled initial open state. Default false. */
   defaultOpen?: boolean;
-  /**
-   * Fires whenever the panel opens or closes. The panel is absolutely
-   * positioned inside the field, so a layout that stacks selects has to know
-   * which one is open to paint it above its neighbours.
-   */
   onOpenChange?: (open: boolean) => void;
   disabled?: boolean;
+  size?: Size;
   className?: string;
   children: ReactNode;
 }
@@ -72,6 +69,7 @@ export function Select({
   defaultOpen = false,
   onOpenChange,
   disabled = false,
+  size,
   className,
   children,
 }: SelectProps) {
@@ -117,7 +115,6 @@ export function Select({
     });
   }, []);
 
-  // close on outside pointer / escape
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -147,6 +144,7 @@ export function Select({
       disabled,
       placement,
       setPlacement,
+      size,
     }),
     [
       current,
@@ -160,6 +158,7 @@ export function Select({
       baseId,
       disabled,
       placement,
+      size,
     ],
   );
 
@@ -172,6 +171,13 @@ export function Select({
   );
 }
 
+// Matches `Input`'s radius per step.
+const FIELD_RADIUS: Record<Size, string> = {
+  compact: "rounded-lg",
+  default: "rounded-lg",
+  large: "rounded-xl",
+};
+
 export interface SelectTriggerProps {
   className?: string;
   children: ReactNode;
@@ -179,6 +185,7 @@ export interface SelectTriggerProps {
 
 export function SelectTrigger({ className, children }: SelectTriggerProps) {
   const ctx = useSelectContext("SelectTrigger");
+  const tokens = useSize(ctx.size);
   return (
     <button
       type="button"
@@ -189,7 +196,12 @@ export function SelectTrigger({ className, children }: SelectTriggerProps) {
       aria-controls={ctx.listId}
       onClick={() => ctx.setOpen(!ctx.open)}
       className={cn(
-        "relative z-10 flex w-full items-center justify-between gap-2 rounded-[12px] border border-border bg-background px-3 py-2 text-sm text-foreground transition-colors outline-none",
+        "relative z-10 flex w-full items-center justify-between border border-border bg-background text-foreground transition-colors duration-(--duration-fast) outline-none",
+        tokens.control,
+        tokens.controlPx,
+        tokens.text,
+        tokens.gap,
+        FIELD_RADIUS[tokens.size],
         "hover:border-border-strong focus-visible:ring-4 focus-visible:ring-ring",
         "disabled:pointer-events-none disabled:opacity-50",
         className,
@@ -198,8 +210,9 @@ export function SelectTrigger({ className, children }: SelectTriggerProps) {
       {children}
       <ChevronDown
         aria-hidden
+        size={tokens.icon}
         className={cn(
-          "h-4 w-4 text-muted-foreground transition-transform duration-200 ease-out",
+          "shrink-0 text-muted-foreground transition-transform duration-(--duration-moderate) ease-out",
           ctx.open && "rotate-180",
         )}
       />
@@ -229,13 +242,27 @@ export interface SelectContentProps {
 
 export function SelectContent({ className, children }: SelectContentProps) {
   const ctx = useSelectContext("SelectContent");
+  const surface = useElevation(SURFACE_OFFSET.popover, { shadowLevel: 3 });
   const innerRef = useRef<HTMLDivElement>(null);
   const open = ctx.open;
   const { setPlacement } = ctx;
   const [shown, setShown] = useState(open);
   if (open && !shown) setShown(true);
 
-  // On open, flip upward when there isn't room below and there's more above.
+  const hover = useFluidHover(innerRef);
+  const { from, indexOf } = useFluidHoverDomItems(
+    hover,
+    innerRef,
+    '[role="option"]',
+    '[aria-selected="true"]',
+  );
+  const { remeasure, setActiveIndex } = hover;
+  useEffect(() => {
+    // The panel scales in from 0.97, so rows measured while closed sit a hair off.
+    if (open) remeasure();
+    else setActiveIndex(null);
+  }, [open, remeasure, setActiveIndex]);
+
   useLayoutEffect(() => {
     if (!open) return;
     const trigger = document.getElementById(ctx.triggerId);
@@ -260,9 +287,8 @@ export function SelectContent({ className, children }: SelectContentProps) {
 
   const isTop = ctx.placement === "top";
 
-  // Items stay mounted (open just animates the panel) so each item's label
-  // registration persists — otherwise the trigger would fall back to the
-  // placeholder the moment the panel closes.
+  // Items stay mounted so their label registrations persist; otherwise the trigger
+  // would show the placeholder once the panel closes.
   return (
     <motion.div
       id={ctx.listId}
@@ -279,23 +305,35 @@ export function SelectContent({ className, children }: SelectContentProps) {
               transform: open ? "scale(1)" : "scale(0.97)",
             }
       }
-      transition={{
-        duration: ctx.reduce ? 0.12 : open ? 0.2 : 0.12,
-        ease: EASE_OUT,
-      }}
+      transition={open ? reducedTransition(spring.moderate, ctx.reduce) : springExit.moderate}
       onAnimationComplete={() => {
         if (!open) setShown(false);
       }}
       className={cn(
-        "absolute right-0 left-0 z-20 overflow-hidden rounded-[12px] border border-border bg-popover shadow-panel",
+        "absolute right-0 left-0 z-(--z-popup) overflow-hidden rounded-[12px] border border-border",
+        surface.className,
         isTop ? "bottom-full mb-2 origin-bottom" : "top-full mt-2 origin-top",
         open ? "pointer-events-auto" : "pointer-events-none",
         !shown && "h-0",
         className,
       )}
     >
-      <div ref={innerRef} className="flex flex-col gap-0.5 p-1">
-        {children}
+      <div
+        ref={innerRef}
+        {...hover.handlers}
+        // Only a visible focus moves the highlight; a click's focus is already lit by the pointer.
+        onFocus={(event) => {
+          if (event.target.matches(":focus-visible")) setActiveIndex(indexOf(event.target));
+        }}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            setActiveIndex(null);
+          }
+        }}
+        className="relative flex flex-col gap-0.5 p-1"
+      >
+        <FluidHoverHighlight hover={hover} hidden={!open} from={from} />
+        <SurfaceProvider value={surface.level}>{children}</SurfaceProvider>
       </div>
     </motion.div>
   );
@@ -318,6 +356,7 @@ export function SelectItem({
   children,
 }: SelectItemProps) {
   const ctx = useSelectContext("SelectItem");
+  const tokens = useSize(ctx.size);
   const selected = ctx.value === value;
   const label = labelProp ?? (typeof children === "string" ? children : value);
 
@@ -328,7 +367,7 @@ export function SelectItem({
   }, [register, unregister, value, label]);
 
   return (
-    <li>
+    <li className="relative">
       <button
         type="button"
         role="option"
@@ -336,16 +375,19 @@ export function SelectItem({
         disabled={disabled}
         onClick={() => ctx.select(value)}
         className={cn(
-          "flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors outline-none",
+          "flex w-full items-center justify-between rounded-lg text-left transition-colors duration-(--duration-fast) outline-none",
+          tokens.row,
+          tokens.text,
+          tokens.gap,
           selected
-            ? "bg-muted text-foreground"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:bg-muted",
+            ? "bg-selected text-foreground"
+            : "text-muted-foreground data-fluid-hover-active:text-foreground",
           "disabled:pointer-events-none disabled:opacity-50",
           className,
         )}
       >
         {children}
-        {selected ? <Check className="h-3.5 w-3.5 shrink-0" /> : null}
+        {selected ? <Check aria-hidden size={tokens.icon} className="shrink-0" /> : null}
       </button>
     </li>
   );

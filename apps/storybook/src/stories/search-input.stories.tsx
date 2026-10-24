@@ -9,12 +9,14 @@ const meta = {
     placeholder: "Search deployments",
     "aria-label": "Search deployments",
     disabled: false,
+    size: "default",
     onChange: fn(),
   },
   argTypes: {
     placeholder: { control: "text" },
     shortcut: { control: "text" },
     disabled: { control: "boolean" },
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
   },
   decorators: [
     function FixedWidth(Story) {
@@ -35,6 +37,8 @@ export const Default: Story = {};
 export const WithShortcut: Story = { args: { shortcut: "/" } };
 
 export const WithValue: Story = { args: { defaultValue: "api-gateway", shortcut: "/" } };
+
+export const Compact: Story = { args: { size: "compact", shortcut: "/" } };
 
 export const Disabled: Story = { args: { disabled: true } };
 

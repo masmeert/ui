@@ -2,13 +2,14 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Button } from "@masmeert/ui/button";
 import { TextCascade, type TextCascadeProps } from "@masmeert/ui/text-cascade";
 import { useState } from "react";
+import { typeClass } from "@masmeert/ui/lib/type-scale";
 
 function TextCascadeCycle({ labels, ...args }: TextCascadeProps & { labels: string[] }) {
   const [index, setIndex] = useState(0);
   return (
     <div className="flex flex-col items-center gap-4">
       <TextCascade {...args} text={labels[index % labels.length]} />
-      <Button variant="outline" size="sm" onClick={() => setIndex((current) => current + 1)}>
+      <Button variant="outline" size="compact" onClick={() => setIndex((current) => current + 1)}>
         Next
       </Button>
     </div>
@@ -20,7 +21,7 @@ const meta = {
   component: TextCascade,
   args: {
     text: "main",
-    className: "font-mono text-lg",
+    className: `font-mono ${typeClass("subtitle")}`,
   },
   argTypes: {
     text: { control: false },
@@ -41,7 +42,7 @@ export const BranchName: Story = {
 };
 
 export const Headline: Story = {
-  args: { className: "text-3xl font-semibold tracking-tight" },
+  args: { className: `${typeClass("display")} font-bold` },
   render: (args) => (
     <TextCascadeCycle {...args} labels={["Ship faster", "Review together", "Deploy anywhere"]} />
   ),

@@ -3,14 +3,13 @@ import { type MotionValue, motion, useReducedMotion, useSpring, useTransform } f
 import { useSmoothScroll } from "@/components/smooth-scroll";
 import { cn } from "cn";
 
-// Soft follow so the indicator trails the scroll smoothly instead of snapping;
-// looser than the UI springs in lib/ease.ts on purpose.
+// A follower physics config, not a tier: deliberately looser than the UI springs.
 const PROGRESS_SPRING = { stiffness: 120, damping: 30, mass: 0.6 };
 
 type CommonProps = {
-  /** Override the scroll source. Defaults to the page via useSmoothScroll. */
+  /** Defaults to the page via `useSmoothScroll`. */
   progress?: MotionValue<number>;
-  /** Spring-smooth the value. Disabled automatically under reduced motion. */
+  /** Spring-smooth the value. Off under reduced motion. */
   spring?: boolean;
   className?: string;
 };
@@ -61,7 +60,7 @@ function ScrollProgressBar({
       aria-hidden
       style={{ height, scaleX: value }}
       className={cn(
-        "right-0 left-0 z-50 origin-left bg-foreground",
+        "right-0 left-0 z-(--z-sticky) origin-left bg-foreground",
         fixed ? "fixed" : "absolute",
         position === "top" ? "top-0" : "bottom-0",
         className,

@@ -22,8 +22,7 @@ export function AnimatedNumber({
   const inView = useInView(ref, { once: true, amount: 0.6 });
   const reduce = useReducedMotion();
   const [display, setDisplay] = useState(0);
-  // Tracks the value on screen, so a change mid-tween continues from there
-  // instead of snapping to the previous target first.
+  // A change mid-tween continues from the shown value, not the previous target.
   const shownRef = useRef(0);
 
   useEffect(() => {
@@ -33,6 +32,7 @@ export function AnimatedNumber({
       setDisplay(value);
       return;
     }
+    // Content-driven length, so a tween rather than a tier.
     const controls = animate(shownRef.current, value, {
       duration,
       ease: EASE_OUT,

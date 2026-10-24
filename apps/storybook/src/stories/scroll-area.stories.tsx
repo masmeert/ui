@@ -84,3 +84,9 @@ export const Horizontal: Story = {
   args: { className: "w-80 rounded-lg border" },
   render: BranchStrip,
 };
+
+/** A hairline marks each edge with more to scroll past it. */
+export const WithDivider: Story = {
+  args: { divider: true, className: "h-72 w-[26rem] rounded-lg border" },
+  render: CommitLog,
+};

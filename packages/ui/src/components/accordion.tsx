@@ -1,7 +1,12 @@
 import { motion, useReducedMotion, type Transition } from "motion/react";
 import { ChevronDown } from "lucide-react";
-import { useCallback, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { EASE_OUT } from "@/lib/ease";
+import { useCallback, useId, useRef, useState, type ReactNode } from "react";
+import { FluidHoverHighlight } from "@/components/fluid-hover-highlight";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHoverDomItems } from "@/hooks/use-fluid-hover-dom-items";
+import { FOLD } from "@/lib/ease";
+import { reducedTransition, spring, springExit } from "@/lib/springs";
+import { typeClass } from "@/lib/type-scale";
 import { cn } from "cn";
 
 export type AccordionItem = {
@@ -33,40 +38,19 @@ export interface AccordionProps {
   classNames?: AccordionClassNames;
 }
 
-// Local springs keep the accordion's connected groups moving together while
-// avoiding scale projection on text-heavy row contents.
-// Gap spring: must not overshoot y — positive y overshoot drifts items below
-// their mt-3 resting point and briefly overlaps the next item.
-const ROW_TRANSITION: Transition = {
-  type: "spring",
-  duration: 0.5,
-  bounce: 0.18,
-};
+// Must not overshoot: a y overshoot briefly overlaps the next item.
+const ROW_TRANSITION: Transition = spring.moderate;
 
-const CONTENT_OPEN_TRANSITION: Transition = {
-  type: "spring",
-  duration: 0.58,
-  bounce: 0.32,
-};
+// Folds to `"auto"`, not a measured height, so a nested collapsible doesn't animate twice.
+const CONTENT_TRANSITION: Transition = FOLD;
 
-// Closing animates height toward 0, so any bounce undershoots past zero and the
-// row visibly collapses through itself before settling.
-const CONTENT_CLOSE_TRANSITION: Transition = {
-  type: "spring",
-  duration: 0.36,
-  bounce: 0,
-};
+const DESCRIPTION_OPEN_TRANSITION: Transition = spring.moderate;
+const DESCRIPTION_CLOSE_TRANSITION: Transition = springExit.fast;
 
-const DESCRIPTION_TRANSITION: Transition = {
-  duration: 0.18,
-  ease: EASE_OUT,
-};
+const CHEVRON_TRANSITION: Transition = spring.moderate;
 
-const CHEVRON_TRANSITION: Transition = {
-  type: "spring",
-  duration: 0.42,
-  bounce: 0.28,
-};
+const GROUP_RADIUS = 28;
+const HIGHLIGHT_INSET = 6;
 
 function useControllableAccordionValue({
   value,
@@ -106,6 +90,7 @@ function AccordionRow({
   prefersReducedMotion,
   classNames,
   onToggle,
+  onLayoutSettled,
 }: {
   item: AccordionItem;
   open: boolean;
@@ -117,47 +102,29 @@ function AccordionRow({
   prefersReducedMotion: boolean | null;
   classNames?: AccordionClassNames;
   onToggle: () => void;
+  onLayoutSettled: () => void;
 }) {
-  const contentRef = useRef<HTMLDivElement>(null);
-  const [contentHeight, setContentHeight] = useState(0);
   const [everOpened, setEverOpened] = useState(open);
   if (open && !everOpened) setEverOpened(true);
-
-  useLayoutEffect(() => {
-    const node = contentRef.current;
-    if (!node) return;
-
-    const updateHeight = () => {
-      setContentHeight(node.offsetHeight);
-    };
-
-    updateHeight();
-
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(node);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
 
   return (
     <motion.div
       layout="position"
       initial={false}
       style={{ marginTop: separatedFromPrevious ? 12 : 0 }}
-      transition={prefersReducedMotion ? { duration: 0 } : ROW_TRANSITION}
+      transition={reducedTransition(ROW_TRANSITION, prefersReducedMotion)}
+      onLayoutAnimationComplete={onLayoutSettled}
     >
       <motion.div
         data-state={open ? "open" : "closed"}
         initial={false}
         animate={{
-          borderTopLeftRadius: startsGroup ? 28 : 0,
-          borderTopRightRadius: startsGroup ? 28 : 0,
-          borderBottomLeftRadius: endsGroup ? 28 : 0,
-          borderBottomRightRadius: endsGroup ? 28 : 0,
+          borderTopLeftRadius: startsGroup ? GROUP_RADIUS : 0,
+          borderTopRightRadius: startsGroup ? GROUP_RADIUS : 0,
+          borderBottomLeftRadius: endsGroup ? GROUP_RADIUS : 0,
+          borderBottomRightRadius: endsGroup ? GROUP_RADIUS : 0,
         }}
-        transition={prefersReducedMotion ? { duration: 0 } : ROW_TRANSITION}
+        transition={reducedTransition(ROW_TRANSITION, prefersReducedMotion)}
         className={cn(
           "overflow-hidden bg-card text-card-foreground",
           item.disabled && "opacity-50",
@@ -170,10 +137,11 @@ function AccordionRow({
           disabled={item.disabled}
           aria-expanded={open}
           aria-controls={contentId}
+          data-slot="accordion-trigger"
           onClick={onToggle}
           className={cn(
-            "flex min-h-13.5 w-full items-center gap-4 px-5 text-left transition-colors outline-none",
-            "focus-visible:bg-muted/25",
+            "flex min-h-13.5 w-full items-center gap-4 px-5 text-left transition-colors duration-(--duration-fast) outline-none",
+            "focus-visible:bg-hover",
             "disabled:pointer-events-none",
             classNames?.trigger,
           )}
@@ -190,7 +158,8 @@ function AccordionRow({
           ) : null}
           <span
             className={cn(
-              "min-w-0 flex-1 truncate text-[15px] font-medium text-foreground",
+              "min-w-0 flex-1 truncate font-medium text-foreground",
+              typeClass("subtitle"),
               classNames?.title,
             )}
           >
@@ -199,7 +168,7 @@ function AccordionRow({
           <motion.span
             aria-hidden
             animate={{ rotate: open ? 180 : 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : CHEVRON_TRANSITION}
+            transition={reducedTransition(CHEVRON_TRANSITION, prefersReducedMotion)}
             className={cn(
               "grid h-6 w-6 shrink-0 place-items-center text-muted-foreground",
               classNames?.chevron,
@@ -216,26 +185,19 @@ function AccordionRow({
           aria-hidden={!open}
           inert={!open}
           initial={false}
-          animate={{ height: open && item.description ? contentHeight : 0 }}
-          transition={
-            prefersReducedMotion
-              ? { duration: 0 }
-              : open
-                ? CONTENT_OPEN_TRANSITION
-                : CONTENT_CLOSE_TRANSITION
-          }
+          animate={{ height: open && item.description ? "auto" : 0 }}
+          transition={reducedTransition(CONTENT_TRANSITION, prefersReducedMotion)}
           className={cn("overflow-hidden", classNames?.content)}
         >
           <motion.div
-            ref={contentRef}
             animate={{
               opacity: open ? 1 : 0,
             }}
-            transition={prefersReducedMotion ? { duration: 0 } : DESCRIPTION_TRANSITION}
+            transition={open ? DESCRIPTION_OPEN_TRANSITION : DESCRIPTION_CLOSE_TRANSITION}
             className="px-5 pb-5"
           >
             <div
-              className={cn("text-[15px] leading-6 text-muted-foreground", classNames?.description)}
+              className={cn("text-muted-foreground", typeClass("body"), classNames?.description)}
             >
               {everOpened ? item.description : null}
             </div>
@@ -263,6 +225,24 @@ export function Accordion({
     onValueChange,
   });
   const activeIndex = items.findIndex((item) => item.id === activeValue);
+  const rootRef = useRef<HTMLDivElement>(null);
+  // Rows slide on layout transforms ResizeObserver can't see, so they call refresh once settled.
+  const hover = useFluidHover(rootRef);
+  const hoverItems = useFluidHoverDomItems(
+    hover,
+    rootRef,
+    '[data-slot="accordion-trigger"]',
+    '[aria-expanded="true"]',
+  );
+  const inset = (rect: (typeof hover.itemRects)[number]) =>
+    rect && {
+      top: rect.top + HIGHLIGHT_INSET,
+      left: rect.left + HIGHLIGHT_INSET,
+      width: Math.max(0, rect.width - HIGHLIGHT_INSET * 2),
+      height: Math.max(0, rect.height - HIGHLIGHT_INSET * 2),
+    };
+  const insetHover = { ...hover, itemRects: hover.itemRects.map(inset) };
+  const from = insetHover.itemRects[hoverItems.fromIndex] ?? null;
 
   const toggleItem = useCallback(
     (id: string) => {
@@ -279,7 +259,18 @@ export function Accordion({
   );
 
   return (
-    <div className={cn("w-full", className, classNames?.root)}>
+    <div
+      ref={rootRef}
+      className={cn("relative w-full", className, classNames?.root)}
+      {...hover.handlers}
+    >
+      {/* Above the cards, which paint their own fill. */}
+      <FluidHoverHighlight
+        hover={insetHover}
+        from={from}
+        // nestedRadius(GROUP_RADIUS, HIGHLIGHT_INSET) = 22: concentric with the cards.
+        className="z-10 rounded-[22px]"
+      />
       {items.map((item, index) => {
         const open = activeValue === item.id;
         const previousIsOpen = activeIndex === index - 1;
@@ -303,6 +294,7 @@ export function Accordion({
             prefersReducedMotion={prefersReducedMotion}
             classNames={classNames}
             onToggle={() => toggleItem(item.id)}
+            onLayoutSettled={hoverItems.refresh}
           />
         );
       })}

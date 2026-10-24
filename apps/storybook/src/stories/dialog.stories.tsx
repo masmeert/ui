@@ -1,9 +1,16 @@
 import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
-import { Button } from "@masmeert/ui/button";
+import { Button, buttonVariants } from "@masmeert/ui/button";
 import { Dialog, type DialogProps } from "@masmeert/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@masmeert/ui/dropdown-menu";
 import { Input } from "@masmeert/ui/input";
+import { typeClass } from "@masmeert/ui/lib/type-scale";
 
 const meta = {
   title: "Overlays/Dialog",
@@ -36,15 +43,17 @@ function RenameThreadDialog({ placement, className, onClose }: DialogProps) {
       <Dialog viewId={viewId} onClose={close} placement={placement} className={className}>
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
-            <h2 className="text-base font-medium text-foreground">Rename thread</h2>
-            <p className="text-sm text-muted-foreground">Shown in the sidebar and in search.</p>
+            <h2 className={`${typeClass("title")} font-semibold text-foreground`}>Rename thread</h2>
+            <p className={`${typeClass("body")} text-muted-foreground`}>
+              Shown in the sidebar and in search.
+            </p>
           </div>
           <Input label="Thread name" value={name} onChange={setName} />
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={close}>
+            <Button variant="ghost" size="compact" onClick={close}>
               Cancel
             </Button>
-            <Button size="sm" disabled={name.trim() === ""} onClick={close}>
+            <Button size="compact" disabled={name.trim() === ""} onClick={close}>
               Save
             </Button>
           </div>
@@ -71,16 +80,18 @@ function ThreadSettingsDialog({ placement, className, onClose }: DialogProps) {
         {viewId === "confirm" ? (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <h2 className="text-base font-medium text-foreground">Delete this thread?</h2>
-              <p className="text-sm text-muted-foreground">
+              <h2 className={`${typeClass("title")} font-semibold text-foreground`}>
+                Delete this thread?
+              </h2>
+              <p className={`${typeClass("body")} text-muted-foreground`}>
                 Its transcript and 3 checkpoints are removed. The branch stays.
               </p>
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setViewId("details")}>
+              <Button variant="ghost" size="compact" onClick={() => setViewId("details")}>
                 Back
               </Button>
-              <Button size="sm" onClick={close}>
+              <Button size="compact" onClick={close}>
                 Delete thread
               </Button>
             </div>
@@ -88,10 +99,14 @@ function ThreadSettingsDialog({ placement, className, onClose }: DialogProps) {
         ) : (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <h2 className="text-base font-medium text-foreground">Fix flaky auth test</h2>
-              <p className="text-sm text-muted-foreground">masscode · branch fix/auth-retry</p>
+              <h2 className={`${typeClass("title")} font-semibold text-foreground`}>
+                Fix flaky auth test
+              </h2>
+              <p className={`${typeClass("body")} text-muted-foreground`}>
+                masscode · branch fix/auth-retry
+              </p>
             </div>
-            <dl className="grid grid-cols-2 gap-y-2 text-sm">
+            <dl className={`grid grid-cols-2 gap-y-2 ${typeClass("body")}`}>
               <dt className="text-muted-foreground">Agent</dt>
               <dd className="text-foreground">Claude</dd>
               <dt className="text-muted-foreground">Started</dt>
@@ -100,15 +115,61 @@ function ThreadSettingsDialog({ placement, className, onClose }: DialogProps) {
               <dd className="text-foreground">4</dd>
             </dl>
             <div className="flex justify-between gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setViewId("confirm")}>
+              <Button variant="ghost" size="compact" onClick={() => setViewId("confirm")}>
                 Delete thread
               </Button>
-              <Button size="sm" onClick={close}>
+              <Button size="compact" onClick={close}>
                 Done
               </Button>
             </div>
           </div>
         )}
+      </Dialog>
+    </>
+  );
+}
+
+// A menu opened inside the dialog lands a surface level above it.
+function NestedMenuDialog({ placement, className, onClose }: DialogProps) {
+  const [viewId, setViewId] = useState<string | null>(null);
+  const [agent, setAgent] = useState("Claude");
+
+  function close() {
+    setViewId(null);
+    onClose();
+  }
+
+  return (
+    <>
+      <Button variant="outline" onClick={() => setViewId("agent")}>
+        Change agent
+      </Button>
+      <Dialog viewId={viewId} onClose={close} placement={placement} className={className}>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <h2 className={`${typeClass("title")} font-semibold text-foreground`}>Agent</h2>
+            <p className={`${typeClass("body")} text-muted-foreground`}>
+              Picks up from the last checkpoint.
+            </p>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger className={buttonVariants({ variant: "outline" })}>
+              {agent}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {["Claude", "Codex", "Cursor"].map((name) => (
+                <DropdownMenuItem key={name} onClick={() => setAgent(name)}>
+                  {name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <div className="flex justify-end">
+            <Button size="compact" onClick={close}>
+              Done
+            </Button>
+          </div>
+        </div>
       </Dialog>
     </>
   );
@@ -125,4 +186,8 @@ export const Bottom: Story = {
 
 export const MultipleViews: Story = {
   render: (args) => <ThreadSettingsDialog {...args} />,
+};
+
+export const NestedMenu: Story = {
+  render: (args) => <NestedMenuDialog {...args} />,
 };

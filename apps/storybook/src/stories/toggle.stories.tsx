@@ -17,7 +17,7 @@ const meta = {
   },
   argTypes: {
     variant: { control: "inline-radio", options: ["default", "outline"] },
-    size: { control: "inline-radio", options: ["sm", "default", "lg"] },
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
     disabled: { control: "boolean" },
     children: { control: false },
   },
@@ -44,5 +44,7 @@ export const WithText: Story = {
     ),
   },
 };
+
+export const Compact: Story = { args: { size: "compact", variant: "outline" } };
 
 export const Disabled: Story = { args: { disabled: true, variant: "outline" } };

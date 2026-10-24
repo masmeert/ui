@@ -9,7 +9,6 @@ const meta = {
     children: null,
     y: 16,
     blur: 8,
-    durationSeconds: 0.6,
     delaySeconds: 0,
     once: true,
     amount: 0.3,
@@ -19,7 +18,6 @@ const meta = {
     root: { control: false },
     y: { control: { type: "range", min: 0, max: 80, step: 2 } },
     blur: { control: { type: "range", min: 0, max: 10, step: 1 } },
-    durationSeconds: { control: { type: "range", min: 0.1, max: 2, step: 0.1 } },
     delaySeconds: { control: { type: "range", min: 0, max: 1, step: 0.05 } },
     once: { control: "boolean" },
     amount: { control: { type: "range", min: 0, max: 1, step: 0.05 } },
@@ -67,4 +65,4 @@ export const Default: Story = {};
 
 export const EveryTime: Story = { args: { once: false } };
 
-export const LongSlide: Story = { args: { y: 48, blur: 0, durationSeconds: 0.9 } };
+export const LongSlide: Story = { args: { y: 48, blur: 0 } };

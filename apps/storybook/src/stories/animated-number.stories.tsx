@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { AnimatedNumber, type AnimatedNumberProps } from "@masmeert/ui/animated-number";
 import { Button } from "@masmeert/ui/button";
 import { useState } from "react";
+import { typeClass } from "@masmeert/ui/lib/type-scale";
 
 const meta = {
   title: "Motion/Animated Number",
@@ -10,7 +11,7 @@ const meta = {
     value: 12480,
     duration: 1.2,
     startOnView: true,
-    className: "text-4xl font-semibold",
+    className: `${typeClass("display")} font-bold`,
   },
   argTypes: {
     value: { control: "number" },
@@ -25,7 +26,7 @@ const meta = {
         <AnimatedNumber {...args} value={args.value + increment} />
         <Button
           variant="outline"
-          size="sm"
+          size="compact"
           onClick={() => setIncrement((current) => current + Math.round(args.value * 0.18))}
         >
           Next

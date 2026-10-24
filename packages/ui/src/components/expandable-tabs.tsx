@@ -1,14 +1,14 @@
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { EASE_OUT } from "@/lib/ease";
+import { reducedTransition, spring, springExit } from "@/lib/springs";
+import { typeClass } from "@/lib/type-scale";
 import { cn } from "cn";
 
 export type ExpandableTabsItem = {
   id: string;
-  /** String label — shown inside the active tab and used as the button's accessible name. */
+  /** Also the button's accessible name. */
   label: string;
   icon: ReactNode;
-  /** Panel shown above the bar when this tab is active. */
   content: ReactNode;
 };
 
@@ -25,7 +25,7 @@ export type ExpandableTabsClassNames = {
 
 export interface ExpandableTabsProps {
   items: ExpandableTabsItem[];
-  /** Active tab id, or null/undefined for the closed (bar-only) state. */
+  /** `null` closes the panel, leaving just the bar. */
   value?: string | null;
   defaultValue?: string | null;
   onValueChange?: (id: string | null) => void;
@@ -35,22 +35,13 @@ export interface ExpandableTabsProps {
 
 type Size = { width: number; height: number };
 
-// DynamicIsland-style real width/height motion, tuned tighter here so the tab
-// bar feels controlled instead of elastic.
-const SHELL_SPRING = { type: "spring", duration: 0.58, bounce: 0.06 } as const;
+const SHELL_SPRING = spring.slow;
 
-// Position-only tab layout motion keeps switching loose without stretching
-// icons or letting the label linger.
-const TAB_CHANGE_SPRING = {
-  type: "spring",
-  duration: 0.46,
-  bounce: 0.04,
-} as const;
-const LABEL_OPEN = { type: "spring", duration: 0.38, bounce: 0.03 } as const;
-const LABEL_CLOSE = { duration: 0.16, ease: EASE_OUT } as const;
+const TAB_CHANGE_SPRING = spring.moderate;
+const LABEL_OPEN = spring.moderate;
+const LABEL_CLOSE = springExit.moderate;
 
-// Fixed bar height keeps the content panel's bottom reserve static so the open
-// height is right on the first frame. p-2 (16) + h-9 button (36).
+// p-2 (16) + h-9 button (36). Fixed so the open height is right on the first frame.
 const BAR_H = 52;
 const TAB_W = 32;
 const BAR_X = 16;
@@ -62,8 +53,6 @@ const ACTIVE_RIGHT_PAD = 16;
 const LABEL_GAP = 7;
 const PANEL_DOCK_GAP = 4;
 
-// Content is clipped above the dock so rows never pass through the icon bar.
-// It enters from slightly above instead of from the dock line.
 const CONTENT_VARIANTS: Variants = {
   enter: { y: -8, scale: 0.98, opacity: 0, filter: "blur(4px)" },
   center: { y: 0, scale: 1, opacity: 1, filter: "blur(0px)" },
@@ -72,7 +61,7 @@ const CONTENT_VARIANTS: Variants = {
     scale: 0.98,
     opacity: 0,
     filter: "blur(4px)",
-    transition: { duration: 0.08, ease: EASE_OUT },
+    transition: springExit.moderate,
   },
 };
 
@@ -82,11 +71,11 @@ const REDUCED_CONTENT_VARIANTS: Variants = {
   exit: {
     opacity: 0,
     filter: "blur(0px)",
-    transition: { duration: 0.08, ease: EASE_OUT },
+    transition: springExit.fast,
   },
 };
 
-const CONTENT_SPRING = { type: "spring", duration: 0.46, bounce: 0.08 } as const;
+const CONTENT_SPRING = spring.slow;
 
 function sameSize(a: Size | null | undefined, b: Size | null | undefined) {
   return a?.width === b?.width && a?.height === b?.height;
@@ -206,7 +195,6 @@ export function ExpandableTabs({
     [controlled, onValueChange],
   );
 
-  // Outside click / Escape closes — it behaves like an open menu.
   useEffect(() => {
     if (!visualActiveId) return;
     const onPointer = (e: PointerEvent) => {
@@ -250,7 +238,7 @@ export function ExpandableTabs({
         ref={rootRef}
         initial={false}
         animate={targetSize ? { width: targetSize.width, height: targetSize.height } : undefined}
-        transition={reduce ? { duration: 0 } : SHELL_SPRING}
+        transition={reducedTransition(SHELL_SPRING, reduce)}
         style={{ transformOrigin: "bottom center" }}
         className={cn(
           "relative overflow-hidden rounded-[26px] border border-border bg-card",
@@ -289,7 +277,7 @@ export function ExpandableTabs({
                 initial="enter"
                 animate="center"
                 exit="exit"
-                transition={reduce ? { duration: 0.15, ease: EASE_OUT } : CONTENT_SPRING}
+                transition={reducedTransition(CONTENT_SPRING, reduce)}
                 className="w-max"
                 style={{ transformOrigin: "top center" }}
               >
@@ -315,6 +303,7 @@ export function ExpandableTabs({
             const labelWidth = labelWidths[item.id] ?? 0;
 
             return (
+              // Per-tab hover, not fluid hover: tabs slide on layout transforms.
               <motion.button
                 key={item.id}
                 type="button"
@@ -326,12 +315,13 @@ export function ExpandableTabs({
                 animate={{
                   width: active && isActive ? activeTabWidth : TAB_W,
                 }}
-                transition={reduce ? { duration: 0 } : TAB_CHANGE_SPRING}
+                transition={reducedTransition(TAB_CHANGE_SPRING, reduce)}
                 className={cn(
-                  // One alignment for both states: swapping justify or padding on
-                  // toggle made the icon jump a few pixels before the width glided.
-                  "relative isolate flex h-9 min-w-8 shrink-0 items-center justify-start overflow-hidden rounded-[18px] px-2 text-sm font-medium outline-none",
+                  // One alignment for both states, or the icon jumps before the width glides.
+                  "relative isolate flex h-9 min-w-8 shrink-0 items-center justify-start overflow-hidden rounded-[18px] px-2 font-medium outline-none",
+                  typeClass("body"),
                   "focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  "transition-colors duration-(--duration-fast)",
                   isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                   classNames?.tab,
                   isActive && classNames?.activeTab,
@@ -340,7 +330,7 @@ export function ExpandableTabs({
                 {isActive ? (
                   <span
                     className={cn(
-                      "absolute inset-0 -z-10 rounded-[18px] bg-foreground/10",
+                      "absolute inset-0 -z-10 rounded-[18px] bg-selected",
                       classNames?.pill,
                     )}
                   />
@@ -366,7 +356,7 @@ export function ExpandableTabs({
                           filter: isActive ? "blur(0px)" : "blur(3px)",
                         }
                   }
-                  transition={reduce ? { duration: 0 } : isActive ? LABEL_OPEN : LABEL_CLOSE}
+                  transition={reducedTransition(isActive ? LABEL_OPEN : LABEL_CLOSE, reduce)}
                   className={cn(
                     "inline-block overflow-hidden whitespace-nowrap",
                     classNames?.label,
@@ -385,7 +375,12 @@ export function ExpandableTabs({
       >
         {items.map((item) => (
           <span
-            className={cn("text-sm leading-none font-medium whitespace-nowrap", classNames?.label)}
+            className={cn(
+              "font-medium whitespace-nowrap",
+              typeClass("body"),
+              "leading-none",
+              classNames?.label,
+            )}
             key={item.id}
             ref={setLabelMeasureRef(item.id)}
           >

@@ -1,6 +1,3 @@
-// Fuzzy command search. Each item's fields are normalized once and cached, so a
-// keystroke only scores.
-
 export type SearchableCommand = {
   readonly label: string;
   readonly group?: string;
@@ -19,13 +16,9 @@ function normalize(value: string) {
 
 type Field = { text: string; words: string[] };
 
-/**
- * Keyed by the item object, so it holds for as long as the caller keeps passing
- * the same objects. An item whose text changes must be a new object.
- */
+// Keyed by item object: an item whose text changes must be a new object.
 const fieldCache = new WeakMap<SearchableCommand, ReadonlyArray<Field>>();
 
-/** The label first: it earns a bonus the other fields don't. */
 function fieldsOf(item: SearchableCommand) {
   let fields = fieldCache.get(item);
   if (!fields) {
@@ -42,8 +35,7 @@ function tokenScore(token: string, { text, words }: Field) {
   if (words.includes(token)) return 100;
   if (words.some((word) => word.startsWith(token))) return 80;
   if (text.includes(token)) return 60;
-  // Keep short queries precise; fuzzy abbreviations may skip at most two
-  // letters within a word, rather than matching across a whole description.
+  // Fuzzy matches may skip at most two letters, within one word.
   if (token.length < 3) return 0;
   for (const word of words) {
     if (word.length - token.length > 2) continue;
@@ -56,10 +48,6 @@ function tokenScore(token: string, { text, words }: Field) {
   return 0;
 }
 
-/**
- * Match every query word across fields and put direct name matches first. Equal
- * scores keep the order they came in.
- */
 export function searchCommands<T extends SearchableCommand>(
   items: ReadonlyArray<T>,
   query: string,

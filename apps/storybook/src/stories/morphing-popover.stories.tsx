@@ -9,6 +9,10 @@ import {
   MorphingPopoverMenu,
   MorphingPopoverTrigger,
 } from "@masmeert/ui/morphing-popover";
+import { sizeTokens } from "@masmeert/ui/lib/size";
+
+const tokens = sizeTokens();
+const itemClass = `flex items-center rounded-lg text-foreground outline-none ${tokens.row} ${tokens.gap} ${tokens.text}`;
 
 const meta = {
   title: "Overlays/Morphing Popover",
@@ -56,7 +60,7 @@ function ThreadActionsPopover(props: ComponentProps<typeof MorphingPopoverConten
               type="button"
               role="menuitem"
               onClick={() => setOpen(false)}
-              className="flex h-8 items-center gap-2 rounded-lg px-2.5 text-[13px] text-foreground outline-none hover:bg-muted/60 focus-visible:bg-muted/60"
+              className={itemClass}
             >
               <Icon className="size-4 text-muted-foreground" />
               {label}
@@ -93,7 +97,7 @@ function NewProjectPopover(props: ComponentProps<typeof MorphingPopoverContent>)
               type="button"
               role="menuitem"
               onClick={() => changeOpen(false)}
-              className="flex h-8 items-center rounded-lg px-2.5 text-[13px] text-foreground outline-none hover:bg-muted/60 focus-visible:bg-muted/60"
+              className={itemClass}
             >
               New thread
             </button>
@@ -101,7 +105,7 @@ function NewProjectPopover(props: ComponentProps<typeof MorphingPopoverContent>)
               type="button"
               role="menuitem"
               onClick={() => setView("form")}
-              className="flex h-8 items-center rounded-lg px-2.5 text-[13px] text-foreground outline-none hover:bg-muted/60 focus-visible:bg-muted/60"
+              className={itemClass}
             >
               New project…
             </button>
@@ -116,10 +120,10 @@ function NewProjectPopover(props: ComponentProps<typeof MorphingPopoverContent>)
           >
             <Input label="Project name" placeholder="masscode" value={name} onChange={setName} />
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setView("menu")}>
+              <Button variant="ghost" size="compact" onClick={() => setView("menu")}>
                 Back
               </Button>
-              <Button type="submit" size="sm" disabled={name.trim() === ""}>
+              <Button type="submit" size="compact" disabled={name.trim() === ""}>
                 Create
               </Button>
             </div>

@@ -9,10 +9,14 @@ import {
   InputGroupText,
   InputGroupTextarea,
 } from "@masmeert/ui/input-group";
+import { Button } from "@masmeert/ui/button";
 
 const meta = {
   title: "Inputs/Input Group",
   component: InputGroup,
+  argTypes: {
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
+  },
   decorators: [
     function FixedWidth(Story) {
       return (
@@ -56,7 +60,7 @@ export const WithPrefixAndSuffix: Story = {
   ),
 };
 
-function CopyableDeployHook() {
+function CopyableDeployHook({ size }: { size?: "compact" | "default" | "large" }) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -66,7 +70,7 @@ function CopyableDeployHook() {
   }, [copied]);
 
   return (
-    <InputGroup>
+    <InputGroup size={size}>
       <InputGroupInput
         readOnly
         value="https://api.masscode.app/hooks/deploy/prj_7Hq2"
@@ -74,7 +78,7 @@ function CopyableDeployHook() {
       />
       <InputGroupAddon align="inline-end">
         <InputGroupButton
-          size="icon-sm"
+          size="icon-inset"
           aria-label={copied ? "Copied" : "Copy deploy hook URL"}
           onClick={() => setCopied(true)}
         >
@@ -86,7 +90,31 @@ function CopyableDeployHook() {
 }
 
 export const WithCopyButton: Story = {
-  render: () => <CopyableDeployHook />,
+  render: (args) => <CopyableDeployHook size={args.size} />,
+};
+
+/** Every step beside a button of the same step: the field and the button share a height. */
+export const Sizes: Story = {
+  render: () => (
+    <div className="flex flex-col gap-3">
+      {(["compact", "default", "large"] as const).map((size) => (
+        <div key={size} className="flex items-center gap-2">
+          <InputGroup size={size}>
+            <InputGroupAddon>
+              <Search />
+            </InputGroupAddon>
+            <InputGroupInput placeholder={`Search (${size})`} aria-label={`Search (${size})`} />
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton>Go</InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
+          <Button size={size} variant="outline">
+            Filter
+          </Button>
+        </div>
+      ))}
+    </div>
+  ),
 };
 
 export const WithTextarea: Story = {
@@ -100,7 +128,7 @@ export const WithTextarea: Story = {
         <InputGroupText>claude-sonnet-4-5</InputGroupText>
         <InputGroupButton
           variant="primary"
-          size="icon-sm"
+          size="icon-inset"
           aria-label="Send message"
           className="ml-auto"
         >

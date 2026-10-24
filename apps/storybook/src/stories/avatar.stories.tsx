@@ -24,7 +24,7 @@ const meta = {
   component: Avatar,
   args: { size: "default" },
   argTypes: {
-    size: { control: "inline-radio", options: ["sm", "default", "lg"] },
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
   },
 } satisfies Meta<typeof Avatar>;
 
@@ -77,5 +77,5 @@ function ReviewerGroup(props: AvatarProps) {
 
 export const Image: Story = { render: AuthorAvatar };
 export const Fallback: Story = { render: InitialsAvatar };
-export const WithBadge: Story = { args: { size: "lg" }, render: ApprovedReviewerAvatar };
+export const WithBadge: Story = { args: { size: "large" }, render: ApprovedReviewerAvatar };
 export const Group: Story = { render: ReviewerGroup };

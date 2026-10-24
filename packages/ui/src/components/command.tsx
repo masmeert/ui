@@ -2,13 +2,17 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Search, type LucideIcon } from "lucide-react";
 import { type ReactNode, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { EASE_OUT } from "@/lib/ease";
+import { FluidHoverHighlight } from "@/components/fluid-hover-highlight";
+import { type FluidHover, useFluidHover, useRegisterFluidHoverItem } from "@/hooks/use-fluid-hover";
 import { useOnOpen } from "@/hooks/use-on-open";
 import { useRowCursor } from "@/hooks/use-row-cursor";
-import { useTouchCapable } from "@/hooks/use-touch-capable";
 import { PresenceGate } from "@/components/presence-gate";
 import { cn } from "cn";
 import { searchCommands } from "@/lib/command-search";
+import { type Size, type SizeTokens, useSize } from "@/lib/size";
+import { reducedTransition, spring, springExit } from "@/lib/springs";
+import { SURFACE_OFFSET, SurfaceProvider, useElevation } from "@/lib/surface";
+import { typeClass } from "@/lib/type-scale";
 
 export type CommandItem = {
   id: string;
@@ -23,22 +27,18 @@ export type CommandItem = {
 
 export interface CommandDialogProps {
   items: CommandItem[];
-  /** Opens with Cmd/Ctrl + this key. Default: "k" */
+  /** Opens with Cmd/Ctrl + this key. Default "k". */
   shortcut?: string;
   placeholder?: string;
   emptyMessage?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  size?: Size;
 }
 
-// Opened via a keyboard shortcut many times a day — entrance must read as
-// instant. Tight spring, even faster exit.
-const PANEL_SPRING = {
-  type: "spring",
-  stiffness: 560,
-  damping: 40,
-  mass: 0.5,
-} as const;
+// Deliberately faster than the dialog tier: summoned by shortcut many times a day.
+const PANEL_ENTER = spring.moderate;
+const PANEL_EXIT = springExit.moderate;
 
 export function CommandDialog({
   items,
@@ -47,7 +47,10 @@ export function CommandDialog({
   emptyMessage = "No results found.",
   open: controlledOpen,
   onOpenChange,
+  size: sizeProp,
 }: CommandDialogProps) {
+  const size = useSize(sizeProp);
+  const surface = useElevation(SURFACE_OFFSET.dialog);
   const [internalOpen, setInternalOpen] = useState(false);
   const controlled = controlledOpen !== undefined;
   const open = controlled ? controlledOpen : internalOpen;
@@ -60,12 +63,10 @@ export function CommandDialog({
   );
 
   const [query, setQuery] = useState("");
-  // Portal target only exists client-side; render nothing during SSR/hydration.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const uid = useId();
   const reduce = useReducedMotion();
-  const canTouch = useTouchCapable();
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -100,8 +101,6 @@ export function CommandDialog({
 
   const filtered = useMemo(() => searchCommands(items, query), [items, query]);
 
-  // Reserve the icon column only when at least one item brings an icon, so
-  // icon-less lists don't render a dead gap before every label.
   const hasIcons = useMemo(() => items.some((it) => it.icon), [items]);
 
   const grouped = useMemo(() => {
@@ -115,19 +114,36 @@ export function CommandDialog({
     return Array.from(map.entries());
   }, [filtered]);
 
-  // Grouping reorders the list, so the rendered order is not the filtered
-  // order whenever two groups interleave. Everything that has to agree on
-  // "which row" — the highlight, the ids, Enter, the scroll — reads this one
-  // array, so they cannot drift apart.
+  // Grouping reorders rows; the highlight, ids, Enter and scroll must all read this render order.
   const rows = useMemo(() => grouped.flatMap(([, list]) => list), [grouped]);
 
   const { activeIndex: active, moveTo, moveActive } = useRowCursor(rows, query);
 
-  // Clearing the query would drop the cursor on its own, but only if it had
-  // changed; `moveTo(null)` covers reopening on an already-empty query.
+  // The highlight is the cursor: pointer-lit becomes active, and on leave it returns to the active row.
+  const hover = useFluidHover(listRef);
+  const { activeIndex: lit, setActiveIndex, remeasure } = hover;
+  const activeRow = rows.length > 0 ? active : null;
+  // Only react to pointer moves of `lit`: after a key step it still names the old row.
+  const litSeen = useRef<number | null>(null);
+  useEffect(() => {
+    if (lit === litSeen.current) return;
+    litSeen.current = lit;
+    if (lit === null) {
+      if (activeRow !== null) setActiveIndex(activeRow);
+      return;
+    }
+    const row = rows[lit];
+    if (lit !== activeRow && row) moveTo(row.id);
+  }, [lit, activeRow, rows, moveTo, setActiveIndex]);
+  useEffect(() => {
+    setActiveIndex(activeRow);
+  }, [activeRow, setActiveIndex]);
+
+  // `moveTo(null)` covers reopening on an already-empty query.
   useOnOpen(open, () => {
     setQuery("");
     moveTo(null);
+    remeasure();
   });
 
   useEffect(() => {
@@ -161,14 +177,8 @@ export function CommandDialog({
 
   if (!mounted) return null;
 
-  // Portaled to <body> so ancestors with transforms, filters, or fixed
-  // positioning can't trap the overlay in their stacking context, and mounted
-  // only while open. The chrome is two fixed siblings rather than one wrapper:
-  // the backdrop spans the viewport edges but carries the scrim colour, and the
-  // layer positioning the panel is inset off every edge. Both hang off
-  // `PresenceGate`, so interaction releases in the same commit that starts the
-  // exit rather than when it ends — `open` is already false for those frames.
-  // See tests/fixed-overlay-edge-sampling.test.tsx.
+  // Backdrop and inset panel layer are separate fixed siblings (see
+  // tests/fixed-overlay-edge-sampling.test.tsx). PresenceGate releases interaction as the exit starts.
   return createPortal(
     <AnimatePresence initial={false}>
       {open ? (
@@ -179,14 +189,11 @@ export function CommandDialog({
               aria-label="Close command palette"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{
-                opacity: 0,
-                transition: { duration: 0.12, ease: EASE_OUT },
-              }}
-              transition={{ duration: 0.18, ease: EASE_OUT }}
+              exit={{ opacity: 0, transition: PANEL_EXIT }}
+              transition={PANEL_ENTER}
               {...gate}
               onClick={() => setOpen(false)}
-              className="pointer-events-auto fixed inset-0 z-[100] bg-background/5 [backdrop-filter:blur(12px)_saturate(140%)] [-webkit-backdrop-filter:blur(12px)_saturate(140%)]"
+              className="pointer-events-auto fixed inset-0 z-(--z-overlay) bg-background/5 [backdrop-filter:blur(12px)_saturate(140%)] [-webkit-backdrop-filter:blur(12px)_saturate(140%)]"
             />
           )}
         </PresenceGate>
@@ -195,11 +202,10 @@ export function CommandDialog({
       {open ? (
         <PresenceGate key="panel-layer">
           {({ isPresent, gate }) => (
-            // The layer itself never takes pointer events, so it carries
-            // `inert` alone rather than the gate's pointer-events value.
+            // Never takes pointer events, so only `inert` from the gate.
             <div
               inert={!isPresent}
-              className="pointer-events-none fixed inset-x-4 top-[18vh] bottom-4 z-[100] flex items-start justify-center"
+              className="pointer-events-none fixed inset-x-4 top-[18vh] bottom-4 z-(--z-overlay) flex items-start justify-center"
             >
               <motion.div
                 role="dialog"
@@ -215,122 +221,96 @@ export function CommandDialog({
                   opacity: 0,
                   y: reduce ? 0 : -8,
                   scale: reduce ? 1 : 0.97,
-                  transition: { duration: 0.12, ease: EASE_OUT },
+                  transition: PANEL_EXIT,
                 }}
-                transition={reduce ? { duration: 0.1 } : PANEL_SPRING}
+                transition={reducedTransition(PANEL_ENTER, reduce)}
                 {...gate}
                 onKeyDown={onKeyDown}
-                className="pointer-events-auto w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-popover shadow-panel"
+                className={cn(
+                  "pointer-events-auto w-full max-w-xl overflow-hidden rounded-2xl border border-border",
+                  surface.className,
+                )}
               >
-                <div className="flex items-center gap-3 border-b border-border px-4">
-                  <Search className="h-4 w-4 text-muted-foreground" />
-                  <input
-                    ref={inputRef}
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder={placeholder}
-                    role="combobox"
-                    // The field only exists while the palette is open.
-                    aria-expanded="true"
-                    aria-controls={`${uid}-list`}
-                    aria-activedescendant={rows.length > 0 ? `${uid}-opt-${active}` : undefined}
-                    aria-autocomplete="list"
-                    className={cn(
-                      "h-12 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground",
-                      // The palette focuses this field the moment it opens, and iOS
-                      // zooms the page in on a focused field under 16px: the fixed
-                      // overlay is magnified off-center — clipped leading edge, half
-                      // an icon column — and the zoom outlives the palette. 16px on
-                      // touch keeps the page at scale 1; pointer devices keep 14px.
-                      canTouch && "text-base",
-                    )}
-                  />
-                  <kbd className="hidden rounded border border-border bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground sm:inline-block">
-                    ESC
-                  </kbd>
-                </div>
-                <motion.div
-                  layoutScroll
-                  ref={listRef}
-                  id={`${uid}-list`}
-                  role="listbox"
-                  aria-label="Commands"
-                  className="max-h-[60vh] [scrollbar-width:none] overflow-y-auto overscroll-contain p-2 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-                >
-                  {rows.length === 0 ? (
-                    <div className="p-8 text-center text-sm text-muted-foreground">
-                      {emptyMessage}
-                    </div>
-                  ) : (
-                    grouped.map(([group, list]) => (
-                      <div key={group} className="mb-1 last:mb-0">
-                        <div
-                          aria-hidden
-                          className="px-2 py-1.5 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase"
-                        >
-                          {group}
-                        </div>
-                        {list.map((it) => {
-                          // `rows` holds these very objects, in render order.
-                          const idx = rows.indexOf(it);
-                          const isActive = idx === active;
-                          const Icon = it.icon;
-                          return (
-                            <button
-                              key={it.id}
-                              type="button"
-                              id={`${uid}-opt-${idx}`}
-                              role="option"
-                              aria-selected={isActive}
-                              data-index={idx}
-                              onMouseEnter={() => moveTo(it.id)}
-                              onClick={() => {
-                                it.onSelect();
-                                setOpen(false);
-                              }}
-                              className={cn(
-                                "relative isolate flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm transition-colors",
-                                isActive ? "text-foreground" : "text-muted-foreground",
-                              )}
-                            >
-                              {isActive ? (
-                                <motion.span
-                                  layoutId={`${uid}-active`}
-                                  className="absolute inset-0 z-0 rounded-md bg-muted/60"
-                                  transition={
-                                    reduce
-                                      ? { duration: 0 }
-                                      : // Tracks rapid arrow-key navigation — keep it tighter
-                                        // than SPRING_LAYOUT so it never lags the active row.
-                                        {
-                                          type: "spring",
-                                          stiffness: 480,
-                                          damping: 38,
-                                        }
-                                  }
-                                />
-                              ) : null}
-                              {Icon ? (
-                                <Icon className="relative z-10 h-4 w-4" />
-                              ) : hasIcons ? (
-                                <span className="relative z-10 h-4 w-4" />
-                              ) : null}
-                              <span className="relative z-10 flex-1 truncate">{it.label}</span>
-                              {it.badge ? (
-                                <span className="relative z-10 shrink-0">{it.badge}</span>
-                              ) : null}
-                              {it.hint ? (
-                                <kbd className="relative z-10 rounded border border-border bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                                  {it.hint}
-                                </kbd>
-                              ) : null}
-                            </button>
-                          );
-                        })}
+                <SurfaceProvider value={surface.level}>
+                  <div className="flex items-center gap-3 border-b border-border px-4">
+                    <Search size={size.icon} className="text-muted-foreground" />
+                    <input
+                      ref={inputRef}
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder={placeholder}
+                      role="combobox"
+                      // The field only exists while the palette is open.
+                      aria-expanded="true"
+                      aria-controls={`${uid}-list`}
+                      aria-activedescendant={rows.length > 0 ? `${uid}-opt-${active}` : undefined}
+                      aria-autocomplete="list"
+                      className={cn(
+                        "h-12 flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground",
+                        // Auto-focused on open: `field` prevents iOS zoom on the fixed overlay.
+                        size.field,
+                      )}
+                    />
+                    <kbd
+                      className={cn(
+                        "hidden rounded border border-border bg-background px-1.5 py-0.5 text-muted-foreground sm:inline-block",
+                        typeClass("micro"),
+                      )}
+                    >
+                      ESC
+                    </kbd>
+                  </div>
+                  <motion.div
+                    layoutScroll
+                    ref={listRef}
+                    id={`${uid}-list`}
+                    role="listbox"
+                    aria-label="Commands"
+                    {...hover.handlers}
+                    className="relative max-h-[60vh] [scrollbar-width:none] overflow-y-auto overscroll-contain p-2 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                  >
+                    <FluidHoverHighlight hover={hover} className="rounded-md" />
+                    {rows.length === 0 ? (
+                      <div className={cn("p-8 text-center text-muted-foreground", size.type.body)}>
+                        {emptyMessage}
                       </div>
-                    ))
-                  )}
-                </motion.div>
+                    ) : (
+                      grouped.map(([group, list]) => (
+                        <div key={group} className="mb-1 last:mb-0">
+                          <div
+                            aria-hidden
+                            className={cn(
+                              "px-2 py-1.5 font-medium text-muted-foreground",
+                              size.type.caption,
+                            )}
+                          >
+                            {group}
+                          </div>
+                          {list.map((it) => {
+                            // `rows` holds these very objects, in render order.
+                            const idx = rows.indexOf(it);
+                            return (
+                              <CommandRow
+                                key={it.id}
+                                item={it}
+                                index={idx}
+                                id={`${uid}-opt-${idx}`}
+                                active={idx === active}
+                                hasIcons={hasIcons}
+                                size={size}
+                                registerItem={hover.registerItem}
+                                onSelect={() => {
+                                  it.onSelect();
+                                  setOpen(false);
+                                }}
+                              />
+                            );
+                          })}
+                        </div>
+                      ))
+                    )}
+                  </motion.div>
+                </SurfaceProvider>
               </motion.div>
             </div>
           )}
@@ -338,5 +318,65 @@ export function CommandDialog({
       ) : null}
     </AnimatePresence>,
     document.body,
+  );
+}
+
+function CommandRow({
+  item,
+  index,
+  id,
+  active,
+  hasIcons,
+  size,
+  registerItem,
+  onSelect,
+}: {
+  item: CommandItem;
+  index: number;
+  id: string;
+  active: boolean;
+  hasIcons: boolean;
+  size: SizeTokens;
+  registerItem: FluidHover["registerItem"];
+  onSelect: () => void;
+}) {
+  const ref = useRef<HTMLButtonElement>(null);
+  useRegisterFluidHoverItem(registerItem, index, ref);
+  const Icon = item.icon;
+  return (
+    <button
+      ref={ref}
+      type="button"
+      id={id}
+      role="option"
+      aria-selected={active}
+      data-index={index}
+      onClick={onSelect}
+      className={cn(
+        "relative flex w-full items-center rounded-md text-left transition-colors duration-(--duration-fast)",
+        size.row,
+        size.gap,
+        size.text,
+        active ? "text-foreground" : "text-muted-foreground",
+      )}
+    >
+      {Icon ? (
+        <Icon size={size.icon} className="shrink-0" />
+      ) : hasIcons ? (
+        <span className="shrink-0" style={{ width: size.icon, height: size.icon }} />
+      ) : null}
+      <span className="flex-1 truncate">{item.label}</span>
+      {item.badge ? <span className="shrink-0">{item.badge}</span> : null}
+      {item.hint ? (
+        <kbd
+          className={cn(
+            "rounded border border-border bg-background px-1.5 py-0.5 text-muted-foreground",
+            typeClass("micro"),
+          )}
+        >
+          {item.hint}
+        </kbd>
+      ) : null}
+    </button>
   );
 }

@@ -5,8 +5,16 @@ import type {
   ReactNode,
   Ref,
 } from "react";
+import { type Size, useSize } from "@/lib/size";
 import { cn } from "cn";
 import { mergeRefs, useComboboxContext } from "./context";
+
+// Matches `Input`'s radius per step.
+const FIELD_RADIUS: Record<Size, string> = {
+  compact: "rounded-lg",
+  default: "rounded-lg",
+  large: "rounded-xl",
+};
 
 export interface ComboboxTriggerProps {
   children: ReactNode;
@@ -15,6 +23,7 @@ export interface ComboboxTriggerProps {
 
 export function ComboboxTrigger({ children, className }: ComboboxTriggerProps) {
   const context = useComboboxContext("ComboboxTrigger");
+  const tokens = useSize(context.size);
 
   return (
     <div
@@ -28,7 +37,12 @@ export function ComboboxTrigger({ children, className }: ComboboxTriggerProps) {
         context.setOpen(true);
       }}
       className={cn(
-        "relative z-20 flex h-10 w-full min-w-52 cursor-text items-center justify-between gap-3 rounded-xl border border-border bg-transparent px-3 text-sm text-foreground transition-[border-color] hover:border-border-strong",
+        "relative z-20 flex w-full min-w-52 cursor-text items-center justify-between border border-border bg-transparent text-foreground transition-[border-color] duration-(--duration-fast) hover:border-border-strong",
+        tokens.control,
+        tokens.controlPx,
+        tokens.text,
+        tokens.gap,
+        FIELD_RADIUS[tokens.size],
         "focus-within:border-brand/40",
         context.disabled && "pointer-events-none opacity-50",
         className,
@@ -36,7 +50,7 @@ export function ComboboxTrigger({ children, className }: ComboboxTriggerProps) {
     >
       <span className="min-w-0 flex-1 text-left">{children}</span>
       <span aria-hidden className="shrink-0 text-muted-foreground">
-        <ChevronsUpDown className="size-4" />
+        <ChevronsUpDown size={tokens.icon} />
       </span>
     </div>
   );
@@ -95,6 +109,7 @@ export function ComboboxInput({
   ...props
 }: ComboboxInputProps) {
   const context = useComboboxContext("ComboboxInput");
+  const tokens = useSize(context.size);
   const selectedLabel = context.labelFor(context.value);
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
@@ -103,11 +118,8 @@ export function ComboboxInput({
 
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
-      // Opening is the whole action. While closed the list is still filtering
-      // by the query the last session left, so a step taken here would be
-      // measured against rows the next render replaces — and stamped with a
-      // query it no longer has, which discards it. Open onto the selection,
-      // and let the next key step through the list the user can see.
+      // Only open: while closed the list still filters by the last session's query,
+      // so a step here would target rows the next render replaces.
       if (!context.open) {
         context.setOpen(true);
         return;
@@ -130,8 +142,8 @@ export function ComboboxInput({
   };
 
   return (
-    <div className={cn("flex min-w-0 flex-1 items-center gap-2", wrapperClassName)}>
-      <Search aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+    <div className={cn("flex min-w-0 flex-1 items-center", tokens.gap, wrapperClassName)}>
+      <Search aria-hidden size={tokens.icon} className="shrink-0 text-muted-foreground" />
       <input
         {...props}
         ref={mergeRefs(ref, context.inputRef)}
@@ -168,7 +180,9 @@ export function ComboboxInput({
         }}
         onKeyDown={handleKeyDown}
         className={cn(
-          "h-10 min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed",
+          "min-w-0 flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed",
+          tokens.control,
+          tokens.field,
           className,
         )}
       />

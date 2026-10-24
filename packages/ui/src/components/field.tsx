@@ -4,6 +4,8 @@ import { cn } from "cn";
 
 import { Label } from "@/components/label";
 import { Separator } from "@/components/separator";
+import { useSize } from "@/lib/size";
+import { surfaceClasses, useSurface } from "@/lib/surface";
 
 function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
   return (
@@ -24,14 +26,14 @@ function FieldLegend({
   variant = "legend",
   ...props
 }: React.ComponentProps<"legend"> & { variant?: "legend" | "label" }) {
+  const { type } = useSize();
   return (
     <legend
       data-slot="field-legend"
       data-variant={variant}
       className={cn(
         "mb-3 font-medium",
-        "data-[variant=legend]:text-base",
-        "data-[variant=label]:text-sm",
+        variant === "legend" ? type.subtitle : type.body,
         className,
       )}
       {...props}
@@ -115,11 +117,13 @@ function FieldLabel({ className, ...props }: React.ComponentProps<typeof Label>)
 }
 
 function FieldTitle({ className, ...props }: React.ComponentProps<"div">) {
+  const { type } = useSize();
   return (
     <div
       data-slot="field-label"
       className={cn(
-        "flex w-fit items-center gap-2 text-sm leading-snug font-medium group-data-[disabled=true]/field:opacity-50",
+        type.body,
+        "flex w-fit items-center gap-2 font-medium group-data-[disabled=true]/field:opacity-50",
         className,
       )}
       {...props}
@@ -128,11 +132,13 @@ function FieldTitle({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 function FieldDescription({ className, ...props }: React.ComponentProps<"p">) {
+  const { type } = useSize();
   return (
     <p
       data-slot="field-description"
       className={cn(
-        "text-sm leading-normal font-normal text-muted-foreground group-has-data-horizontal/field:text-balance",
+        type.caption,
+        "font-normal text-muted-foreground group-has-data-horizontal/field:text-balance",
         "last:mt-0 nth-last-2:-mt-1 [[data-variant=legend]+&]:-mt-1.5",
         "[&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-brand",
         className,
@@ -149,12 +155,16 @@ function FieldSeparator({
 }: React.ComponentProps<"div"> & {
   children?: React.ReactNode;
 }) {
+  const { type } = useSize();
+  // The label masks the rule with the surface it sits on, so it works inside dialogs too.
+  const surface = useSurface();
   return (
     <div
       data-slot="field-separator"
       data-content={!!children}
       className={cn(
-        "relative -my-2 h-5 text-sm group-data-[variant=outline]/field-group:-mb-2",
+        type.caption,
+        "relative -my-2 h-5 leading-5 group-data-[variant=outline]/field-group:-mb-2",
         className,
       )}
       {...props}
@@ -162,7 +172,10 @@ function FieldSeparator({
       <Separator className="absolute inset-0 top-1/2" />
       {children && (
         <span
-          className="relative mx-auto block w-fit bg-background px-2 text-muted-foreground"
+          className={cn(
+            "relative mx-auto block w-fit px-2 text-muted-foreground",
+            surfaceClasses(surface, 1),
+          )}
           data-slot="field-separator-content"
         >
           {children}
@@ -180,6 +193,7 @@ function FieldError({
 }: React.ComponentProps<"div"> & {
   errors?: Array<{ message?: string } | undefined>;
 }) {
+  const { type } = useSize();
   const content = useMemo(() => {
     if (children) {
       return children;
@@ -210,7 +224,7 @@ function FieldError({
     <div
       role="alert"
       data-slot="field-error"
-      className={cn("text-sm font-normal text-destructive", className)}
+      className={cn(type.caption, "font-normal text-destructive", className)}
       {...props}
     >
       {content}

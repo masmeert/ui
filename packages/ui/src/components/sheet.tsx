@@ -1,7 +1,8 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, type ReactNode } from "react";
-import { EASE_OUT, SPRING_PANEL } from "@/lib/ease";
 import { PresenceGate } from "@/components/presence-gate";
+import { reducedTransition, spring, springExit } from "@/lib/springs";
+import { SURFACE_OFFSET, SurfaceProvider, useElevation } from "@/lib/surface";
 import { cn } from "cn";
 
 export interface SheetProps {
@@ -9,12 +10,10 @@ export interface SheetProps {
   onOpenChange: (open: boolean) => void;
   side?: "left" | "right";
   children: ReactNode;
-  /** Class for the panel surface. */
   className?: string;
-  /** Class for the backdrop. */
   backdropClassName?: string;
   ariaLabel?: string;
-  /** Close when the backdrop is clicked. Default true. */
+  /** Close when the backdrop is clicked. */
   dismissable?: boolean;
 }
 
@@ -29,6 +28,7 @@ export function Sheet({
   dismissable = true,
 }: SheetProps) {
   const reduce = useReducedMotion();
+  const surface = useElevation(SURFACE_OFFSET.dialog);
 
   useEffect(() => {
     if (!open) return;
@@ -46,11 +46,7 @@ export function Sheet({
 
   const offscreen = side === "right" ? "100%" : "-100%";
 
-  // Two fixed siblings, no wrapper: the backdrop spans the viewport edges but
-  // paints the scrim, and the panel is inset off one side and paints its own
-  // surface, so neither is a transparent edge-spanning layer. Both hang off
-  // `PresenceGate`, so interaction releases in the same commit that starts the
-  // exit rather than when it ends. See tests/fixed-overlay-edge-sampling.test.tsx.
+  // Separate fixed siblings, each gated so interaction releases when the exit starts.
   return (
     <AnimatePresence>
       {open ? (
@@ -63,11 +59,11 @@ export function Sheet({
               onClick={() => dismissable && onOpenChange(false)}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25, ease: EASE_OUT }}
+              exit={{ opacity: 0, transition: springExit.slow }}
+              transition={spring.slow}
               {...gate}
               className={cn(
-                "fixed inset-0 z-50 h-full w-full cursor-default bg-background/5 [backdrop-filter:blur(14px)_saturate(140%)] [-webkit-backdrop-filter:blur(14px)_saturate(140%)]",
+                "fixed inset-0 z-(--z-overlay) h-full w-full cursor-default bg-background/5 [backdrop-filter:blur(14px)_saturate(140%)] [-webkit-backdrop-filter:blur(14px)_saturate(140%)]",
                 backdropClassName,
               )}
             />
@@ -83,18 +79,22 @@ export function Sheet({
               aria-label={ariaLabel}
               initial={reduce ? { opacity: 0 } : { x: offscreen }}
               animate={reduce ? { opacity: 1 } : { x: 0 }}
-              exit={reduce ? { opacity: 0 } : { x: offscreen }}
-              transition={reduce ? { duration: 0.2, ease: EASE_OUT } : SPRING_PANEL}
+              exit={{
+                ...(reduce ? { opacity: 0 } : { x: offscreen }),
+                transition: springExit.slow,
+              }}
+              transition={reducedTransition(spring.slow, reduce)}
               {...gate}
               className={cn(
-                "fixed inset-y-0 z-50 flex w-80 max-w-[85vw] flex-col bg-background shadow-panel",
+                "fixed inset-y-0 z-(--z-overlay) flex w-80 max-w-[85vw] flex-col",
+                surface.className,
                 side === "right"
                   ? "right-0 border-l border-border"
                   : "left-0 border-r border-border",
                 className,
               )}
             >
-              {children}
+              <SurfaceProvider value={surface.level}>{children}</SurfaceProvider>
             </motion.aside>
           )}
         </PresenceGate>

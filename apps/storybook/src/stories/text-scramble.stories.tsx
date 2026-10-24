@@ -2,13 +2,14 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Button } from "@masmeert/ui/button";
 import { TextScramble, type TextScrambleProps } from "@masmeert/ui/text-scramble";
 import { useState } from "react";
+import { typeClass } from "@masmeert/ui/lib/type-scale";
 
 function TextScrambleCycle({ messages, ...args }: TextScrambleProps & { messages: string[] }) {
   const [index, setIndex] = useState(0);
   return (
     <div className="flex flex-col items-center gap-4">
       <TextScramble {...args} text={messages[index % messages.length]} />
-      <Button variant="outline" size="sm" onClick={() => setIndex((current) => current + 1)}>
+      <Button variant="outline" size="compact" onClick={() => setIndex((current) => current + 1)}>
         Next
       </Button>
     </div>
@@ -22,7 +23,7 @@ const meta = {
   component: TextScramble,
   args: {
     text: deployStatuses[0],
-    className: "font-mono text-2xl font-semibold",
+    className: `font-mono font-bold ${typeClass("display")}`,
   },
   argTypes: {
     text: { control: false },
@@ -46,7 +47,7 @@ export const CommitHash: Story = {
 };
 
 export const SlowResolve: Story = {
-  args: { duration: 2000, className: "font-mono text-lg" },
+  args: { duration: 2000, className: `font-mono ${typeClass("subtitle")}` },
   render: (args) => (
     <TextScrambleCycle
       {...args}

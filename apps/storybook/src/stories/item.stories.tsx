@@ -62,7 +62,7 @@ function DeployItem(props: ItemProps) {
         <ItemDescription>main@4f2c91a · built in 1m 12s · 4 minutes ago</ItemDescription>
       </ItemContent>
       <ItemActions>
-        <Button size="sm" variant="outline">
+        <Button size="compact" variant="outline">
           Logs
         </Button>
       </ItemActions>
@@ -79,7 +79,7 @@ function PullRequestLinkItem(props: ItemProps) {
       <ItemContent>
         <ItemTitle>
           #482 Stream thread output{" "}
-          <Badge size="sm" status="info">
+          <Badge size="compact" status="info">
             Open
           </Badge>
         </ItemTitle>

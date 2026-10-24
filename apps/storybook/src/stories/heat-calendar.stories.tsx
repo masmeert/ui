@@ -2,6 +2,7 @@ import { useState, type ComponentProps } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Button } from "@masmeert/ui/button";
 import { HeatCalendar, type HeatCalendarSelection } from "@masmeert/ui/heat-calendar";
+import { typeClass } from "@masmeert/ui/lib/type-scale";
 
 type HeatCalendarProps = ComponentProps<typeof HeatCalendar>;
 
@@ -52,9 +53,16 @@ function SelectionReadout(props: HeatCalendarProps) {
   return (
     <div className="flex flex-col gap-3">
       <HeatCalendar {...props} selection={selection} onSelectionChange={setSelection} />
-      <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
+      <div
+        className={`flex items-center justify-between gap-3 text-muted-foreground ${typeClass("body")}`}
+      >
         <span>{describeSelection(selection)}</span>
-        <Button size="sm" variant="ghost" disabled={!selection} onClick={() => setSelection(null)}>
+        <Button
+          size="compact"
+          variant="ghost"
+          disabled={!selection}
+          onClick={() => setSelection(null)}
+        >
           Clear
         </Button>
       </div>

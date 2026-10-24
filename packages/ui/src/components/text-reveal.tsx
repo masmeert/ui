@@ -1,6 +1,7 @@
 import { motion, type Transition, useInView, useReducedMotion } from "motion/react";
 import { useRef, type ElementType, type ReactNode } from "react";
 import { EASE_OUT } from "@/lib/ease";
+import { spring as tier } from "@/lib/springs";
 import { cn } from "cn";
 
 type SplitMode = "word" | "char";
@@ -24,13 +25,8 @@ const DEFAULT_SPRING = { stiffness: 140, damping: 26, mass: 1.2 };
 
 type WordGroup = { text: string; trailing: string };
 
-/**
- * One tokenizer for both modes: a line becomes the words it is made of, each
- * carrying the whitespace that follows it. Word mode animates a group at a
- * time, char mode the characters inside one — so the two can't drift apart on
- * what counts as a word or where a space belongs. Runs of whitespace and tabs
- * survive as their own group rather than collapsing.
- */
+// Shared by both split modes: each word carries its trailing whitespace; leading
+// whitespace runs survive as their own group.
 function toWordGroups(line: string): WordGroup[] {
   const chunks = line.match(/\S+\s*|\s+/g) ?? [];
   return chunks.map((chunk) => {
@@ -86,8 +82,9 @@ export function TextReveal({
               ? { opacity: 1 }
               : { y: 0, opacity: 1, filter: "blur(0px)" }
             : initial;
+          // A read-once hero flourish whose pacing is the effect, so it keeps literal timings.
           const transition: Transition = reduce
-            ? { opacity: { duration: 0.25, ease: EASE_OUT, delay: d * 0.3 } }
+            ? { opacity: { ...tier.fast, delay: d * 0.3 } }
             : {
                 y: { type: "spring" as const, ...s, delay: d },
                 opacity: { duration: 0.7, ease: EASE_OUT, delay: d },
@@ -99,9 +96,7 @@ export function TextReveal({
               initial={initial}
               animate={animate}
               transition={transition}
-              // `whitespace-pre` is load-bearing: a unit's trailing space is
-              // inside an inline-block and would otherwise collapse to zero
-              // width, running every word together.
+              // whitespace-pre: the trailing space would collapse inside an inline-block.
               className="inline-block whitespace-pre will-change-transform"
             >
               {unit}
@@ -116,9 +111,7 @@ export function TextReveal({
           <span key={lineKey} className="block">
             {groups.map((group) => {
               const whole = group.text + group.trailing;
-              // Characters animate one at a time, but each word (plus the
-              // space that follows it) sits in its own inline-block so a long
-              // line wraps between words instead of mid-word.
+              // Char mode wraps each word in an inline-block so lines break between words.
               if (split !== "char") return renderUnit(whole);
 
               const groupCount = groupCounts.get(whole) ?? 0;

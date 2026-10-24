@@ -20,7 +20,12 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { EASE_OUT, SPRING_LAYOUT, SPRING_PANEL } from "@/lib/ease";
+import { MenuHoverContext, useMenuHoverScope, useMenuRowRef } from "@/components/dropdown-menu";
+import { FluidHoverHighlight } from "@/components/fluid-hover-highlight";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
+import { type Size, SizeProvider, useSize } from "@/lib/size";
+import { INSTANT, reducedTransition, spring, springExit, tierTween } from "@/lib/springs";
+import { SURFACE_OFFSET, SurfaceProvider, surfaceClasses, useElevation } from "@/lib/surface";
 import { holdSelection, TOUCH_GESTURE_CONTENT_CLASS } from "@/lib/touch";
 import { cn } from "cn";
 
@@ -28,6 +33,8 @@ type OpenModality = "pointer" | "keyboard" | "touch";
 type MenuPoint = { x: number; y: number };
 
 const VIEWPORT_PADDING = 8;
+// A spring on a multi-value clip-path snaps when it resolves its last distance.
+const CLIP_ENTER = tierTween.moderate;
 const LONG_PRESS_DELAY = 520;
 const LONG_PRESS_TOLERANCE = 10;
 
@@ -45,10 +52,6 @@ interface ContextMenuContextValue {
   menuId: string;
   triggerRef: React.MutableRefObject<HTMLElement | null>;
   contentRef: React.MutableRefObject<HTMLDivElement | null>;
-  activeId: string | null;
-  setActiveId: (id: string | null) => void;
-  glide: boolean;
-  setGlide: (glide: boolean) => void;
   reduce: boolean;
 }
 
@@ -111,8 +114,6 @@ export function ContextMenu({
   const [point, setPoint] = useState<MenuPoint>({ x: 0, y: 0 });
   const [modality, setModality] = useState<OpenModality>("pointer");
   const [invocation, setInvocation] = useState(0);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [glide, setGlide] = useState(false);
   const controlled = controlledOpen !== undefined;
   const open = controlled ? controlledOpen : internalOpen;
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -125,7 +126,6 @@ export function ContextMenu({
       if (nextModality) setModality(nextModality);
       if (!controlled) setInternalOpen(next);
       onOpenChange?.(next);
-      if (!next) setActiveId(null);
     },
     [controlled, onOpenChange],
   );
@@ -135,8 +135,6 @@ export function ContextMenu({
       setPoint(nextPoint);
       setModality(nextModality);
       setInvocation((current) => current + 1);
-      setActiveId(null);
-      setGlide(false);
       setOpen(true);
     },
     [setOpen],
@@ -171,13 +169,9 @@ export function ContextMenu({
       menuId,
       triggerRef,
       contentRef,
-      activeId,
-      setActiveId,
-      glide,
-      setGlide,
       reduce,
     }),
-    [open, setOpen, openAt, point, modality, invocation, menuId, activeId, glide, reduce],
+    [open, setOpen, openAt, point, modality, invocation, menuId, reduce],
   );
 
   return (
@@ -211,8 +205,7 @@ export function ContextMenuTrigger({
     touchOrigin.current = null;
   }, []);
 
-  // Held for the whole press, not just the timer: a gesture that turned into a
-  // drag must not paint a selection under the finger either.
+  // Selection is held for the whole press, not just the timer, so a drag doesn't paint one either.
   const endPress = useCallback(() => {
     cancelLongPress();
     releaseSelection.current?.();
@@ -230,17 +223,12 @@ export function ContextMenuTrigger({
 
   const onPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
     childProps.onPointerDown?.(event);
-    // A pen presses the same way a finger does and gets no `contextmenu` out
-    // of the platform for it, so it holds to open too. A mouse has the right
-    // button and is left to `onContextMenu`.
+    // Pens get no platform `contextmenu`, so they long-press like touch.
     const pressToOpen = event.pointerType === "touch" || event.pointerType === "pen";
     if (event.defaultPrevented || disabled || !pressToOpen) return;
 
-    // `pointer-coarse:select-none` misses this press on a laptop whose mouse
-    // is the primary pointer and whose touchscreen is not, and the platform's
-    // own long-press selection then claims the gesture and cancels ours. The
-    // press is the only thing that knows which input is on the glass, so it
-    // takes selection away itself — for its own duration, and no longer.
+    // `pointer-coarse:select-none` misses touchscreens on mouse-primary laptops, where the
+    // platform's long-press selection would cancel ours; block selection for this press only.
     releaseSelection.current?.();
     releaseSelection.current = holdSelection(event.currentTarget);
 
@@ -285,12 +273,7 @@ export function ContextMenuTrigger({
     "aria-controls": context.open ? context.menuId : undefined,
     "aria-haspopup": "menu",
     "aria-expanded": context.open,
-    // The long press is ours: without this iOS runs its own on the same
-    // gesture and drops the selection callout and its handles on top of the
-    // menu we just opened. Only the press gesture is ours though — the child
-    // is the consumer's content, so a mouse can still select the text in it
-    // and right-click the selection. `touch-none` stays off too: the page
-    // still has to scroll from the trigger.
+    // Stops iOS's own long-press callout over our menu; mouse selection and scrolling still work.
     className: cn(TOUCH_GESTURE_CONTENT_CLASS, childProps.className, className),
     onContextMenu: (event: ReactMouseEvent<HTMLElement>) => {
       childProps.onContextMenu?.(event);
@@ -317,14 +300,39 @@ export interface ContextMenuContentProps {
   children: ReactNode;
   className?: string;
   ariaLabel?: string;
+  size?: Size;
 }
 
 export function ContextMenuContent({
   children,
   className,
   ariaLabel = "Context menu",
+  size: sizeProp,
 }: ContextMenuContentProps) {
   const context = useContextMenuContext("ContextMenuContent");
+  const tokens = useSize(sizeProp);
+  const surface = useElevation(SURFACE_OFFSET.popover);
+  // Keyboard focus moves the highlight via `ContextMenuItem`'s onFocus.
+  const hover = useFluidHover(context.contentRef);
+  const { registerItem, remeasure, setActiveIndex } = hover;
+  const { scope, indexOf } = useMenuHoverScope(registerItem);
+  const hoverValue = useMemo(
+    () => ({
+      ...scope,
+      focus: (element: Element) => {
+        const index = indexOf(element);
+        if (index !== undefined) setActiveIndex(index);
+      },
+    }),
+    [scope, indexOf, setActiveIndex],
+  );
+  const [fromIndex, setFromIndex] = useState<number | null>(null);
+  const findChecked = () => {
+    const checked = context.contentRef.current?.querySelector(
+      '[role="menuitemradio"][aria-checked="true"]',
+    );
+    setFromIndex(indexOf(checked ?? null) ?? null);
+  };
   const [mounted, setMounted] = useState(false);
   const [position, setPosition] = useState<MenuPoint>(context.point);
   const [origin, setOrigin] = useState<MenuPoint>({ x: 0, y: 0 });
@@ -373,9 +381,7 @@ export function ContextMenuContent({
       return;
     }
 
-    // Let the measured collapsed clip paint once before expanding it. Without
-    // this preparation frame, the first invocation can batch both states and
-    // appear at full size without the morph.
+    // Paint the collapsed clip once first, or the first open batches both states and skips the morph.
     let openFrame = 0;
     const prepareFrame = requestAnimationFrame(() => {
       openFrame = requestAnimationFrame(() => setMorphReady(true));
@@ -392,6 +398,11 @@ export function ContextMenuContent({
     context.modality,
     context.reduce,
   ]);
+
+  // Stays mounted while closed, so remeasure on each open.
+  useEffect(() => {
+    if (context.open) remeasure();
+  }, [context.open, remeasure]);
 
   useEffect(() => {
     if (!context.open) return;
@@ -428,7 +439,6 @@ export function ContextMenuContent({
       context.setOpen(false, "keyboard");
       return;
     }
-    context.setGlide(false);
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       moveFocus(event.key === "ArrowDown" ? 1 : -1);
@@ -463,11 +473,10 @@ export function ContextMenuContent({
   const clipShown = "inset(0px 0px 0px 0px round 12px)";
   const transition =
     context.modality === "keyboard" || (context.open && !morphReady)
-      ? { duration: 0 }
-      : {
-          duration: context.reduce ? 0.1 : context.open ? 0.18 : 0.12,
-          ease: EASE_OUT,
-        };
+      ? INSTANT
+      : context.open
+        ? reducedTransition(CLIP_ENTER, context.reduce)
+        : springExit.moderate;
 
   return createPortal(
     <div
@@ -477,7 +486,7 @@ export function ContextMenuContent({
       style={{ left: position.x, top: position.y }}
       // A drop-shadow follows the clip as the menu unclips from the pointer; a box-shadow would sit at full size around it from the first frame.
       className={cn(
-        "fixed z-[100] [filter:drop-shadow(0_18px_28px_rgb(0_0_0/0.2))]",
+        "fixed z-(--z-popup) [filter:drop-shadow(0_18px_28px_rgb(0_0_0/0.2))]",
         context.open ? "pointer-events-auto" : "pointer-events-none",
       )}
     >
@@ -501,12 +510,35 @@ export function ContextMenuContent({
         onUpdate={() => {}}
         onKeyDown={onKeyDown}
         onContextMenu={(event) => event.preventDefault()}
+        onPointerEnter={(event) => {
+          findChecked();
+          hover.handlers.onPointerEnter(event);
+        }}
+        onPointerMove={(event) => hover.handlers.onPointerMove(event)}
+        onPointerLeave={(event) => hover.handlers.onPointerLeave(event)}
+        onClick={(event) => hover.handlers.onClick(event)}
         className={cn(
-          "relative min-w-56 overflow-hidden rounded-xl border border-border bg-card p-1.5 text-foreground outline-none",
+          // Shadow comes from the wrapper's drop-shadow.
+          "group/menu relative min-w-56 overflow-hidden rounded-xl border border-border p-1.5 text-foreground outline-none",
+          surfaceClasses(surface.level, 1),
           className,
         )}
       >
-        {children}
+        <ContextMenuHoverContext.Provider value={hoverValue}>
+          <MenuHoverContext.Provider value={scope}>
+            <SurfaceProvider value={surface.level}>
+              <SizeProvider size={tokens.size}>
+                <FluidHoverHighlight
+                  hover={hover}
+                  hidden={!context.open}
+                  from={fromIndex === null ? null : hover.itemRects[fromIndex]}
+                  className="rounded-lg group-has-[[data-fluid-hover-active][data-tone=destructive]]/menu:bg-destructive/10"
+                />
+                {children}
+              </SizeProvider>
+            </SurfaceProvider>
+          </MenuHoverContext.Provider>
+        </ContextMenuHoverContext.Provider>
       </motion.div>
     </div>,
     document.body,
@@ -514,6 +546,8 @@ export function ContextMenuContent({
 }
 
 type ContextMenuItemTone = "default" | "destructive";
+
+const ContextMenuHoverContext = createContext<{ focus: (element: Element) => void } | null>(null);
 
 export interface ContextMenuItemProps {
   children: ReactNode;
@@ -542,25 +576,26 @@ function ContextMenuItemBase({
   ariaChecked?: boolean;
 }) {
   const context = useContextMenuContext("ContextMenuItem");
-  const id = useId();
-  const active = context.activeId === id;
+  const hover = useContext(ContextMenuHoverContext);
+  const size = useSize();
+  const rowRef = useMenuRowRef();
   const checkedProps = role === "menuitem" ? {} : { "aria-checked": ariaChecked };
 
   return (
     <button
+      ref={rowRef}
       type="button"
-      id={id}
       role={role}
       {...checkedProps}
       disabled={disabled}
       data-context-menu-item="true"
       data-disabled={disabled ? "true" : undefined}
+      data-tone={tone}
       data-label={textValue}
       tabIndex={-1}
-      onFocus={() => context.setActiveId(id)}
+      onFocus={(event) => hover?.focus(event.currentTarget)}
       onPointerMove={(event) => {
         if (disabled || event.pointerType === "touch") return;
-        context.setGlide(true);
         event.currentTarget.focus();
       }}
       onClick={(event) => {
@@ -569,7 +604,10 @@ function ContextMenuItemBase({
         if (closeOnSelect) context.setOpen(false, event.detail === 0 ? "keyboard" : undefined);
       }}
       className={cn(
-        "relative isolate flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] outline-none select-none",
+        "relative flex w-full items-center rounded-lg text-left outline-none select-none",
+        size.row,
+        size.gap,
+        size.text,
         "focus-visible:ring-2 focus-visible:ring-foreground/15",
         "disabled:pointer-events-none disabled:opacity-40",
         inset && "pl-8",
@@ -577,16 +615,6 @@ function ContextMenuItemBase({
         className,
       )}
     >
-      {active ? (
-        <motion.span
-          layoutId={`${context.menuId}-active`}
-          className={cn(
-            "absolute inset-0 -z-10 rounded-lg",
-            tone === "destructive" ? "bg-destructive/10" : "bg-foreground/[0.065]",
-          )}
-          transition={context.reduce || !context.glide ? { duration: 0 } : SPRING_LAYOUT}
-        />
-      ) : null}
       {children}
     </button>
   );
@@ -622,8 +650,12 @@ export function ContextMenuCheckboxItem({
               key="check"
               initial={context.reduce ? false : { opacity: 0, scale: 0.75 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: context.reduce ? 1 : 0.75 }}
-              transition={context.reduce ? { duration: 0.08 } : SPRING_PANEL}
+              exit={{
+                opacity: 0,
+                scale: context.reduce ? 1 : 0.75,
+                transition: springExit.fast,
+              }}
+              transition={reducedTransition(spring.fast, context.reduce)}
             >
               <Check aria-hidden="true" className="h-3.5 w-3.5" strokeWidth={2.4} />
             </motion.span>
@@ -683,7 +715,7 @@ export function ContextMenuRadioItem({ value, children, ...props }: ContextMenuR
       <span className="flex h-4 w-4 shrink-0 items-center justify-center">
         <span
           className={cn(
-            "h-1.5 w-1.5 rounded-full bg-current transition-opacity",
+            "h-1.5 w-1.5 rounded-full bg-current transition-opacity duration-(--duration-fast)",
             checked ? "opacity-100" : "opacity-0",
           )}
         />
@@ -700,10 +732,12 @@ export interface ContextMenuLabelProps {
 }
 
 export function ContextMenuLabel({ children, inset = false, className }: ContextMenuLabelProps) {
+  const size = useSize();
   return (
     <div
       className={cn(
-        "px-2.5 pt-1.5 pb-1 text-[10px] font-semibold tracking-[0.12em] text-muted-foreground uppercase",
+        "px-2.5 pt-1.5 pb-1 font-medium text-muted-foreground",
+        size.type.caption,
         inset && "pl-8",
         className,
       )}
@@ -727,11 +761,14 @@ export interface ContextMenuShortcutProps {
 }
 
 export function ContextMenuShortcut({ children, className }: ContextMenuShortcutProps) {
+  const size = useSize();
   return (
     <span
       aria-hidden="true"
       className={cn(
-        "ml-auto pl-4 text-[10px] font-medium tracking-wide text-muted-foreground",
+        // Deliberate letter-spacing exception: ⌘⇧⌥ glyphs run together without it.
+        "ml-auto pl-4 tracking-widest text-muted-foreground",
+        size.type.caption,
         className,
       )}
     >

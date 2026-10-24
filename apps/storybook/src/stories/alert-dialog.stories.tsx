@@ -20,7 +20,7 @@ const meta = {
   component: AlertDialogContent,
   args: { size: "default" },
   argTypes: {
-    size: { control: "inline-radio", options: ["default", "sm"] },
+    size: { control: "inline-radio", options: ["default", "compact"] },
   },
 } satisfies Meta<typeof AlertDialogContent>;
 
@@ -108,7 +108,7 @@ export const WithMedia: Story = {
   render: (args) => <ArchiveThreadAlert {...args} />,
 };
 
-export const Small: Story = {
-  args: { size: "sm" },
+export const Compact: Story = {
+  args: { size: "compact" },
   render: (args) => <DiscardChangesAlert {...args} />,
 };

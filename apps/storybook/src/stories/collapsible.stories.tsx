@@ -45,7 +45,7 @@ function DeployStepWithLog() {
           <div className="text-xs text-muted-foreground">Finished in 1m 12s</div>
         </div>
         <Button
-          size="sm"
+          size="compact"
           variant="ghost"
           aria-expanded={logOpen}
           onClick={() => setLogOpen((open) => !open)}

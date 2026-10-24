@@ -17,11 +17,14 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { FluidHoverHighlight } from "@/components/fluid-hover-highlight";
+import { useFluidHover } from "@/hooks/use-fluid-hover";
 import { usePopoverPortalPosition } from "@/lib/popover-position";
-import { EASE_OUT, SPRING_LAYOUT, SPRING_PANEL } from "@/lib/ease";
+import { spring, springExit, tierTween } from "@/lib/springs";
+import { SURFACE_OFFSET, SurfaceProvider, surfaceClasses, useElevation } from "@/lib/surface";
 import { cn } from "cn";
 
-/** "right" opens a flyout beside its trigger (a row in another panel), or on its left without room. */
+/** "right" opens a flyout beside its trigger, flipping left without room. */
 type Side = "top" | "bottom" | "right";
 type Align = "start" | "end";
 
@@ -31,7 +34,6 @@ type MorphContextValue = {
   toggle: () => void;
   triggerId: string;
   contentId: string;
-  /** The element the panel measures against — see `registerTrigger`. */
   triggerRef: React.MutableRefObject<HTMLElement | null>;
   registerTrigger: (node: HTMLElement | null) => void;
   contentRef: React.MutableRefObject<HTMLDivElement | null>;
@@ -47,19 +49,13 @@ function useMorphContext(component: string) {
 
 export interface MorphingPopoverProps {
   children: ReactNode;
-  /** Controlled open state. */
   open?: boolean;
-  /** Uncontrolled initial open state. */
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   className?: string;
 }
 
-/**
- * A popover whose panel morphs open from the trigger corner: it's laid out at
- * full size but clipped to the corner nearest the trigger, then unclips as one
- * piece. Closes on outside pointer / Escape. Controlled or uncontrolled.
- */
+/** A popover whose panel unclips from the corner nearest the trigger. */
 export function MorphingPopover({
   children,
   open: controlledOpen,
@@ -84,25 +80,14 @@ export function MorphingPopover({
   );
   const toggle = useCallback(() => setOpen(!open), [setOpen, open]);
 
-  // A trigger normally registers itself through MorphingPopoverTrigger. It can't
-  // when something else already clones the element — a Tooltip wrapping the
-  // button, say — and an unregistered trigger leaves the panel with nothing to
-  // measure against, so it renders permanently invisible. The root boxes the
-  // trigger exactly (the content portals out of it), so it stands in until a
-  // real trigger registers, and stands in again if that one unmounts. Both are
-  // state, so a trigger arriving while the panel is open re-anchors it.
+  // The root stands in as anchor when no trigger registered (e.g. a Tooltip cloned it first),
+  // else the panel has nothing to measure and stays invisible. State, so a late trigger re-anchors.
   const anchorRef = useMemo<React.MutableRefObject<HTMLElement | null>>(
     () => ({ current: trigger ?? root }),
     [root, trigger],
   );
 
-  // The panel is a `role="dialog"` and goes inert the moment it closes, so
-  // focus cannot be left sitting inside it: a dismissal hands it back to the
-  // trigger, the way the ARIA dialog pattern asks. A pointer dismissal takes
-  // the focus onward itself when it lands on something focusable — this only
-  // catches the case where it would otherwise be stranded. When no trigger has
-  // registered, the root anchor stands in only if it can actually hold focus;
-  // there is nowhere better than where the keyboard already is, so leave it.
+  // The panel goes inert on close, so return focus to the trigger (or a focusable root) if stranded inside.
   const close = useCallback(() => {
     setOpen(false);
     const focused = document.activeElement;
@@ -117,7 +102,7 @@ export function MorphingPopover({
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
     const onPointer = (e: PointerEvent) => {
       const target = e.target as Node;
-      // A flyout portals out of the panel it opens from, so a click in it isn't outside that panel.
+      // A flyout portals out of its parent panel; a click in it isn't outside.
       if (target instanceof Element && target.closest("[data-morph-popover-portal]")) return;
       if (root && !root.contains(target) && !contentRef.current?.contains(target)) close();
     };
@@ -166,7 +151,6 @@ function mergeRefs<T>(...refs: Array<Ref<T> | undefined>) {
   };
 }
 
-/** Wraps a single element, toggling the popover on click. */
 export function MorphingPopoverTrigger({ children }: MorphingPopoverTriggerProps) {
   const ctx = useMorphContext("MorphingPopoverTrigger");
   if (!isValidElement<React.HTMLProps<HTMLElement>>(children)) return children;
@@ -189,8 +173,6 @@ export function MorphingPopoverTrigger({ children }: MorphingPopoverTriggerProps
 const originFor = (side: Exclude<Side, "right">, align: Align) =>
   `${side === "bottom" ? "top" : "bottom"} ${align === "end" ? "right" : "left"}`;
 
-// A clip that hides everything but the corner nearest the trigger, so the
-// panel appears to grow out of it. inset(top right bottom left).
 function clipHidden(side: Exclude<Side, "right">, align: Align, radius: number) {
   const top = side === "bottom" ? "0%" : "92%";
   const bottom = side === "bottom" ? "92%" : "0%";
@@ -200,15 +182,19 @@ function clipHidden(side: Exclude<Side, "right">, align: Align, radius: number) 
 }
 const clipShown = (radius: number) => `inset(0% 0% 0% 0% round ${radius}px)`;
 
-const MORPH_EXIT = { duration: 0.12, ease: EASE_OUT } as const;
+// Clip is a tween: a spring on a multi-value clip-path snaps when it resolves its last distance.
+const MORPH_ENTER = spring.slow;
+const MORPH_EXIT = springExit.slow;
+const CLIP_ENTER = tierTween.slow;
+const { type: _spring, ...SIZE_SPRING } = spring.moderate;
 
 export interface MorphingPopoverContentProps {
   children: ReactNode;
   side?: Side;
   align?: Align;
-  /** Gap between trigger and panel, in px. Default 8. */
+  /** In px. Default 8. */
   sideOffset?: number;
-  /** Panel corner radius, in px. Default 16. */
+  /** In px. Default 16. */
   radius?: number;
   instant?: boolean;
   className?: string;
@@ -225,18 +211,17 @@ export function MorphingPopoverContent({
 }: MorphingPopoverContentProps) {
   const ctx = useMorphContext("MorphingPopoverContent");
   const reduce = useReducedMotion() ?? false;
+  const surface = useElevation(SURFACE_OFFSET.popover);
   const [portalReady, setPortalReady] = useState(false);
-  // Measures the content at its natural size; the panel box springs to it, so
-  // swapping what's inside (a menu for a form, say) resizes smoothly.
+  // Natural content size; the panel box springs to it.
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const layout = usePopoverPortalPosition(ctx.triggerRef, bodyRef, portalReady && ctx.open);
 
   useEffect(() => setPortalReady(true), []);
 
-  const width = useSpring(0, SPRING_LAYOUT);
-  const height = useSpring(0, SPRING_LAYOUT);
-  // Sizes measured before the panel's first frame are its opening size, not a
-  // change to animate — the layout from a previous open is still around then.
+  const width = useSpring(0, SIZE_SPRING);
+  const height = useSpring(0, SIZE_SPRING);
+  // Sizes before the first frame are the opening size, not a change: the last open's layout lingers.
   const settled = useRef(false);
   useLayoutEffect(() => {
     if (!ctx.open) return;
@@ -255,10 +240,7 @@ export function MorphingPopoverContent({
       else value.jump(target);
   }, [layout, ctx.open, reduce, width, height]);
 
-  // Anchor the edges nearest the trigger (right for "end", bottom for "top"),
-  // so a size change grows away from it instead of needing a re-measure to
-  // stay put. Keep the panel inside the viewport, so a trigger near the edge
-  // doesn't push it off-screen.
+  // Anchor the edges nearest the trigger so a size change grows away from it without a re-measure.
   const VIEWPORT_MARGIN = 8;
   const viewport = document.documentElement;
   // The measured body sits inside the panel's 1px border.
@@ -267,7 +249,6 @@ export function MorphingPopoverContent({
   const flyoutLeft = layout ? layout.trigger.left + layout.trigger.width + sideOffset : 0;
   const flipped =
     side === "right" && flyoutLeft + panelWidth + VIEWPORT_MARGIN > viewport.clientWidth;
-  // A flyout grows down from its top corner nearest the trigger, like a bottom-side panel.
   const growSide = side === "right" ? "bottom" : side;
   const growAlign = side === "right" ? (flipped ? "end" : "start") : align;
   const horizontal = !layout
@@ -305,16 +286,12 @@ export function MorphingPopoverContent({
         ? { top: layout.trigger.top + layout.trigger.height + sideOffset }
         : { bottom: viewport.clientHeight - layout.trigger.top + sideOffset };
 
-  // Both directions travel between the exact same hidden/show states. Exit
-  // targets "hidden" directly instead of introducing separate choreography.
   const wrap = reduce
     ? undefined
     : {
         hidden: { opacity: 0, transform: "scale(0.96)", transition: MORPH_EXIT },
-        show: { opacity: 1, transform: "scale(1)", transition: SPRING_PANEL },
+        show: { opacity: 1, transform: "scale(1)", transition: MORPH_ENTER },
       };
-  // Preserve the original spring character on the wrapper, but tween the complex
-  // clip-path so it cannot snap when the spring resolves its final distance.
   const clip = reduce
     ? undefined
     : {
@@ -324,11 +301,11 @@ export function MorphingPopoverContent({
         },
         show: {
           clipPath: clipShown(radius),
-          transition: { duration: 0.2, ease: EASE_OUT },
+          transition: CLIP_ENTER,
         },
       };
 
-  // Keep the server and first client render identical, then mount the portal.
+  // Portal after hydration to match the server render.
   if (!portalReady) return null;
 
   return createPortal(
@@ -336,13 +313,12 @@ export function MorphingPopoverContent({
       {ctx.open ? (
         <motion.div
           data-morph-popover-portal=""
-          // Wrapper carries the shadow as a drop-shadow filter, which hugs the
-          // clipped shape below (box-shadow would just get clipped away).
+          // drop-shadow hugs the clipped shape; a box-shadow would be clipped away.
           variants={wrap}
           initial={instant ? false : reduce ? { opacity: 0 } : "hidden"}
           animate={reduce ? { opacity: 1 } : "show"}
           exit={reduce ? { opacity: 0 } : "hidden"}
-          transition={reduce ? { duration: 0.12 } : undefined}
+          transition={reduce ? spring.fast : undefined}
           style={{
             ...horizontal,
             ...vertical,
@@ -350,7 +326,7 @@ export function MorphingPopoverContent({
             transformOrigin: originFor(growSide, growAlign),
           }}
           // Electron hit-tests `app-region: drag` regardless of stacking, so a panel over a drag area would lose its clicks.
-          className="fixed z-[9999] [filter:drop-shadow(0_1px_1px_rgb(0_0_0/0.06))_drop-shadow(0_8px_20px_rgb(0_0_0/0.12))] [-webkit-app-region:no-drag]"
+          className="fixed z-(--z-popup) [filter:drop-shadow(0_1px_1px_rgb(0_0_0/0.06))_drop-shadow(0_8px_20px_rgb(0_0_0/0.12))] [-webkit-app-region:no-drag]"
         >
           <motion.div
             ref={ctx.contentRef}
@@ -365,10 +341,14 @@ export function MorphingPopoverContent({
               width: layout ? width : undefined,
               height: layout ? height : undefined,
             }}
-            className="box-content overflow-hidden border border-border bg-popover"
+            // Shadow comes from the wrapper's drop-shadow.
+            className={cn(
+              "box-content overflow-hidden border border-border",
+              surfaceClasses(surface.level, 1),
+            )}
           >
             <div ref={bodyRef} className={cn("w-max", className)}>
-              {children}
+              <SurfaceProvider value={surface.level}>{children}</SurfaceProvider>
             </div>
           </motion.div>
         </motion.div>
@@ -382,10 +362,76 @@ export interface MorphingPopoverMenuProps extends HTMLAttributes<HTMLDivElement>
   children: ReactNode;
 }
 
-/** Stacks menu items inside a MorphingPopoverContent with a consistent gap. */
-export function MorphingPopoverMenu({ className, children, ...props }: MorphingPopoverMenuProps) {
+/** Every direct child is a clickable item in one fluid hover list. */
+export function MorphingPopoverMenu({
+  className,
+  children,
+  onPointerEnter,
+  onPointerMove,
+  onPointerLeave,
+  onClick,
+  onFocus,
+  onBlur,
+  ...props
+}: MorphingPopoverMenuProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const hover = useFluidHover(ref);
+  const { registerItem, setActiveIndex, handlers } = hover;
+  const items = useRef<HTMLElement[]>([]);
+  const keyboardLit = useRef<number | null>(null);
+
+  useLayoutEffect(() => {
+    const found = Array.from(
+      ref.current?.querySelectorAll<HTMLElement>(
+        ":scope > :not([data-slot='fluid-hover-highlight'])",
+      ) ?? [],
+    );
+    items.current = found;
+    found.forEach((element, index) => registerItem(index, element));
+    return () => found.forEach((_, index) => registerItem(index, null));
+  }, [children, registerItem]);
+
   return (
-    <div role="menu" className={cn("flex flex-col gap-0.5", className)} {...props}>
+    <div
+      ref={ref}
+      role="menu"
+      className={cn(
+        "relative flex flex-col gap-0.5 [&>:not([data-slot=fluid-hover-highlight])]:relative",
+        className,
+      )}
+      onPointerEnter={(event) => {
+        onPointerEnter?.(event);
+        handlers.onPointerEnter(event);
+      }}
+      onPointerMove={(event) => {
+        onPointerMove?.(event);
+        handlers.onPointerMove(event);
+      }}
+      onPointerLeave={(event) => {
+        onPointerLeave?.(event);
+        handlers.onPointerLeave(event);
+      }}
+      onClick={(event) => {
+        onClick?.(event);
+        handlers.onClick(event);
+      }}
+      onFocus={(event) => {
+        onFocus?.(event);
+        if (!(event.target as Element).matches(":focus-visible")) return;
+        const index = items.current.indexOf(event.target as HTMLElement);
+        if (index < 0) return;
+        keyboardLit.current = index;
+        setActiveIndex(index);
+      }}
+      onBlur={(event) => {
+        onBlur?.(event);
+        if (keyboardLit.current === null) return;
+        if (hover.activeIndex === keyboardLit.current) setActiveIndex(null);
+        keyboardLit.current = null;
+      }}
+      {...props}
+    >
+      <FluidHoverHighlight hover={hover} className="rounded-lg" />
       {children}
     </div>
   );

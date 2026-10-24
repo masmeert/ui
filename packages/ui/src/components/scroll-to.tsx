@@ -8,20 +8,16 @@ import {
 import { cn } from "cn";
 
 export interface ScrollToProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> {
-  /** Where to scroll: px offset, selector string or element. */
+  /** Px offset, selector string or element. */
   to: ScrollTarget;
-  /** Extra px offset from the target (e.g. to clear a sticky header). */
+  /** Extra px offset from the target, e.g. to clear a sticky header. */
   offset?: number;
-  /** Override the ease duration in seconds. */
+  /** Scroll duration in seconds. */
   duration?: number;
   children: ReactNode;
   className?: string;
 }
 
-/**
- * Button that smooth-scrolls to a target via the active SmoothScroll provider
- * (or native scroll as a fallback). Respects reduced motion — jumps instantly.
- */
 export function ScrollTo({ to, offset, duration, children, className, ...rest }: ScrollToProps) {
   const { scrollTo } = useSmoothScroll();
   const options: ScrollToOptions = { offset, duration };

@@ -65,7 +65,7 @@ function ControlledPipeline(props: AccordionProps) {
         {pipelineSteps.map((step) => (
           <Button
             key={step.id}
-            size="sm"
+            size="compact"
             variant={openStepId === step.id ? "secondary" : "ghost"}
             onClick={() => setOpenStepId(step.id)}
           >

@@ -7,7 +7,8 @@ import {
 } from "motion/react";
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { EASE_OUT, SPRING_PRESS, SPRING_SWAP } from "@/lib/ease";
+import { type Size, useSize } from "@/lib/size";
+import { spring, springExit, tierTween } from "@/lib/springs";
 import { cn } from "cn";
 
 export type ActionSwapItem = {
@@ -18,10 +19,10 @@ export type ActionSwapItem = {
 };
 
 export type ActionSwapButtonVariant = "primary" | "secondary" | "outline" | "ghost";
-export type ActionSwapButtonSize = "sm" | "md" | "lg" | "icon";
+/** `icon` is a square button at the surrounding size. */
+export type ActionSwapButtonSize = Size | "icon";
 export type ActionSwapAnimation = "blur" | "roll" | "cascade";
 
-/** Animations with a single-element variant set (cascade animates per letter). */
 type CoreAnimation = "blur" | "roll";
 
 export interface ActionSwapButtonProps extends Omit<
@@ -53,16 +54,14 @@ export interface ActionSwapIconProps {
   className?: string;
 }
 
-const BLUR_TRANSITION = { duration: 0.2, ease: EASE_OUT } as const;
-const ROLL_TRANSITION = SPRING_SWAP;
-const EXIT_TRANSITION = { duration: 0.14, ease: EASE_OUT } as const;
+// Tweens: filter strings snap at the end of a spring's settling tail.
+const BLUR_TRANSITION = tierTween.moderate;
+const ROLL_TRANSITION = tierTween.moderate;
+const EXIT_TRANSITION = springExit.moderate;
 const SWAP_BLUR = "blur(8px)";
 const ROLL_BLUR = "blur(3px)";
 
-// Cascade rolls the label one letter at a time, left to right. The leaving
-// and landing strings overlap as independent layers (no shared cells), so
-// proportional glyph widths never jitter. Exits cascade at half the enter
-// stagger so the tail of the old label lingers briefly.
+// Leaving and landing strings are independent layers, so proportional glyph widths never jitter.
 const CASCADE_STAGGER = 0.025;
 
 const CASCADE_LETTER_VARIANTS: Variants = {
@@ -71,13 +70,13 @@ const CASCADE_LETTER_VARIANTS: Variants = {
     opacity: 1,
     transform: "translateY(0%)",
     filter: "blur(0px)",
-    transition: { ...SPRING_SWAP, delay },
+    transition: { ...tierTween.moderate, delay },
   }),
   exit: (delay: number = 0) => ({
     opacity: 0,
     transform: "translateY(-105%)",
     filter: ROLL_BLUR,
-    transition: { duration: 0.16, ease: EASE_OUT, delay: delay * 0.5 },
+    transition: { ...springExit.moderate, delay: delay * 0.5 },
   }),
 };
 
@@ -147,18 +146,23 @@ const ICON_VARIANTS: Record<CoreAnimation, Variants> = {
   },
 };
 
+const REDUCED_VARIANTS: Variants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: spring.moderate },
+  exit: { opacity: 0, transition: springExit.moderate },
+};
+
 const VARIANT_CLASS: Record<ActionSwapButtonVariant, string> = {
   primary: "sheen bg-primary text-primary-foreground",
   secondary: "border border-border bg-card text-foreground hover:border-border",
-  outline: "border border-border bg-transparent text-foreground hover:bg-muted/60",
-  ghost: "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+  outline: "border border-border bg-transparent text-foreground hover:bg-hover",
+  ghost: "text-muted-foreground hover:bg-hover hover:text-foreground",
 };
 
-const SIZE_CLASS: Record<ActionSwapButtonSize, string> = {
-  sm: "h-8 gap-1.5 rounded-full px-3 text-xs",
-  md: "h-10 gap-2 rounded-full px-4 text-sm",
-  lg: "h-12 gap-2.5 rounded-full px-5 text-base",
-  icon: "h-10 w-10 rounded-full",
+const ICON_CLASS: Record<Size, string> = {
+  compact: "size-3.5",
+  default: "size-4",
+  large: "size-[18px]",
 };
 
 export function ActionSwapText({
@@ -169,8 +173,7 @@ export function ActionSwapText({
 }: ActionSwapTextProps) {
   const reduce = useReducedMotion();
 
-  // Cascade needs a plain string to split into letters; non-string content
-  // and reduced motion fall back to the closest single-element animation.
+  // Cascade needs a plain string; otherwise (or with reduced motion) it falls back to roll.
   const label = typeof children === "string" ? children : null;
   const cascade = animation === "cascade" && label !== null && !reduce;
   const coreAnimation: CoreAnimation = animation === "cascade" ? "roll" : animation;
@@ -230,12 +233,11 @@ export function ActionSwapText({
         <AnimatePresence initial={false}>
           <motion.span
             key={`${animation}-${value}`}
-            variants={TEXT_VARIANTS[coreAnimation]}
-            initial={reduce ? false : "initial"}
-            animate={reduce ? { opacity: 1, filter: "blur(0px)" } : "animate"}
-            exit={reduce ? undefined : "exit"}
-            // Truncation lives on the layer that holds the text — the layer
-            // moves as a whole, so clipping it never eats the roll.
+            variants={reduce ? REDUCED_VARIANTS : TEXT_VARIANTS[coreAnimation]}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            // Truncate on the moving layer, so clipping never eats the roll.
             className="absolute top-[0.08em] left-0 inline-block max-w-full truncate will-change-[opacity,filter,transform]"
           >
             {children}
@@ -253,21 +255,23 @@ export function ActionSwapIcon({
   className,
 }: ActionSwapIconProps) {
   const reduce = useReducedMotion();
-  // Icons are single elements — cascade maps to its closest motion, roll.
   const coreAnimation: CoreAnimation = animation === "cascade" ? "roll" : animation;
 
   return (
     <span
-      className={cn("relative inline-grid shrink-0 place-items-center overflow-hidden", className)}
+      className={cn(
+        "relative inline-grid shrink-0 place-items-center overflow-hidden [&_svg]:size-full",
+        className,
+      )}
     >
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.span
           key={`${animation}-${value}`}
           aria-hidden
-          variants={ICON_VARIANTS[coreAnimation]}
-          initial={reduce ? false : "initial"}
-          animate={reduce ? { opacity: 1, filter: "blur(0px)" } : "animate"}
-          exit={reduce ? undefined : "exit"}
+          variants={reduce ? REDUCED_VARIANTS : ICON_VARIANTS[coreAnimation]}
+          initial="initial"
+          animate="animate"
+          exit="exit"
           className="col-start-1 row-start-1 inline-flex items-center justify-center will-change-[opacity,filter,transform]"
         >
           {children}
@@ -283,7 +287,7 @@ export function ActionSwapButton({
   defaultValue,
   onValueChange,
   variant = "secondary",
-  size = "md",
+  size,
   animation = "blur",
   iconOnly = size === "icon",
   cycle = true,
@@ -293,6 +297,7 @@ export function ActionSwapButton({
   ...rest
 }: ActionSwapButtonProps) {
   const reduce = useReducedMotion();
+  const t = useSize(size === "icon" ? undefined : size);
   const [internalValue, setInternalValue] = useState(defaultValue ?? items[0]?.id);
   const currentValue = value ?? internalValue;
   const activeIndex = Math.max(
@@ -314,12 +319,12 @@ export function ActionSwapButton({
       type="button"
       disabled={disabled}
       whileTap={reduce || disabled ? undefined : { scale: 0.97 }}
-      transition={SPRING_PRESS}
+      transition={spring.fast}
       className={cn(
-        "inline-flex items-center justify-center overflow-hidden font-medium transition-colors",
+        "inline-flex items-center justify-center overflow-hidden rounded-full font-medium transition-colors duration-(--duration-fast)",
         "disabled:pointer-events-none disabled:opacity-50",
         VARIANT_CLASS[variant],
-        SIZE_CLASS[size],
+        size === "icon" ? t.square : [t.control, t.controlPx, t.gap, t.text],
         className,
       )}
       aria-label={accessibleLabel}
@@ -332,7 +337,7 @@ export function ActionSwapButton({
       {...rest}
     >
       {hasIcon ? (
-        <ActionSwapIcon value={activeItem.id} animation={animation} className="h-4 w-4">
+        <ActionSwapIcon value={activeItem.id} animation={animation} className={ICON_CLASS[t.size]}>
           {activeItem.icon ?? null}
         </ActionSwapIcon>
       ) : null}

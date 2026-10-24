@@ -63,7 +63,6 @@ export function useResizableSize(opts: {
     [size],
   );
 
-  /** Double-click the handle to go back to the default size. */
   const onDoubleClick = useCallback(() => {
     const next = latest.current.clamp(latest.current.initial);
     setSize(next);
@@ -72,7 +71,6 @@ export function useResizableSize(opts: {
     } catch {}
   }, []);
 
-  /** Arrow keys nudge the size, so the handle works without a pointer. */
   const onKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLElement>) => {
       const [towardStartKey, towardEndKey] =
@@ -92,11 +90,7 @@ export function useResizableSize(opts: {
   return { size, dragging, handleProps: { onPointerDown, onDoubleClick, onKeyDown } };
 }
 
-/**
- * A width the user drags with a handle, remembered per `key`.
- * `side` is where the handle sits on the element: "start" grows the element when dragged left.
- * `clamp` bounds the width at drag time (e.g. against the parent's current size).
- */
+/** `side: "start"` grows the element when dragged left. `clamp` runs at drag time. */
 export function useResizable(opts: {
   key: string;
   initial: number;

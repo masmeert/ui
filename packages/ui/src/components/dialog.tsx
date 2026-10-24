@@ -1,8 +1,9 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { EASE_OUT, SPRING_PANEL } from "@/lib/ease";
 import { PresenceGate } from "@/components/presence-gate";
+import { reducedTransition, spring, springExit } from "@/lib/springs";
+import { SURFACE_OFFSET, SurfaceProvider, useElevation } from "@/lib/surface";
 import { cn } from "cn";
 
 export interface DialogProps {
@@ -26,6 +27,7 @@ export function Dialog({
   const reduce = useReducedMotion();
   const enterY = reduce ? 0 : placement === "bottom" ? 40 : 20;
   const enterScale = reduce ? 1 : 0.97;
+  const surface = useElevation(SURFACE_OFFSET.dialog);
 
   const panel = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
@@ -54,14 +56,9 @@ export function Dialog({
     };
   }, [open]);
 
-  // Mounted only while open, and while open the chrome is two fixed siblings
-  // rather than one wrapper: the backdrop spans the viewport edges but carries
-  // the scrim colour, and the layer positioning the panel sits inset off every
-  // edge (`inset-4`, with the bottom placement's `pb-4` on top of it). Both hang
-  // off `PresenceGate`, so interaction releases in the same commit that starts
-  // the exit rather than when it ends — `open` is already false for those
-  // frames. See tests/fixed-overlay-edge-sampling.test.tsx.
-  // Portaled so a caller inside a stacking context (the transcript) still paints above the composer.
+  // Backdrop and panel layer are separate fixed siblings, each gated so interaction
+  // releases when the exit starts, not when it ends.
+  // Portaled so a caller inside a stacking context still paints above it.
   return createPortal(
     <AnimatePresence>
       {open ? (
@@ -72,13 +69,13 @@ export function Dialog({
               aria-label="Close modal"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2, ease: EASE_OUT }}
+              exit={{ opacity: 0, transition: springExit.slow }}
+              transition={spring.slow}
               {...gate}
               onClick={onClose}
               // Electron hit-tests `app-region: drag` regardless of stacking, so a drag
               // region under the modal would swallow its clicks and scrolling.
-              className="pointer-events-auto fixed inset-0 z-[80] bg-black/30 [backdrop-filter:blur(24px)_saturate(140%)] [-webkit-app-region:no-drag] [-webkit-backdrop-filter:blur(24px)_saturate(140%)]"
+              className="pointer-events-auto fixed inset-0 z-(--z-overlay) bg-black/30 [backdrop-filter:blur(24px)_saturate(140%)] [-webkit-app-region:no-drag] [-webkit-backdrop-filter:blur(24px)_saturate(140%)]"
             />
           )}
         </PresenceGate>
@@ -87,12 +84,11 @@ export function Dialog({
       {open ? (
         <PresenceGate key="panel-layer">
           {({ isPresent, gate }) => (
-            // The layer itself never takes pointer events, so it carries
-            // `inert` alone rather than the gate's pointer-events value.
+            // The layer never takes pointer events, so it only needs `inert`.
             <div
               inert={!isPresent}
               className={cn(
-                "pointer-events-none fixed inset-4 z-[80] flex justify-center",
+                "pointer-events-none fixed inset-4 z-(--z-overlay) flex justify-center",
                 placement === "bottom" ? "items-end pb-4" : "items-center",
               )}
             >
@@ -107,13 +103,14 @@ export function Dialog({
                   opacity: 0,
                   y: enterY,
                   scale: reduce ? 1 : 0.98,
-                  transition: { duration: 0.18, ease: EASE_OUT },
+                  transition: springExit.slow,
                 }}
-                transition={SPRING_PANEL}
+                transition={reducedTransition(spring.slow, reduce)}
                 {...gate}
                 style={{ ...gate.style, borderRadius: 28 }}
                 className={cn(
-                  "pointer-events-auto relative w-full max-w-sm overflow-hidden border border-border bg-background shadow-panel outline-none",
+                  "pointer-events-auto relative w-full max-w-sm overflow-hidden border border-border outline-none",
+                  surface.className,
                   className,
                 )}
               >
@@ -122,46 +119,15 @@ export function Dialog({
                     <motion.div
                       key={viewId}
                       initial={reduce ? { opacity: 0 } : { opacity: 0, y: 8, filter: "blur(4px)" }}
-                      animate={
-                        reduce
-                          ? {
-                              opacity: 1,
-                              transition: {
-                                duration: 0.18,
-                                ease: EASE_OUT,
-                              },
-                            }
-                          : {
-                              opacity: 1,
-                              y: 0,
-                              filter: "blur(0px)",
-                              transition: {
-                                duration: 0.24,
-                                ease: EASE_OUT,
-                              },
-                            }
-                      }
-                      exit={
-                        reduce
-                          ? {
-                              opacity: 0,
-                              transition: {
-                                duration: 0.14,
-                                ease: EASE_OUT,
-                              },
-                            }
-                          : {
-                              opacity: 0,
-                              y: -8,
-                              filter: "blur(4px)",
-                              transition: {
-                                duration: 0.16,
-                                ease: EASE_OUT,
-                              },
-                            }
-                      }
+                      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                      exit={{
+                        opacity: 0,
+                        ...(reduce ? {} : { y: -8, filter: "blur(4px)" }),
+                        transition: springExit.moderate,
+                      }}
+                      transition={reducedTransition(spring.moderate, reduce)}
                     >
-                      {children}
+                      <SurfaceProvider value={surface.level}>{children}</SurfaceProvider>
                     </motion.div>
                   </AnimatePresence>
                 </motion.div>

@@ -17,7 +17,7 @@ const meta = {
       { id: "share", label: "Share", icon: <Share2 className="size-full" /> },
       { id: "archive", label: "Archive", icon: <Archive className="size-full" /> },
     ],
-    size: "md",
+    size: "default",
     defaultExpanded: false,
     collapseOnAction: false,
     openLabel: "Show extra actions",
@@ -26,7 +26,7 @@ const meta = {
     onExpandedChange: fn(),
   },
   argTypes: {
-    size: { control: "inline-radio", options: ["sm", "md"] },
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
     primaryActions: { control: false },
     overflowActions: { control: false },
     expanded: { control: false },
@@ -38,7 +38,9 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
-export const Small: Story = { args: { size: "sm" } };
+export const Compact: Story = { args: { size: "compact" } };
+
+export const Large: Story = { args: { size: "large" } };
 
 export const Expanded: Story = { args: { defaultExpanded: true } };
 

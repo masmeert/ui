@@ -28,6 +28,9 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-sidebar: var(--sidebar);
@@ -44,13 +47,67 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  /* 14 / 20 / 28: keys and rows, fields and icon buttons, cards. */
   --radius-lg: 0.875rem;
   --radius-xl: 1.25rem;
   --radius-2xl: 1.75rem;
 
-  /* The one cast, for surfaces that leave the document flow (popovers, menus, tooltips, modals). */
-  --shadow-panel: 0 1px 1px rgb(0 0 0 / 0.06), 0 8px 20px rgb(0 0 0 / 0.12);
+  /* Light keeps one colour from level 2 up; dark adds --surface-step of white per level. */
+  --color-surface-1: var(--background);
+  --color-surface-2: var(--popover);
+  --color-surface-3: color-mix(
+    in oklab,
+    var(--popover),
+    var(--surface-tint) calc(var(--surface-step) * 1)
+  );
+  --color-surface-4: color-mix(
+    in oklab,
+    var(--popover),
+    var(--surface-tint) calc(var(--surface-step) * 2)
+  );
+  --color-surface-5: color-mix(
+    in oklab,
+    var(--popover),
+    var(--surface-tint) calc(var(--surface-step) * 3)
+  );
+  --color-surface-6: color-mix(
+    in oklab,
+    var(--popover),
+    var(--surface-tint) calc(var(--surface-step) * 4)
+  );
+  --color-surface-7: color-mix(
+    in oklab,
+    var(--popover),
+    var(--surface-tint) calc(var(--surface-step) * 5)
+  );
+  --color-surface-8: color-mix(
+    in oklab,
+    var(--popover),
+    var(--surface-tint) calc(var(--surface-step) * 6)
+  );
+
+  --shadow-surface-1: 0 0 #0000;
+  --shadow-surface-2: 0 1px 2px rgb(0 0 0 / calc(0.05 * var(--shadow-k)));
+  --shadow-surface-3:
+    0 1px 1px rgb(0 0 0 / calc(0.06 * var(--shadow-k))),
+    0 8px 20px rgb(0 0 0 / calc(0.12 * var(--shadow-k)));
+  --shadow-surface-4:
+    0 1px 2px rgb(0 0 0 / calc(0.06 * var(--shadow-k))),
+    0 12px 28px rgb(0 0 0 / calc(0.14 * var(--shadow-k)));
+  --shadow-surface-5:
+    0 2px 4px rgb(0 0 0 / calc(0.06 * var(--shadow-k))),
+    0 16px 40px rgb(0 0 0 / calc(0.16 * var(--shadow-k)));
+  --shadow-surface-6:
+    0 2px 6px rgb(0 0 0 / calc(0.07 * var(--shadow-k))),
+    0 20px 48px rgb(0 0 0 / calc(0.18 * var(--shadow-k)));
+  --shadow-surface-7:
+    0 3px 8px rgb(0 0 0 / calc(0.08 * var(--shadow-k))),
+    0 24px 56px rgb(0 0 0 / calc(0.2 * var(--shadow-k)));
+  --shadow-surface-8:
+    0 4px 10px rgb(0 0 0 / calc(0.08 * var(--shadow-k))),
+    0 32px 72px rgb(0 0 0 / calc(0.22 * var(--shadow-k)));
+
+  --color-hover: color-mix(in oklab, var(--overlay) var(--hover-alpha), transparent);
+  --color-selected: color-mix(in oklab, var(--overlay) var(--selected-alpha), transparent);
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -104,15 +161,83 @@
     cursor: pointer;
   }
 
+  /* Reduced motion: keyframes keep their fade but lose travel, scale and blur. */
   @media (prefers-reduced-motion: reduce) {
     *,
     ::before,
     ::after {
-      animation-duration: 1ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 1ms !important;
+      --tw-enter-translate-x: 0 !important;
+      --tw-enter-translate-y: 0 !important;
+      --tw-enter-scale: 1 !important;
+      --tw-enter-rotate: 0 !important;
+      --tw-enter-blur: 0 !important;
+      --tw-exit-translate-x: 0 !important;
+      --tw-exit-translate-y: 0 !important;
+      --tw-exit-scale: 1 !important;
+      --tw-exit-rotate: 0 !important;
+      --tw-exit-blur: 0 !important;
       scroll-behavior: auto !important;
     }
+  }
+
+  /* Layered, so a consumer's unlayered :root / .dark wins. */
+  :root {
+    --info: oklch(58% 0.14 250);
+    --info-foreground: oklch(99% 0 0);
+    --warning-foreground: oklch(22% 0.04 70);
+
+    --z-sticky: 50;
+    --z-overlay: 100;
+    --z-popup: 200;
+    --z-tooltip: 300;
+
+    --surface-tint: oklch(100% 0 0);
+    --surface-step: 0%;
+    --shadow-k: 1;
+    --overlay: oklch(0% 0 0);
+    --hover-alpha: 5%;
+    --selected-alpha: 8%;
+
+    --duration-fast: 100ms;
+    --duration-moderate: 180ms;
+    --duration-slow: 260ms;
+    --duration-exit-fast: 60ms;
+    --duration-exit-moderate: 120ms;
+    --duration-exit-slow: 160ms;
+    --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+    --fs-display: 28px;
+    --lh-display: 34px;
+    --fs-title: 18px;
+    --lh-title: 26px;
+    --fs-subtitle: 16px;
+    --lh-subtitle: 24px;
+    --fs-body: 14px;
+    --lh-body: 20px;
+    --fs-caption: 12px;
+    --lh-caption: 16px;
+    --fs-micro: 10px;
+    --lh-micro: 12px;
+    --fs-display-compact: 24px;
+    --lh-display-compact: 30px;
+    --fs-title-compact: 16px;
+    --lh-title-compact: 24px;
+    --fs-subtitle-compact: 14px;
+    --lh-subtitle-compact: 20px;
+    --fs-body-compact: 13px;
+    --lh-body-compact: 18px;
+    --fs-caption-compact: 11px;
+    --lh-caption-compact: 14px;
+    --fs-micro-compact: 10px;
+    --lh-micro-compact: 12px;
+  }
+
+  .dark {
+    --surface-step: 4%;
+    --shadow-k: 2.4;
+    --overlay: oklch(100% 0 0);
+    --hover-alpha: 6%;
+    --selected-alpha: 10%;
   }
 }
 
@@ -161,7 +286,6 @@
   }
 }
 
-/* Custom variants */
 @custom-variant data-open {
   &:where([data-state="open"]),
   &:where([data-open]:not([data-open="false"])) {
@@ -231,7 +355,6 @@
   }
 }
 
-/* scroll-fade */
 @property --scroll-fade-t {
   syntax: "<length-percentage>";
   inherits: false;
@@ -658,7 +781,6 @@
   --scroll-fade-mask: none;
 }
 
-/* shimmer */
 @property --shimmer-angle {
   syntax: "<angle>";
   inherits: true;
@@ -761,17 +883,7 @@
   --shimmer-angle: calc(--value(integer) * 1deg);
 }
 
-/* Kept for backwards compatibility. Unlayered, so it still wins over other
-   utilities on a plain .shimmer element. Variants are handled in the utility. */
-@media (prefers-reduced-motion: reduce) {
-  .shimmer {
-    animation: none;
-    background-image: none;
-    -webkit-text-fill-color: currentColor;
-  }
-}
-
-/* Marquee tracks shift by their own width plus the gap so the duplicated track lands exactly where the first began. */
+/* Shift by width + gap so the duplicate lands where the first began. */
 @theme {
   --animate-marquee: marquee 30s linear infinite;
   --animate-marquee-vertical: marquee-vertical 30s linear infinite;
@@ -795,7 +907,7 @@
   }
 }
 
-/* Vertical resize with a grip drawn inside the rounded corner: the native handle sits in the corner and gets half clipped by the radius, so it is hidden (WebKit/Blink) while dragging stays native. */
+/* The native grip gets half clipped by the radius, so it is hidden and redrawn inside. */
 @utility resize-grip {
   resize: vertical;
   background-image: linear-gradient(
@@ -815,7 +927,6 @@
   }
 }
 
-/* Indeterminate progress: a third-width bar sweeping across the track. */
 @theme {
   --animate-progress-indeterminate: progress-indeterminate 1.4s ease-in-out infinite;
 
@@ -826,5 +937,337 @@
     to {
       transform: translateX(300%);
     }
+  }
+}
+
+@utility stable-label {
+  display: inline-grid;
+  & > * {
+    grid-area: 1 / 1;
+  }
+  & > [data-stable-label-ghost] {
+    visibility: hidden;
+    font-weight: var(--font-weight-semibold, 600);
+    pointer-events: none;
+    user-select: none;
+  }
+}
+
+/* Prose. Zero specificity; space only goes above elements so streamed text never shifts. */
+@layer components {
+  :where(.typeset) {
+    --ts-gap: 12px;
+    --ts-after-heading: 8px;
+    --ts-before-h12: 24px;
+    --ts-before-h3: 20px;
+    --ts-rule: 24px;
+    --ts-li: 4px;
+    --ts-indent: 24px;
+    font-size: var(--fs-body, 14px);
+    line-height: var(--lh-body, 20px);
+    color: var(--muted-foreground);
+    white-space: normal;
+  }
+  :where(.typeset.typeset-compact) {
+    --ts-gap: 8px;
+    --ts-after-heading: 4px;
+    --ts-before-h12: 16px;
+    --ts-before-h3: 12px;
+    --ts-rule: 16px;
+    --ts-li: 4px;
+    --ts-indent: 18px;
+    font-size: var(--fs-body-compact, 13px);
+    line-height: var(--lh-body-compact, 18px);
+  }
+
+  :where(.typeset) :where(:not(.not-typeset, .not-typeset *)) {
+    &:where(* + *) {
+      margin-top: var(--ts-gap);
+    }
+    &:where(h1, h2, h3, h4, h5, h6) {
+      color: var(--foreground);
+      font-weight: var(--font-weight-semibold, 600);
+    }
+    &:where(h1, h2, h3, h4, h5, h6) + * {
+      margin-top: var(--ts-after-heading);
+    }
+    &:where(h1) {
+      font-size: var(--fs-display, 28px);
+      line-height: var(--lh-display, 34px);
+      font-weight: var(--font-weight-bold, 700);
+    }
+    &:where(h2) {
+      font-size: var(--fs-title, 18px);
+      line-height: var(--lh-title, 26px);
+    }
+    &:where(h3, h4, h5, h6) {
+      font-size: var(--fs-subtitle, 16px);
+      line-height: var(--lh-subtitle, 24px);
+    }
+    &:where(* + h1, * + h2) {
+      margin-top: var(--ts-before-h12);
+    }
+    &:where(* + h3, * + h4, * + h5, * + h6) {
+      margin-top: var(--ts-before-h3);
+    }
+    &:where(strong, b) {
+      color: var(--foreground);
+      font-weight: var(--font-weight-semibold, 600);
+    }
+    &:where(a) {
+      color: var(--foreground);
+      text-decoration: underline;
+      text-decoration-color: var(--border-strong);
+      text-underline-offset: 3px;
+    }
+    &:where(a:hover) {
+      text-decoration-color: currentColor;
+    }
+    &:where(ul, ol) {
+      padding-inline-start: var(--ts-indent);
+    }
+    &:where(ul) {
+      list-style: disc;
+    }
+    &:where(ol) {
+      list-style: decimal;
+    }
+    &:where(li + li),
+    &:where(li > ul, li > ol) {
+      margin-top: var(--ts-li);
+    }
+    &:where(li)::marker {
+      color: var(--muted-foreground);
+    }
+    &:where(li:has(> input[type="checkbox"])) {
+      list-style: none;
+      margin-inline-start: calc(var(--ts-indent) * -1);
+    }
+    &:where(blockquote) {
+      border-inline-start: 2px solid var(--border-strong);
+      padding-inline-start: 12px;
+    }
+    &:where(hr) {
+      margin-block: var(--ts-rule);
+      border: 0;
+      border-top: 1px solid var(--rule);
+    }
+    &:where(hr + *) {
+      margin-top: 0;
+    }
+    &:where(code) {
+      font-family: var(--font-mono);
+      font-size: var(--fs-caption, 12px);
+      line-height: var(--lh-caption, 16px);
+      color: var(--foreground);
+      background: var(--color-hover);
+      border-radius: 6px;
+      padding: 2px 4px;
+    }
+    &:where(pre) {
+      overflow-x: auto;
+      background: var(--color-hover);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    &:where(pre code) {
+      background: none;
+      padding: 0;
+    }
+    &:where(figcaption) {
+      font-size: var(--fs-caption, 12px);
+      line-height: var(--lh-caption, 16px);
+    }
+    &:where(img, video) {
+      border-radius: 10px;
+    }
+    &:where(table) {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    &:where(th) {
+      color: var(--foreground);
+      font-weight: var(--font-weight-semibold, 600);
+      text-align: start;
+    }
+    &:where(th, td) {
+      border-bottom: 1px solid var(--border);
+      padding: 8px 12px 8px 0;
+    }
+  }
+
+  :where(.typeset-scroll) {
+    overflow-x: auto;
+  }
+}
+
+/* Clip revealed ancestors with overflow: clip, never hidden: hidden makes a scroll container. */
+@layer components {
+  :where(
+    .reveal-landing,
+    .reveal-landing-subtle,
+    .reveal-product,
+    .reveal-product-subtle,
+    .reveal-scroll,
+    .reveal-items,
+    .reveal-swap
+  ) {
+    --reveal-y: 12px;
+    --reveal-scale: 0.94;
+    --reveal-step: 0.1s;
+    --reveal-duration: 0.42s;
+    --reveal-ease: cubic-bezier(0.16, 1, 0.3, 1);
+    --reveal-range-start: 12px;
+    --reveal-range-end: 120px;
+  }
+  :where(.reveal-product, .reveal-product-subtle) {
+    --reveal-step: 0.06s;
+    --reveal-duration: 0.3s;
+  }
+  :where(.reveal-landing-subtle) {
+    --reveal-y: 8px;
+    --reveal-scale: 0.98;
+    --reveal-step: 0.06s;
+    --reveal-range-end: 60px;
+  }
+  :where(.reveal-product-subtle) {
+    --reveal-step: 0.04s;
+  }
+
+  /* Steps cap at the 4th child (8th for reveal-items). */
+  :where(.reveal-landing, .reveal-landing-subtle) > :first-child > *,
+  :where(.reveal-product, .reveal-product-subtle) > *,
+  :where(.reveal-items) > * {
+    --reveal-i: 3;
+  }
+  :is(
+      :where(.reveal-landing, .reveal-landing-subtle) > :first-child,
+      .reveal-product,
+      .reveal-product-subtle,
+      .reveal-items
+    )
+    > :nth-child(1) {
+    --reveal-i: 0;
+  }
+  :is(
+      :where(.reveal-landing, .reveal-landing-subtle) > :first-child,
+      .reveal-product,
+      .reveal-product-subtle,
+      .reveal-items
+    )
+    > :nth-child(2) {
+    --reveal-i: 1;
+  }
+  :is(
+      :where(.reveal-landing, .reveal-landing-subtle) > :first-child,
+      .reveal-product,
+      .reveal-product-subtle,
+      .reveal-items
+    )
+    > :nth-child(3) {
+    --reveal-i: 2;
+  }
+  :where(.reveal-items) > :nth-child(5) {
+    --reveal-i: 4;
+  }
+  :where(.reveal-items) > :nth-child(6) {
+    --reveal-i: 5;
+  }
+  :where(.reveal-items) > :nth-child(7) {
+    --reveal-i: 6;
+  }
+  :where(.reveal-items) > :nth-child(n + 8) {
+    --reveal-i: 7;
+  }
+
+  :where(.reveal-landing, .reveal-landing-subtle) > :first-child > * {
+    animation: reveal-rise var(--reveal-duration) var(--reveal-ease) both;
+    animation-delay: calc(var(--reveal-i) * var(--reveal-step));
+  }
+
+  @supports (animation-timeline: view()) {
+    :where(.reveal-landing, .reveal-landing-subtle) > :not(:first-child),
+    :where(.reveal-scroll) {
+      animation:
+        reveal-rise linear both,
+        reveal-leave linear both;
+      animation-timeline: view(), view();
+      animation-range:
+        cover var(--reveal-range-start) cover var(--reveal-range-end),
+        cover calc(100% - var(--reveal-range-end)) cover calc(100% - var(--reveal-range-start));
+    }
+  }
+
+  :where(.reveal-product, .reveal-product-subtle) > * {
+    animation: reveal-fade var(--reveal-duration) var(--reveal-ease) both;
+    animation-delay: calc(var(--reveal-i) * var(--reveal-step));
+  }
+
+  :where(.reveal-items) > * {
+    animation: reveal-fade var(--reveal-duration) var(--reveal-ease) both;
+    animation-delay: calc(var(--reveal-i) * var(--reveal-step));
+  }
+  :where(.reveal-landing, .reveal-landing-subtle) :where(.reveal-items) > * {
+    animation-name: reveal-rise;
+  }
+
+  :where(.reveal-swap) {
+    display: grid;
+  }
+  :where(.reveal-swap) > * {
+    grid-area: 1 / 1;
+  }
+  :where(.reveal-swap) > :not(:first-child) {
+    animation: reveal-fade var(--reveal-duration) var(--reveal-ease) both;
+  }
+  :where(.reveal-swap) > :first-child:not(:last-child) {
+    animation: reveal-out var(--reveal-duration) var(--reveal-ease) both;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :where(
+      .reveal-landing,
+      .reveal-landing-subtle,
+      .reveal-product,
+      .reveal-product-subtle,
+      .reveal-scroll,
+      .reveal-items,
+      .reveal-swap
+    ) {
+      --reveal-y: 0px;
+      --reveal-scale: 1;
+    }
+    :where(.reveal-landing, .reveal-landing-subtle) > :not(:first-child),
+    :where(.reveal-scroll) {
+      animation: none;
+    }
+  }
+}
+
+@keyframes reveal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--reveal-y)) scale(var(--reveal-scale));
+  }
+}
+
+@keyframes reveal-leave {
+  to {
+    opacity: 0;
+    transform: translateY(calc(var(--reveal-y) * -1)) scale(var(--reveal-scale));
+  }
+}
+
+@keyframes reveal-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes reveal-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
   }
 }

@@ -12,7 +12,7 @@ const meta = {
       { id: "copied", label: "Copied", icon: <Check /> },
     ],
     variant: "secondary",
-    size: "md",
+    size: "default",
     animation: "blur",
     cycle: true,
     onValueChange: fn(),
@@ -21,7 +21,7 @@ const meta = {
     items: { control: false },
     animation: { control: "inline-radio", options: ["blur", "roll", "cascade"] },
     variant: { control: "inline-radio", options: ["primary", "secondary", "outline", "ghost"] },
-    size: { control: "inline-radio", options: ["sm", "md", "lg", "icon"] },
+    size: { control: "inline-radio", options: ["compact", "default", "large", "icon"] },
     iconOnly: { control: "boolean" },
     cycle: { control: "boolean" },
     disabled: { control: "boolean" },
@@ -66,3 +66,5 @@ export const IconOnly: Story = {
     ],
   },
 };
+
+export const Compact: Story = { args: { size: "compact" } };

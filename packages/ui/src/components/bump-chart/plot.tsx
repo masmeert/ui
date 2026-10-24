@@ -1,4 +1,6 @@
 import { cn } from "cn";
+import { useSize } from "@/lib/size";
+import { TYPE_PX } from "@/lib/type-scale";
 import { useBumpChart } from "./context";
 import { PLOT } from "./model";
 import { BumpChartPoint } from "./point";
@@ -7,6 +9,7 @@ import { pointKey, useBumpGeometry } from "./use-geometry";
 
 export function BumpChartPlot({ className }: { className?: string }) {
   const { rows, ranks, height, x, y, periods, label, reduce } = useBumpChart();
+  const { type, typeVariant } = useSize();
   const positions = useBumpGeometry(
     rows.flatMap((row) =>
       row.ranks.flatMap((rank, index) =>
@@ -17,7 +20,7 @@ export function BumpChartPlot({ className }: { className?: string }) {
   );
   if (!periods.length || !ranks.length)
     return (
-      <div className={cn("py-16 text-center text-sm text-muted-foreground", className)}>
+      <div className={cn("py-16 text-center text-muted-foreground", type.body, className)}>
         No rankings yet
       </div>
     );
@@ -62,7 +65,9 @@ export function BumpChartPlot({ className }: { className?: string }) {
               x={x(index)}
               y={height - 8}
               textAnchor="middle"
-              className="fill-muted-foreground font-mono text-[10px]"
+              // SVG text can't take the type class, so it reads the px size.
+              fontSize={TYPE_PX[typeVariant].caption.size}
+              className="fill-muted-foreground font-mono"
             >
               {period}
             </text>

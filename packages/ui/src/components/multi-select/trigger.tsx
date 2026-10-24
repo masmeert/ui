@@ -6,9 +6,17 @@ import type {
   ReactNode,
   Ref,
 } from "react";
-import { EASE_OUT, SPRING_LAYOUT, SPRING_SWAP } from "@/lib/ease";
+import { type Size, useSize } from "@/lib/size";
+import { INSTANT, spring, springExit } from "@/lib/springs";
 import { cn } from "cn";
 import { mergeRefs, useMultiSelectContext } from "./context";
+
+// Chips wrap, so the field has a min height: one chip row + padding + border = control height.
+const FIELD: Record<Size, { box: string; chip: string; radius: string }> = {
+  compact: { box: "min-h-8 px-1.5 py-0.5", chip: "h-6", radius: "rounded-lg" },
+  default: { box: "min-h-9 px-2 py-0.5", chip: "h-7", radius: "rounded-lg" },
+  large: { box: "min-h-11 px-2.5 py-1", chip: "h-8", radius: "rounded-xl" },
+};
 
 export interface MultiSelectTriggerProps {
   children: ReactNode;
@@ -17,6 +25,7 @@ export interface MultiSelectTriggerProps {
 
 export function MultiSelectTrigger({ children, className }: MultiSelectTriggerProps) {
   const context = useMultiSelectContext("MultiSelectTrigger");
+  const tokens = useSize(context.size);
 
   return (
     <div
@@ -37,14 +46,22 @@ export function MultiSelectTrigger({ children, className }: MultiSelectTriggerPr
         context.setOpen(true);
       }}
       className={cn(
-        "relative z-20 flex min-h-11 w-full min-w-52 cursor-text items-center gap-2 rounded-xl border border-border bg-transparent px-2.5 py-1.5 text-sm text-foreground transition-[border-color] hover:border-border-strong",
+        "relative z-20 flex w-full min-w-52 cursor-text items-center border border-border bg-transparent text-foreground transition-[border-color] duration-(--duration-fast) hover:border-border-strong",
+        FIELD[tokens.size].box,
+        FIELD[tokens.size].radius,
+        tokens.text,
+        tokens.gap,
         "focus-within:border-brand/40",
         context.disabled && "pointer-events-none opacity-50",
         className,
       )}
     >
-      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">{children}</div>
-      <ChevronsUpDown aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">{children}</div>
+      <ChevronsUpDown
+        aria-hidden="true"
+        size={tokens.icon}
+        className="mr-1 shrink-0 text-muted-foreground"
+      />
     </div>
   );
 }
@@ -63,6 +80,7 @@ export function MultiSelectValue({
   chipClassName,
 }: MultiSelectValueProps) {
   const context = useMultiSelectContext("MultiSelectValue");
+  const tokens = useSize(context.size);
   const showPlaceholder = context.values.length === 0 && !context.open;
 
   return (
@@ -79,51 +97,46 @@ export function MultiSelectValue({
             <motion.span
               layout={context.reduce ? false : "position"}
               key={`multi-select-value-${value}`}
-              // y/scale rather than a raw `transform` string: the layout
-              // projection owns `transform`, so a string fought it whenever a
-              // chip entered while its neighbours were sliding.
+              // y/scale, not a `transform` string: layout projection owns `transform`.
               initial={{
                 opacity: 0,
-                clipPath: "inset(0 0 0 0% round 0.5rem)",
+                clipPath: "inset(0 0 0 0% round 0.375rem)",
                 y: context.reduce ? 0 : 6,
                 scale: context.reduce ? 1 : 0.92,
               }}
               animate={{
                 opacity: 1,
-                clipPath: "inset(0 0 0 0% round 0.5rem)",
+                clipPath: "inset(0 0 0 0% round 0.375rem)",
                 y: 0,
                 scale: 1,
               }}
               exit={{
                 opacity: 1,
                 clipPath: context.reduce
-                  ? "inset(0 0 0 0% round 0.5rem)"
-                  : "inset(0 0 0 100% round 0.5rem)",
+                  ? "inset(0 0 0 0% round 0.375rem)"
+                  : "inset(0 0 0 100% round 0.375rem)",
                 y: 0,
                 scale: 1,
                 transition: {
-                  clipPath: context.reduce ? { duration: 0 } : { duration: 0.16, ease: EASE_OUT },
-                  y: { duration: 0 },
-                  scale: { duration: 0 },
+                  clipPath: context.reduce ? INSTANT : springExit.moderate,
+                  y: INSTANT,
+                  scale: INSTANT,
                 },
               }}
               transition={
                 context.reduce
-                  ? {
-                      layout: { duration: 0 },
-                      opacity: { duration: 0.15, ease: EASE_OUT },
-                      y: { duration: 0 },
-                      scale: { duration: 0 },
-                    }
+                  ? { layout: INSTANT, opacity: spring.fast, y: INSTANT, scale: INSTANT }
                   : {
-                      layout: SPRING_LAYOUT,
-                      opacity: { duration: 0.18, ease: EASE_OUT },
-                      y: SPRING_SWAP,
-                      scale: SPRING_SWAP,
+                      layout: spring.moderate,
+                      opacity: spring.fast,
+                      y: spring.fast,
+                      scale: spring.fast,
                     }
               }
               className={cn(
-                "inline-flex h-7 max-w-full items-center gap-1 rounded-lg bg-muted px-2 text-xs font-medium text-foreground",
+                "inline-flex max-w-full items-center gap-1 rounded-md bg-muted px-2 text-foreground",
+                FIELD[tokens.size].chip,
+                tokens.type.caption,
                 chipClassName,
               )}
             >
@@ -139,7 +152,7 @@ export function MultiSelectValue({
                   context.remove(value);
                   context.inputRef.current?.focus({ preventScroll: true });
                 }}
-                className="-mr-1 grid size-5 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors outline-none hover:bg-foreground/10 hover:text-foreground focus-visible:ring-4 focus-visible:ring-ring"
+                className="-mr-1 grid size-5 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors outline-none hover:bg-hover hover:text-foreground focus-visible:ring-4 focus-visible:ring-ring"
               >
                 <X aria-hidden="true" className="size-3" />
               </button>
@@ -173,6 +186,7 @@ export function MultiSelectInput({
   ...props
 }: MultiSelectInputProps) {
   const context = useMultiSelectContext("MultiSelectInput");
+  const tokens = useSize(context.size);
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
     onKeyDown?.(event);
@@ -205,8 +219,10 @@ export function MultiSelectInput({
   };
 
   return (
-    <div className="flex min-w-20 flex-1 items-center gap-1.5">
-      {showIcon ? <Search aria-hidden="true" className="size-3.5 text-muted-foreground" /> : null}
+    <div className={cn("flex min-w-20 flex-1 items-center pl-1", tokens.gap)}>
+      {showIcon ? (
+        <Search aria-hidden="true" size={tokens.icon} className="shrink-0 text-muted-foreground" />
+      ) : null}
       <input
         {...props}
         ref={mergeRefs(ref, context.inputRef)}
@@ -241,7 +257,9 @@ export function MultiSelectInput({
         }}
         onKeyDown={handleKeyDown}
         className={cn(
-          "h-7 min-w-12 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed",
+          "min-w-12 flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed",
+          FIELD[tokens.size].chip,
+          tokens.field,
           className,
         )}
       />

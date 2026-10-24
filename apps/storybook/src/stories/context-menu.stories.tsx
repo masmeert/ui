@@ -15,6 +15,8 @@ import {
   ContextMenuTrigger,
   type ContextMenuProps,
 } from "@masmeert/ui/context-menu";
+import { SizeProvider } from "@masmeert/ui/lib/size";
+import { typeClass } from "@masmeert/ui/lib/type-scale";
 
 const meta = {
   title: "Overlays/Context Menu",
@@ -33,8 +35,10 @@ function ThreadRowContextMenu(props: ContextMenuProps) {
     <ContextMenu {...props}>
       <ContextMenuTrigger>
         <div className="flex w-80 flex-col gap-1 rounded-xl border border-border bg-card p-4 select-none">
-          <p className="text-sm font-medium text-foreground">Fix flaky auth test</p>
-          <p className="text-xs text-muted-foreground">Right-click or long-press for actions</p>
+          <p className={`font-medium text-foreground ${typeClass("body")}`}>Fix flaky auth test</p>
+          <p className={`text-muted-foreground ${typeClass("caption")}`}>
+            Right-click or long-press for actions
+          </p>
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent ariaLabel="Thread actions" className="w-56">
@@ -71,8 +75,12 @@ function DiffViewContextMenu(props: ContextMenuProps) {
   return (
     <ContextMenu {...props}>
       <ContextMenuTrigger>
-        <div className="flex w-96 flex-col gap-2 rounded-xl border border-border bg-card p-4 font-mono text-xs select-none">
-          <p className="flex items-center gap-2 font-sans text-sm font-medium text-foreground">
+        <div
+          className={`flex w-96 flex-col gap-2 rounded-xl border border-border bg-card p-4 font-mono ${typeClass("caption")} select-none`}
+        >
+          <p
+            className={`flex items-center gap-2 font-sans ${typeClass("body")} font-medium text-foreground`}
+          >
             <FileCode className="size-4 text-muted-foreground" />
             src/auth/session.ts
           </p>
@@ -105,4 +113,13 @@ export const Default: Story = {
 
 export const CheckboxAndRadioItems: Story = {
   render: (args) => <DiffViewContextMenu {...args} />,
+};
+
+/** A compact region: the menu's rows follow the nearest `SizeProvider` (or pass `size`). */
+export const Compact: Story = {
+  render: (args) => (
+    <SizeProvider size="compact">
+      <ThreadRowContextMenu {...args} />
+    </SizeProvider>
+  ),
 };

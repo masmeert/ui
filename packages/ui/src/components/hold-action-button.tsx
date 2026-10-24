@@ -7,7 +7,8 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
-import { EASE_OUT, SPRING_PRESS } from "@/lib/ease";
+import { spring } from "@/lib/springs";
+import { typeClass } from "@/lib/type-scale";
 import { capturePointer, releasePointer, TOUCH_GESTURE_CLASS } from "@/lib/touch";
 import { cn } from "cn";
 
@@ -70,8 +71,7 @@ export const HoldActionButton = forwardRef<HTMLButtonElement, HoldActionButtonPr
 
     const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
       if (event.button !== 0) return;
-      // Start first: capture is a convenience, and a browser that refuses it
-      // must not take the hold down with it.
+      // Start first, so a browser refusing capture can't take the hold down with it.
       startHold();
       capturePointer(event.currentTarget, event.pointerId);
     };
@@ -82,18 +82,14 @@ export const HoldActionButton = forwardRef<HTMLButtonElement, HoldActionButtonPr
     };
 
     const handlePointerLeave = (event: PointerEvent<HTMLButtonElement>) => {
-      // Only reached when the capture below was refused: a captured pointer gets
-      // no boundary events at all. A finger does not get this reading either way
-      // — WebKit fires leave repeatedly for a touch that never moved, which
-      // would cancel every hold on the frame it started.
+      // Only reached when capture was refused. Ignored for touch: WebKit fires leave
+      // for a touch that never moved, cancelling every hold as it starts.
       if (event.pointerType !== "touch") cancelHold();
     };
 
     const handlePointerMove = (event: PointerEvent<HTMLButtonElement>) => {
-      // Leaving the button abandons the hold, and while the pointer is captured
-      // nothing announces that: no boundary events, and `touch-none` means a
-      // finger sliding off cannot scroll and so cannot cancel either. Measure it
-      // instead — off the button ends the hold, wherever the pointer then goes.
+      // A captured pointer gets no boundary events (and `touch-none` can't scroll-cancel),
+      // so measure: leaving the button ends the hold.
       if (!holding) return;
 
       const rect = event.currentTarget.getBoundingClientRect();
@@ -146,8 +142,9 @@ export const HoldActionButton = forwardRef<HTMLButtonElement, HoldActionButtonPr
         onKeyUp={handleKeyUp}
         onContextMenu={(event) => event.preventDefault()}
         whileTap={reduce || disabled ? undefined : { scale: 0.98 }}
-        transition={SPRING_PRESS}
+        transition={spring.fast}
         className={cn(
+          // Deliberately off the size ladder: a thumb has to rest on it.
           "sheen relative inline-grid h-16 min-w-72 touch-none place-items-center overflow-hidden rounded-[var(--hold-radius)] bg-primary px-8 text-primary-foreground",
           "[--hold-radius:22px]",
           TOUCH_GESTURE_CLASS,
@@ -157,11 +154,8 @@ export const HoldActionButton = forwardRef<HTMLButtonElement, HoldActionButtonPr
         )}
         {...rest}
       >
-        {/* Safari hands the fill its own compositing layer and then stops
-          applying the button's rounded overflow clip to it, so the liquid
-          bleeds past the corners. clip-path survives compositing. It lives on
-          this static layer rather than the button so it never cuts the focus
-          ring, and reads the same radius so the two cannot drift apart. */}
+        {/* Safari drops the rounded overflow clip on the composited fill; clip-path survives.
+            On this layer, not the button, so it never cuts the focus ring. */}
         <span
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 [clip-path:inset(0_round_var(--hold-radius))]"
@@ -179,8 +173,11 @@ export const HoldActionButton = forwardRef<HTMLButtonElement, HoldActionButtonPr
             }
             transition={
               active
-                ? { duration: holdDuration / 1000, ease: "linear" }
-                : { duration: reduce ? 0.15 : 0.24, ease: EASE_OUT }
+                ? // The fill is the countdown, so it runs linearly at the hold's pace.
+                  { duration: holdDuration / 1000, ease: "linear" }
+                : reduce
+                  ? spring.fast
+                  : spring.moderate
             }
             onAnimationComplete={handleFillComplete}
             className={cn(
@@ -197,6 +194,7 @@ export const HoldActionButton = forwardRef<HTMLButtonElement, HoldActionButtonPr
                   animate={{
                     transform: active ? "translateY(-50%)" : "translateY(0%)",
                   }}
+                  // Looping decoration, not UI motion, so it keeps a literal duration.
                   transition={{
                     duration: 1.1,
                     ease: "linear",
@@ -236,13 +234,14 @@ export const HoldActionButton = forwardRef<HTMLButtonElement, HoldActionButtonPr
 
         <span
           className={cn(
-            "relative z-10 grid place-items-center text-base font-medium tracking-[-0.01em]",
+            "relative z-10 grid place-items-center font-medium",
+            typeClass("subtitle"),
             labelClassName,
           )}
         >
           <motion.span
             animate={{ opacity: active ? 0 : 1 }}
-            transition={{ duration: reduce ? 0 : 0.12, ease: EASE_OUT }}
+            transition={spring.fast}
             className="col-start-1 row-start-1"
           >
             {children}
@@ -250,7 +249,7 @@ export const HoldActionButton = forwardRef<HTMLButtonElement, HoldActionButtonPr
           <motion.span
             aria-hidden={!holding || completed}
             animate={{ opacity: holding && !completed ? 1 : 0 }}
-            transition={{ duration: reduce ? 0 : 0.12, ease: EASE_OUT }}
+            transition={spring.fast}
             className="col-start-1 row-start-1"
           >
             {holdingLabel}
@@ -258,7 +257,7 @@ export const HoldActionButton = forwardRef<HTMLButtonElement, HoldActionButtonPr
           <motion.span
             aria-hidden={!completed}
             animate={{ opacity: completed ? 1 : 0 }}
-            transition={{ duration: reduce ? 0 : 0.12, ease: EASE_OUT }}
+            transition={spring.fast}
             className="col-start-1 row-start-1"
           >
             {completeLabel}

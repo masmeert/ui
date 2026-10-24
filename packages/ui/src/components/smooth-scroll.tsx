@@ -11,9 +11,7 @@ import {
   useRef,
 } from "react";
 
-// Lenis' own expo-out curve — the canonical smooth-scroll easing. Kept as a
-// named local fn (not a lib/ease token) because tokens are bezier control
-// points for the motion lib, while Lenis needs a (t) => number easing fn.
+// Lenis' expo-out. A function, not a lib/ease bezier token, because Lenis takes (t) => number.
 const EASE_SCROLL = (t: number) => Math.min(1, 1.001 - 2 ** (-10 * t));
 
 export type ScrollTarget = number | string | HTMLElement;
@@ -25,15 +23,14 @@ export type ScrollToOptions = {
 };
 
 export type SmoothScrollApi = {
-  /** Underlying Lenis instance, or null on the reduced-motion / native path. */
+  /** Null on the reduced-motion / native path. */
   lenis: Lenis | null;
-  /** Current scroll offset in px. */
   scrollY: MotionValue<number>;
-  /** Scroll position as 0..1 of the scrollable height. */
+  /** 0..1 of the scrollable height. */
   progress: MotionValue<number>;
-  /** Signed scroll velocity (px/frame); drives velocity-based effects. */
+  /** Signed, px/frame. */
   velocity: MotionValue<number>;
-  /** Programmatic smooth scroll. Respects reduced motion (jumps instantly). */
+  /** Jumps instantly under reduced motion. */
   scrollTo: (target: ScrollTarget, options?: ScrollToOptions) => void;
 };
 
@@ -48,9 +45,8 @@ export interface SmoothScrollProps {
   /** Wheel / programmatic ease duration in seconds. */
   duration?: number;
   orientation?: "vertical" | "horizontal";
-  /** Wheel scroll speed multiplier. */
   wheelMultiplier?: number;
-  /** Smooth touch scrolling. Off by default — native momentum is good on mobile. */
+  /** Smooth touch scrolling. Off by default: native momentum is better on mobile. */
   touch?: boolean;
   className?: string;
 }
@@ -80,7 +76,6 @@ function resolveTop(target: ScrollTarget, source: ScrollSource, offset = 0): num
   return el.offsetTop + offset;
 }
 
-/** Pushes Lenis' live scroll state into the shared motion values. */
 function LenisBridge({
   scrollY,
   progress,
@@ -177,8 +172,7 @@ export function SmoothScroll({
     [reduce, nativeSource],
   );
 
-  // Reduced motion drives the native listener; the Lenis path leaves it
-  // disabled and lets LenisBridge feed the values instead.
+  // On the Lenis path, LenisBridge feeds the values instead.
   useNativeScrollSync(!!reduce, nativeSource, scrollY, progress, velocity);
 
   const api = useMemo<SmoothScrollApi>(
@@ -223,11 +217,7 @@ export function SmoothScroll({
   );
 }
 
-/**
- * Read the page's smooth-scroll state. Inside <SmoothScroll> it returns the
- * shared motion values; outside it falls back to a native window scroll
- * listener so scroll-driven components still work without the provider.
- */
+/** Outside <SmoothScroll>, falls back to a native window scroll listener. */
 export function useSmoothScroll(): SmoothScrollApi {
   const ctx = useContext(SmoothScrollContext);
   const scrollY = useMotionValue(0);

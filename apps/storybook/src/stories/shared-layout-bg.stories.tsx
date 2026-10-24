@@ -15,7 +15,6 @@ const meta = {
     as: { control: "inline-radio", options: ["div", "ul"] },
     inset: { control: { type: "range", min: 0, max: 40, step: 2 } },
     pillClassName: { control: "text" },
-    pillContainerClassName: { control: "text" },
   },
   render: function FileTree(args: SharedLayoutBgProps) {
     return (

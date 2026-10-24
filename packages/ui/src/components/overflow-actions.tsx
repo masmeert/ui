@@ -7,11 +7,10 @@ import {
   type Variants,
 } from "motion/react";
 import { useCallback, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { EASE_OUT } from "@/lib/ease";
 import { useHoverCapable } from "@/hooks/use-hover-capable";
+import { type Size, type SizeTokens, useSize } from "@/lib/size";
+import { reducedTransition, spring, springExit } from "@/lib/springs";
 import { cn } from "cn";
-
-export type OverflowActionsSize = "sm" | "md";
 
 export type OverflowActionItem = {
   id: string;
@@ -41,74 +40,39 @@ export interface OverflowActionsProps {
   onExpandedChange?: (expanded: boolean) => void;
   onAction?: (item: OverflowActionItem) => void;
   collapseOnAction?: boolean;
-  size?: OverflowActionsSize;
+  size?: Size;
   openLabel?: string;
   closeLabel?: string;
   className?: string;
   classNames?: OverflowActionsClassNames;
 }
 
-// This needs a softer layout spring than the app defaults so the overflow group
-// stays visually attached to the toggle while entering and leaving.
-const SHELL_TRANSITION: Transition = {
-  type: "spring",
-  stiffness: 220,
-  damping: 17,
-  mass: 0.85,
-};
+const SHELL_TRANSITION: Transition = spring.slow;
 
 const ICON_VARIANTS: Variants = {
   hidden: { opacity: 0, filter: "blur(3px)" },
-  visible: {
-    opacity: 1,
-    filter: "blur(0px)",
-    transition: { duration: 0.18, ease: EASE_OUT },
-  },
-  exit: {
-    opacity: 0,
-    filter: "blur(3px)",
-    transition: { duration: 0.18, ease: EASE_OUT },
-  },
+  visible: { opacity: 1, filter: "blur(0px)", transition: spring.fast },
+  exit: { opacity: 0, filter: "blur(3px)", transition: springExit.fast },
 };
 
-// Tweened, not left to the bouncy shell spring: an overshooting blur goes negative, which is invalid CSS, so the filter freezes for those frames.
+// Own no-bounce transition: the shell spring's overshoot would drive blur negative (invalid CSS).
 const OVERFLOW_ACTION_VARIANTS: Variants = {
   hidden: { opacity: 0, filter: "blur(4px)" },
-  visible: {
-    opacity: 1,
-    filter: "blur(0px)",
-    transition: { duration: 0.18, ease: EASE_OUT },
-  },
-  exit: {
-    opacity: 0,
-    filter: "blur(4px)",
-    transition: { duration: 0.18, ease: EASE_OUT },
-  },
+  visible: { opacity: 1, filter: "blur(0px)", transition: spring.fast },
+  exit: { opacity: 0, filter: "blur(4px)", transition: springExit.fast },
 };
 
-const TRACK_SIZE_CLASS: Record<OverflowActionsSize, string> = {
-  sm: "gap-1 p-1 text-xs",
-  md: "gap-1.5 p-1.5 text-sm",
+// Icon-only actions stay at least square.
+const MIN_WIDTH_CLASS: Record<Size, string> = {
+  compact: "min-w-8",
+  default: "min-w-9",
+  large: "min-w-11",
 };
 
-const GROUP_GAP_CLASS: Record<OverflowActionsSize, string> = {
-  sm: "gap-1",
-  md: "gap-1.5",
-};
-
-const ACTION_SIZE_CLASS: Record<OverflowActionsSize, string> = {
-  sm: "h-8 min-w-8 gap-1.5 px-3",
-  md: "h-9 min-w-9 gap-2 px-3.5",
-};
-
-const TOGGLE_SIZE_CLASS: Record<OverflowActionsSize, string> = {
-  sm: "h-8 w-8",
-  md: "h-9 w-9",
-};
-
-const ICON_SIZE_CLASS: Record<OverflowActionsSize, string> = {
-  sm: "h-3.5 w-3.5",
-  md: "h-4 w-4",
+const TRACK_PAD_CLASS: Record<Size, string> = {
+  compact: "p-1",
+  default: "p-1.5",
+  large: "p-1.5",
 };
 
 function useControllableExpanded({
@@ -143,12 +107,13 @@ export function OverflowActions({
   onExpandedChange,
   onAction,
   collapseOnAction = false,
-  size = "md",
+  size: sizeProp,
   openLabel = "Show extra actions",
   closeLabel = "Hide extra actions",
   className,
   classNames,
 }: OverflowActionsProps) {
+  const size = useSize(sizeProp);
   const reduce = useReducedMotion();
   const canHover = useHoverCapable();
   const overflowId = useId();
@@ -160,7 +125,7 @@ export function OverflowActions({
     onExpandedChange,
   });
 
-  const transition = reduce ? { duration: 0 } : SHELL_TRANSITION;
+  const transition = reducedTransition(SHELL_TRANSITION, reduce);
 
   useLayoutEffect(() => {
     const overflowNode = overflowWrapperRef.current;
@@ -195,14 +160,16 @@ export function OverflowActions({
         style={{ borderRadius: 9999 }}
         className={cn(
           "relative inline-flex items-center overflow-hidden border border-border bg-card",
-          TRACK_SIZE_CLASS[size],
+          TRACK_PAD_CLASS[size.size],
+          size.gap,
+          size.text,
           classNames?.track,
         )}
       >
         <motion.div
           layout
           transition={transition}
-          className={cn("inline-flex items-center", GROUP_GAP_CLASS[size])}
+          className={cn("inline-flex items-center", size.gap)}
         >
           {primaryActions.map((item) => (
             <ActionButton
@@ -229,7 +196,7 @@ export function OverflowActions({
               layout
               aria-hidden={!isExpanded}
               transition={transition}
-              className={cn("relative inline-flex w-max items-center", GROUP_GAP_CLASS[size])}
+              className={cn("relative inline-flex w-max items-center", size.gap)}
             >
               {overflowActions.map((item) => (
                 <ActionButton
@@ -267,7 +234,7 @@ export function OverflowActions({
           className={cn(
             "sheen relative inline-grid shrink-0 place-items-center bg-primary text-primary-foreground outline-none disabled:pointer-events-none disabled:opacity-50",
             "focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-            TOGGLE_SIZE_CLASS[size],
+            size.square,
             classNames?.toggle,
           )}
         >
@@ -280,11 +247,7 @@ export function OverflowActions({
               exit={reduce ? { opacity: 0 } : "exit"}
               className="inline-grid place-items-center"
             >
-              {isExpanded ? (
-                <X className={ICON_SIZE_CLASS[size]} />
-              ) : (
-                <MoreHorizontal className={ICON_SIZE_CLASS[size]} />
-              )}
+              {isExpanded ? <X size={size.icon} /> : <MoreHorizontal size={size.icon} />}
             </motion.span>
           </AnimatePresence>
         </motion.button>
@@ -308,7 +271,7 @@ function ActionButton({
   labelClassName,
 }: {
   item: OverflowActionItem;
-  size: OverflowActionsSize;
+  size: SizeTokens;
   reduce: boolean | null;
   canHover: boolean;
   overflow?: boolean;
@@ -345,7 +308,10 @@ function ActionButton({
           "inline-flex shrink-0 items-center justify-center rounded-full bg-background font-medium text-foreground outline-none",
           "disabled:pointer-events-none disabled:opacity-45",
           "focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-          ACTION_SIZE_CLASS[size],
+          size.control,
+          size.controlPx,
+          size.gap,
+          MIN_WIDTH_CLASS[size.size],
           className,
         )}
       >
@@ -353,9 +319,9 @@ function ActionButton({
           <span
             className={cn(
               "inline-flex shrink-0 items-center justify-center [&_svg:not([class*='size-'])]:size-full",
-              ICON_SIZE_CLASS[size],
               iconClassName,
             )}
+            style={{ width: size.icon, height: size.icon }}
           >
             {item.icon}
           </span>

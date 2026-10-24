@@ -2,26 +2,33 @@ import {
   AnimatePresence,
   type HTMLMotionProps,
   motion,
-  type Transition,
   useReducedMotion,
   type Variants,
 } from "motion/react";
 import { type MouseEvent, type ReactNode, useCallback, useRef, useState } from "react";
+import { type Size, useSize } from "@/lib/size";
+import { reducedTransition, spring, springExit } from "@/lib/springs";
 import { cn } from "cn";
 
-// Matches the Motion Patterns "Layout continuity" recipe so the surface
-// keeps its identity while its footprint changes.
-const CONTINUITY_SPRING: Transition = {
-  type: "spring",
-  stiffness: 220,
-  damping: 17,
-  mass: 0.85,
+const CONTINUITY = { ...spring.moderate, scale: spring.fast };
+
+const MIN_WIDTH: Record<Size, string> = {
+  compact: "min-w-8",
+  default: "min-w-9",
+  large: "min-w-11",
+};
+
+// Control height minus the 4px padding on each side.
+const ICON_SLOT: Record<Size, string> = {
+  compact: "size-6",
+  default: "size-7",
+  large: "size-9",
 };
 
 const CONTINUITY_LABEL: Variants = {
   hidden: { opacity: 0, filter: "blur(4px)" },
   visible: { opacity: 1, filter: "blur(0px)" },
-  exit: { opacity: 0, filter: "blur(4px)" },
+  exit: { opacity: 0, filter: "blur(4px)", transition: springExit.fast },
 };
 
 type ExpandableStateProps = {
@@ -34,6 +41,7 @@ export interface ExpandableButtonProps
   extends Omit<HTMLMotionProps<"button">, "children">, ExpandableStateProps {
   icon: ReactNode;
   label: ReactNode;
+  size?: Size;
 }
 
 export interface ExpandableChipProps extends ExpandableStateProps {
@@ -46,6 +54,7 @@ export interface ExpandableChipProps extends ExpandableStateProps {
   className?: string;
   labelClassName?: string;
   actionClassName?: string;
+  size?: Size;
 }
 
 function useExpandableState({
@@ -81,9 +90,11 @@ export function ExpandableButton({
   disabled,
   type = "button",
   "aria-label": ariaLabel,
+  size,
   ...props
 }: ExpandableButtonProps) {
   const reduce = useReducedMotion();
+  const t = useSize(size);
   const [isExpanded, setExpanded] = useExpandableState({
     expanded,
     defaultExpanded,
@@ -97,7 +108,7 @@ export function ExpandableButton({
     }
   };
 
-  const transition = reduce ? { duration: 0 } : CONTINUITY_SPRING;
+  const transition = reducedTransition(CONTINUITY, reduce);
 
   return (
     <motion.span layout transition={transition} className="inline-flex">
@@ -109,7 +120,10 @@ export function ExpandableButton({
         aria-expanded={isExpanded}
         disabled={disabled}
         className={cn(
-          "relative inline-flex h-11 min-w-11 items-center overflow-hidden rounded-full border border-border bg-transparent p-1 pr-1 text-sm font-medium text-foreground transition-colors outline-none focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-50",
+          "relative inline-flex items-center overflow-hidden rounded-full border border-border bg-transparent p-1 pr-1 font-medium text-foreground transition-colors duration-(--duration-fast) outline-none focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-50",
+          t.control,
+          t.text,
+          MIN_WIDTH[t.size],
           className,
         )}
         style={{ borderRadius: 9999 }}
@@ -119,7 +133,7 @@ export function ExpandableButton({
       >
         <motion.span
           layout="position"
-          className="grid size-9 shrink-0 place-items-center"
+          className={cn("grid shrink-0 place-items-center", ICON_SLOT[t.size])}
           aria-hidden="true"
           transition={transition}
         >
@@ -160,8 +174,10 @@ export function ExpandableChip({
   className,
   labelClassName,
   actionClassName,
+  size,
 }: ExpandableChipProps) {
   const reduce = useReducedMotion();
+  const t = useSize(size);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [isExpanded, setExpanded] = useExpandableState({
     expanded,
@@ -177,14 +193,16 @@ export function ExpandableChip({
     }
   };
 
-  const transition = reduce ? { duration: 0 } : CONTINUITY_SPRING;
+  const transition = reducedTransition(CONTINUITY, reduce);
 
   return (
     <motion.span layout transition={transition} className="inline-flex">
       <motion.div
         layout
         className={cn(
-          "inline-flex h-10 items-center overflow-hidden rounded-full border border-border bg-transparent text-sm text-foreground has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-inset",
+          "inline-flex items-center overflow-hidden rounded-full border border-border bg-transparent text-foreground has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-inset",
+          t.control,
+          t.text,
           className,
         )}
         style={{ borderRadius: 9999 }}
@@ -206,14 +224,13 @@ export function ExpandableChip({
         >
           {label}
         </motion.button>
-        {/* Without `layout` this slot was squashed by the chip's scale-based
-            resize. It must not clip itself either: it collapses to w-0 at once,
-            and the chip's own edge has to be what wipes the action away. */}
+        {/* Needs `layout` or the chip's scale-based resize squashes it. Must not clip:
+            it collapses to w-0 at once, and the chip's edge wipes the action away. */}
         <motion.span
           layout="position"
           variants={CONTINUITY_LABEL}
           className={cn(
-            "relative inline-flex h-10 shrink-0 items-center",
+            "relative inline-flex h-full shrink-0 items-center",
             isExpanded ? "w-8" : "w-0",
           )}
           aria-hidden={!isExpanded}
@@ -226,7 +243,7 @@ export function ExpandableChip({
             aria-label={actionLabel}
             disabled={disabled || !isExpanded}
             className={cn(
-              "flex h-10 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors outline-none hover:text-foreground disabled:pointer-events-none",
+              "flex h-full w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors duration-(--duration-fast) outline-none hover:text-foreground disabled:pointer-events-none",
               disabled && "opacity-50",
               actionClassName,
             )}

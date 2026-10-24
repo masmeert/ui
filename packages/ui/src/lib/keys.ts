@@ -1,11 +1,7 @@
-/**
- * Key bindings as `mod+shift+key` strings: `mod` is ⌘ on macOS and Ctrl elsewhere,
- * `alt` is ⌥ / Alt.
- */
+// Bindings are `mod+shift+key` strings; `mod` is ⌘ on macOS, Ctrl elsewhere.
 
 export const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
 
-/** Whether a key event is the shortcut `binding`. */
 export const matches = (event: KeyboardEvent | React.KeyboardEvent, binding: string) => {
   const parts = binding.toLowerCase().split("+");
   const key = parts.at(-1)!;
@@ -19,7 +15,6 @@ export const matches = (event: KeyboardEvent | React.KeyboardEvent, binding: str
   return pressed === key || event.code.toLowerCase() === `key${key}`;
 };
 
-/** How a binding reads in the UI, e.g. ⌘⇧M. */
 export const formatBinding = (binding: string) =>
   binding
     .split("+")

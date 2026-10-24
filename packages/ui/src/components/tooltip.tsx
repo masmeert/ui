@@ -26,25 +26,22 @@ type Side = "top" | "right" | "bottom" | "left";
 export interface TooltipProps {
   content: ReactNode;
   children?: ReactElement;
-  /** Existing trigger for controlled integrations such as chart cells. */
+  /** Existing trigger, e.g. a chart cell; replaces `children`. */
   anchorRef?: RefObject<HTMLElement | SVGElement | null>;
-  /** Point within the anchor, as fractions of its rendered width and height. */
+  /** Fractions of the anchor's width and height. */
   anchorPoint?: { x: number; y: number };
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   id?: string;
   side?: Side;
-  /** Delay before showing (ms). Default 120. */
+  /** In ms. Default 120. */
   delay?: number;
   className?: string;
-  /** Classes for the outer wrapper span. Use to fix baseline / fill parent. */
   wrapperClassName?: string;
 }
 
-// Gap between trigger and tooltip, in px.
 const GAP = 8;
 
-// Centering transform for the fixed-positioned anchor point, per side.
 const anchorTransform: Record<Side, string> = {
   top: "translate(-50%, -100%)",
   bottom: "translate(-50%, 0)",
@@ -59,8 +56,7 @@ const transformOrigin: Record<Side, string> = {
   right: "left center",
 };
 
-// Once any tooltip has just closed, neighbouring tooltips open without the
-// initial delay — moving along a toolbar feels instant after the first one.
+// Right after any tooltip closes, the next opens without delay.
 const WARM_WINDOW_MS = 300;
 let lastHiddenAt = 0;
 
@@ -96,9 +92,6 @@ export function Tooltip({
   const hover = useHoverGesture();
   const surfaceRef = useRef<HTMLSpanElement>(null);
 
-  // Anchor point in viewport coords, on the edge of the trigger facing `side`.
-  // Position:fixed means these viewport coords place the tooltip directly, so
-  // it escapes every ancestor's stacking context and overflow.
   const place = useCallback(() => {
     const el = anchorRef.current;
     if (!el) return;
@@ -116,7 +109,7 @@ export function Tooltip({
     const height = surfaceRef.current?.offsetHeight ?? 0;
     const dx = side === "left" ? width : side === "right" ? 0 : width / 2;
     const dy = side === "top" ? height : side === "bottom" ? 0 : height / 2;
-    // Whole pixels: a fractional anchor leaves the label's text resampled and blurry.
+    // Whole pixels: a fractional anchor blurs the text.
     next.left = Math.round(
       Math.max(GAP + dx, Math.min(next.left, window.innerWidth - GAP - width + dx)),
     );
@@ -163,11 +156,8 @@ export function Tooltip({
     setOpen(false);
   }, [open, setOpen]);
 
-  // A finger never hovers, and Safari does not focus a button on tap either, so
-  // the label is only reachable if the tap itself opens the tooltip. A click
-  // carries no pointerType, so the pointerdown that preceded it is what says
-  // whether this was a tap; keyboard activation arrives with no pointerdown at
-  // all, and focus has already shown the label there.
+  // Touch never hovers and Safari doesn't focus on tap, so a tap toggles the label. The click
+  // has no pointerType, so the preceding pointerdown tells whether it was a tap.
   const tap = useTapGesture<boolean>();
 
   const toggleOnTap = useCallback(() => {
@@ -183,12 +173,8 @@ export function Tooltip({
     setOpen(true);
   }, [hide, place, tap, setOpen]);
 
-  // ...and closed again by the next tap that lands somewhere else. The label
-  // covers nothing interactive, so that tap passes through to what it hit.
   useDismiss(open, hide, anchorRef);
 
-  // Keep the tooltip pinned to the trigger while it's open and the page scrolls
-  // or resizes (fixed coords are viewport-relative).
   useEffect(() => {
     if (!open) return;
     const onMove = () => place();
@@ -209,14 +195,8 @@ export function Tooltip({
 
   if (!externalAnchorRef && !isValidElement(children)) return children;
 
-  // The label describes the trigger, so it has to name the trigger itself.
-  // Everything else the tooltip needs is read off the anchor below instead of
-  // cloned on: a handler written onto the child is the child's handler as far
-  // as that child can tell, and a component that owns its activation —
-  // hard-wiring onClick and spreading the rest of its props over it, as
-  // ThemeToggle does — then runs the tooltip's instead of its own. Composing
-  // with `props.onClick` cannot save it either, because a component element's
-  // props hold nothing the component does internally.
+  // Only aria-describedby is cloned on; handlers live on the wrapper, because a child that
+  // hard-wires onClick and spreads the rest (ThemeToggle) would run ours instead of its own.
   const trigger = isValidElement<AriaAttributes>(children)
     ? cloneElement(children, {
         "aria-describedby": id,
@@ -230,9 +210,7 @@ export function Tooltip({
         <span
           ref={wrapperRef}
           className={cn("relative inline-flex align-middle", wrapperClassName)}
-          // Pointer events, not the mouse pair: a tap fires compatibility
-          // mouseenter/mouseleave that carry no pointerType, which raced the tap
-          // path into opening and closing the same label.
+          // Pointer events: a tap's compat mouseenter/leave carry no pointerType and race the tap path.
           onPointerEnter={(event: PointerEvent) => {
             if (hover.enter(event)) show();
           }}
@@ -242,10 +220,7 @@ export function Tooltip({
           onFocus={(event) => event.target.matches(":focus-visible") && show(true)}
           onBlur={hide}
           onPointerDown={(event: PointerEvent) => tap.start(event, open)}
-          // A gesture the platform took away sends no click, and a key press
-          // starts an activation that never had a pointer behind it. Either way
-          // the record has to go, or the next click reads a finger that has long
-          // since lifted.
+          // No click follows a cancelled gesture, and key activation has no pointer: drop the stale record.
           onPointerCancel={tap.drop}
           onKeyDown={tap.drop}
           onClick={toggleOnTap}
@@ -258,7 +233,7 @@ export function Tooltip({
             <AnimatePresence>
               {open && coords ? (
                 <span
-                  className="pointer-events-none fixed z-[9999]"
+                  className="pointer-events-none fixed z-(--z-tooltip)"
                   style={{
                     top: coords.top,
                     left: coords.left,

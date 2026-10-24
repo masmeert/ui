@@ -9,6 +9,7 @@ import {
 export interface TextShimmerProps {
   children: ReactNode;
   as?: ElementType;
+  /** Seconds per sweep. */
   duration?: number;
   className?: string;
 }

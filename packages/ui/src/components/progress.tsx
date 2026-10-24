@@ -1,6 +1,7 @@
 "use client";
 
 import { Progress as ProgressPrimitive } from "@base-ui/react/progress";
+import { typeClass } from "@/lib/type-scale";
 import { cn } from "cn";
 
 function Progress({ className, children, value, ...props }: ProgressPrimitive.Root.Props) {
@@ -37,7 +38,7 @@ function ProgressIndicator({ className, ...props }: ProgressPrimitive.Indicator.
     <ProgressPrimitive.Indicator
       data-slot="progress-indicator"
       className={cn(
-        "h-full bg-primary transition-all data-indeterminate:w-1/3 data-indeterminate:animate-progress-indeterminate",
+        "h-full bg-primary transition-[width] duration-(--duration-moderate) data-indeterminate:w-1/3 data-indeterminate:animate-progress-indeterminate",
         className,
       )}
       {...props}
@@ -48,7 +49,7 @@ function ProgressIndicator({ className, ...props }: ProgressPrimitive.Indicator.
 function ProgressLabel({ className, ...props }: ProgressPrimitive.Label.Props) {
   return (
     <ProgressPrimitive.Label
-      className={cn("text-sm font-medium", className)}
+      className={cn(typeClass("body"), "font-medium", className)}
       data-slot="progress-label"
       {...props}
     />
@@ -58,7 +59,7 @@ function ProgressLabel({ className, ...props }: ProgressPrimitive.Label.Props) {
 function ProgressValue({ className, ...props }: ProgressPrimitive.Value.Props) {
   return (
     <ProgressPrimitive.Value
-      className={cn("ml-auto text-sm text-muted-foreground tabular-nums", className)}
+      className={cn(typeClass("body"), "ml-auto text-muted-foreground tabular-nums", className)}
       data-slot="progress-value"
       {...props}
     />

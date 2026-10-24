@@ -4,6 +4,7 @@ import { cn } from "cn";
 export interface MarqueeProps {
   children: ReactNode;
   direction?: "left" | "right" | "up" | "down";
+  /** Seconds per loop. */
   speed?: number;
   pauseOnHover?: boolean;
   gap?: string;
@@ -37,8 +38,7 @@ export function Marquee({
           "[mask-image:linear-gradient(to_bottom,transparent,black_12%,black_88%,transparent)]",
         className,
       )}
-      // gap on the wrapper too, so the seam between the two tracks matches the
-      // spacing between items and the loop stays even.
+      // Gap on the wrapper too, so the seam between the two tracks matches.
       style={{ "--gap": gap, gap } as React.CSSProperties}
     >
       {[0, 1].map((dup) => (
@@ -55,6 +55,7 @@ export function Marquee({
             "flex shrink-0 items-center",
             vertical ? "animate-marquee-vertical flex-col" : "animate-marquee flex-row",
             pauseOnHover && "group-hover:[animation-play-state:paused]",
+            "motion-reduce:animate-none",
           )}
         >
           {items.map((child, i) => (

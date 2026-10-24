@@ -14,6 +14,7 @@ const meta = {
   args: {
     className: "w-64",
     disabled: false,
+    size: "default",
     onValueChange: fn(),
     children: (
       <>
@@ -34,6 +35,7 @@ const meta = {
   },
   argTypes: {
     disabled: { control: "boolean" },
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
     children: { control: false },
   },
   decorators: [
@@ -53,5 +55,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 
 export const WithValue: Story = { args: { defaultValue: "claude-sonnet-4-5" } };
+
+export const Compact: Story = { args: { defaultValue: "claude-sonnet-4-5", size: "compact" } };
 
 export const Disabled: Story = { args: { defaultValue: "claude-sonnet-4-5", disabled: true } };

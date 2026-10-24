@@ -3,13 +3,8 @@ import { capturePointer, releasePointer } from "@/lib/touch";
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
-/** Nearest legal value on [min, max] for the given step. max counts as a
- * candidate when the step does not divide the range, so a pointer near the end
- * does not snap back onto the last whole step. */
+// `max` is a candidate even when the step doesn't divide the range, so the end is reachable.
 export function snapSliderValue(next: number, min: number, max: number, step: number): number {
-  // Neither case has a grid to walk. An empty range has exactly one legal
-  // point, and a non-positive step only needs a clamp, which also keeps the
-  // division below away from zero.
   if (!(max > min)) return min;
   if (!(step > 0)) return clamp(next, min, max);
   const whole = Math.floor(Number(((max - min) / step).toFixed(6)));
@@ -28,16 +23,11 @@ export interface SliderOptions {
   step?: number;
   disabled?: boolean;
   "aria-label"?: string;
-  /** Announced instead of the raw number — pass one when the value carries a
-   * unit or a suffix ("72.5 kg", "35%"); a bare number needs no valueText. */
+  /** Announced instead of the number, for values with a unit ("72.5 kg"). */
   formatValueText?: (value: number) => string;
 }
 
-/**
- * Shared value + input plumbing for slider designs: controlled/uncontrolled
- * value, step snapping, pointer-capture drag along a track and arrow-key
- * control. Visuals and motion live in the component; this only owns the number.
- */
+// Value, snapping, drag and keys for slider designs; visuals live in the component.
 export function useSlider({
   value,
   defaultValue = 0,
@@ -51,15 +41,12 @@ export function useSlider({
 }: SliderOptions) {
   const trackRef = useRef<HTMLDivElement>(null);
   const sliderEl = useRef<HTMLElement | null>(null);
-  // The state drives visuals. Move reads this ref instead, so the first
-  // pointermove after pointerdown does not have to wait on a re-render.
+  // Read by pointermove so the first move doesn't wait on a re-render.
   const draggingRef = useRef(false);
   const [internal, setInternal] = useState(defaultValue);
   const [dragging, setDragging] = useState(false);
   const controlled = value !== undefined;
-  // Collapse inverted or empty ranges and non-positive steps here, so that
-  // percent, ticks and the keyboard maths never divide by zero or walk a
-  // NaN grid.
+  // Normalized so nothing below divides by zero.
   const lo = min;
   const hi = max > min ? max : min;
   const stride = step > 0 ? step : 1;
@@ -88,13 +75,10 @@ export function useSlider({
   const onPointerDown = useCallback(
     (event: PointerEvent<HTMLDivElement>) => {
       if (disabled) return;
-      // Start the drag first: capture is a convenience, and a browser that
-      // refuses it — or a test DOM that has no pointer capture at all — must
-      // not take the drag down with it.
+      // Drag first: a refused capture must not kill the drag.
       draggingRef.current = true;
       setDragging(true);
       capturePointer(event.currentTarget, event.pointerId);
-      // A click on the track should land keyboard focus on the handle.
       sliderEl.current?.focus({ preventScroll: true });
       commitFromX(event.clientX);
     },
@@ -144,7 +128,6 @@ export function useSlider({
     max: hi,
     step: stride,
     commit,
-    /** Pointer handlers for the track element — drag anywhere on it. */
     trackProps: {
       ref: trackRef,
       onPointerDown,
@@ -153,9 +136,7 @@ export function useSlider({
       onPointerCancel: endDrag,
       onLostPointerCapture: endDrag,
     },
-    /** ARIA + keyboard props for the focusable slider element. */
     sliderProps: {
-      // Callback keeps the handle typed across button/div/motion hosts.
       ref: (node: HTMLElement | null) => {
         sliderEl.current = node;
       },

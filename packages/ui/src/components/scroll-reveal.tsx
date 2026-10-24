@@ -1,18 +1,17 @@
 import { motion, type TargetAndTransition, useInView, useReducedMotion } from "motion/react";
 import { type ReactNode, type RefObject, useRef } from "react";
 
-import { EASE_OUT } from "@/lib/ease";
+import { spring } from "@/lib/springs";
 import { cn } from "cn";
 
 export interface ScrollRevealProps {
   children: ReactNode;
   /** Slide distance in px before reveal. */
   y?: number;
-  /** Enter blur in px (kept ≤ 10 per motion conventions). */
+  /** Enter blur in px. */
   blur?: number;
-  durationSeconds?: number;
   delaySeconds?: number;
-  /** Reveal only once (default) or every time it enters view. */
+  /** Reveal only once, or every time it enters view. */
   once?: boolean;
   /** Portion of the element that must be visible to trigger. */
   amount?: "some" | "all" | number;
@@ -21,11 +20,14 @@ export interface ScrollRevealProps {
   className?: string;
 }
 
+/**
+ * Prefer the CSS `reveal-*` classes; use this only for a custom scroll root,
+ * `once={false}`, or a per-element trigger threshold.
+ */
 export function ScrollReveal({
   children,
   y = 16,
   blur = 8,
-  durationSeconds = 0.6,
   delaySeconds = 0,
   once = true,
   amount = 0.3,
@@ -47,15 +49,14 @@ export function ScrollReveal({
     }
   }
 
-  // Observe an untransformed wrapper: the hidden offset would otherwise move the
-  // observed box across the threshold, and with `once={false}` a row resting at
-  // the top edge would hide, slide back into view, show, and loop.
+  // Observe an untransformed wrapper: the hidden offset would otherwise move the box
+  // across the threshold, and with `once={false}` an element at the edge would loop.
   return (
     <div ref={ref}>
       <motion.div
         initial={hidden}
         animate={inView ? shown : hidden}
-        transition={{ duration: durationSeconds, ease: EASE_OUT, delay: delaySeconds }}
+        transition={{ ...spring.slow, delay: delaySeconds }}
         className={cn(className)}
       >
         {children}

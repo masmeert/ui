@@ -1,8 +1,9 @@
 import { Check, Loader2, X } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import { forwardRef, type ReactNode, useLayoutEffect, useRef, useState } from "react";
-import { EASE_OUT, SPRING_SWAP } from "@/lib/ease";
-import { Button, type ButtonProps } from "./base";
+import { sizeTokens, useSizeContext } from "@/lib/size";
+import { reducedTransition, spring, springExit } from "@/lib/springs";
+import { Button, type ButtonProps, resolveButtonSize } from "./base";
 
 export type ButtonState = "idle" | "loading" | "success" | "error";
 
@@ -24,46 +25,54 @@ const CASCADE_LETTER_VARIANTS: Variants = {
     opacity: 1,
     y: "0%",
     filter: "blur(0px)",
-    transition: { ...SPRING_SWAP, delay },
+    transition: { ...spring.fast, delay },
   }),
   exit: (delay: number = 0) => ({
     opacity: 0,
     y: "-105%",
     filter: ROLL_BLUR,
-    transition: { duration: 0.16, ease: EASE_OUT, delay: delay * 0.5 },
+    transition: { ...springExit.fast, delay: delay * 0.5 },
   }),
 };
 
 const ICON_VARIANTS: Variants = {
-  // Width collapses too, so the icon adds/removes its own space smoothly
-  // instead of popping the row width in a single frame.
+  // Width collapses too, so the row width doesn't pop in one frame.
   initial: { opacity: 0, width: 0, scale: 0.7, filter: ROLL_BLUR },
-  animate: {
+  animate: (width: number) => ({
     opacity: 1,
-    width: "1.5rem",
+    width,
     scale: 1,
     filter: "blur(0px)",
-    transition: SPRING_SWAP,
-  },
+    transition: spring.fast,
+  }),
   exit: {
     opacity: 0,
     width: 0,
     scale: 0.7,
     filter: ROLL_BLUR,
-    transition: { duration: 0.16, ease: EASE_OUT },
+    transition: springExit.fast,
   },
 };
 
-function IconSlot({ keyId, children }: { keyId: string; children: ReactNode }) {
+function IconSlot({
+  keyId,
+  width,
+  children,
+}: {
+  keyId: string;
+  width: number;
+  children: ReactNode;
+}) {
   const reduce = useReducedMotion();
   return (
     <motion.span
       key={keyId}
       variants={ICON_VARIANTS}
-      initial={reduce ? { opacity: 0 } : "initial"}
-      animate={reduce ? { opacity: 1 } : "animate"}
-      exit={reduce ? { opacity: 0 } : "exit"}
-      transition={reduce ? { duration: 0.15 } : undefined}
+      custom={width}
+      initial={reduce ? { opacity: 0, width } : "initial"}
+      animate={reduce ? { opacity: 1, width } : "animate"}
+      exit={reduce ? { opacity: 0, transition: springExit.fast } : "exit"}
+      transition={reduce ? spring.fast : undefined}
       className="inline-grid shrink-0 place-items-center overflow-hidden"
     >
       {children}
@@ -78,9 +87,7 @@ function TextSlot({ value, children }: { value: string; children: ReactNode }) {
   const label = typeof children === "string" ? children : null;
   const cascade = label !== null && !reduce;
 
-  // Measure strings with the same per-letter layout as the cascade. Measuring
-  // the whole string preserves kerning, which can make it narrower than the
-  // inline-block letters and clip the final glyph during the width animation.
+  // Measure per letter like the cascade: whole-string kerning is narrower and clips the last glyph.
   useLayoutEffect(() => {
     const nextWidth = measureRef.current?.offsetWidth;
     if (!nextWidth) return;
@@ -91,7 +98,7 @@ function TextSlot({ value, children }: { value: string; children: ReactNode }) {
     <motion.span
       initial={false}
       animate={{ width }}
-      transition={reduce ? { duration: 0 } : SPRING_SWAP}
+      transition={reducedTransition(spring.fast, reduce)}
       className="relative inline-block overflow-hidden align-bottom whitespace-nowrap"
     >
       <span ref={measureRef} aria-hidden className="invisible inline-block whitespace-nowrap">
@@ -140,8 +147,12 @@ function TextSlot({ value, children }: { value: string; children: ReactNode }) {
             key={`text-${value}`}
             initial={reduce ? { opacity: 0 } : { opacity: 0, y: 14, filter: ROLL_BLUR }}
             animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0, filter: "blur(0px)" }}
-            exit={reduce ? { opacity: 0 } : { opacity: 0, y: -14, filter: ROLL_BLUR }}
-            transition={reduce ? { duration: 0.15 } : SPRING_SWAP}
+            exit={
+              reduce
+                ? { opacity: 0, transition: springExit.fast }
+                : { opacity: 0, y: -14, filter: ROLL_BLUR, transition: springExit.fast }
+            }
+            transition={spring.fast}
             className="absolute top-0 left-0 inline-block"
           >
             {children}
@@ -162,10 +173,16 @@ export const StatefulButton = forwardRef<HTMLButtonElement, StatefulButtonProps>
       errorText = "Try again",
       icon,
       disabled,
+      size,
+      square,
       ...rest
     },
     ref,
   ) {
+    const context = useSizeContext();
+    const { step } = resolveButtonSize(size, square, context?.size);
+    const tokens = sizeTokens(step);
+    const iconWidth = tokens.icon + (step === "compact" ? 4 : 8);
     const isBusy = state === "loading";
     const stateText =
       state === "loading"
@@ -178,25 +195,32 @@ export const StatefulButton = forwardRef<HTMLButtonElement, StatefulButtonProps>
     const textKey = typeof stateText === "string" ? `${state}-${stateText}` : state;
 
     return (
-      <Button ref={ref} disabled={disabled || isBusy} aria-busy={isBusy} {...rest}>
+      <Button
+        ref={ref}
+        size={size}
+        square={square}
+        disabled={disabled || isBusy}
+        aria-busy={isBusy}
+        {...rest}
+      >
         <span
           aria-live="polite"
           className="relative inline-flex items-center justify-center overflow-hidden"
         >
           <AnimatePresence initial={false}>
             {state === "loading" ? (
-              <IconSlot keyId="loading-icon">
-                <Loader2 className="h-4 w-4 animate-spin" />
+              <IconSlot keyId="loading-icon" width={iconWidth}>
+                <Loader2 size={tokens.icon} className="animate-spin" />
               </IconSlot>
             ) : null}
             {state === "success" ? (
-              <IconSlot keyId="success-icon">
-                <Check className="h-4 w-4" />
+              <IconSlot keyId="success-icon" width={iconWidth}>
+                <Check size={tokens.icon} />
               </IconSlot>
             ) : null}
             {state === "error" ? (
-              <IconSlot keyId="error-icon">
-                <X className="h-4 w-4" />
+              <IconSlot keyId="error-icon" width={iconWidth}>
+                <X size={tokens.icon} />
               </IconSlot>
             ) : null}
           </AnimatePresence>
@@ -204,7 +228,11 @@ export const StatefulButton = forwardRef<HTMLButtonElement, StatefulButtonProps>
           <TextSlot value={textKey}>{stateText}</TextSlot>
 
           <AnimatePresence initial={false}>
-            {state === "idle" && icon ? <IconSlot keyId="idle-icon">{icon}</IconSlot> : null}
+            {state === "idle" && icon ? (
+              <IconSlot keyId="idle-icon" width={iconWidth}>
+                {icon}
+              </IconSlot>
+            ) : null}
           </AnimatePresence>
         </span>
       </Button>

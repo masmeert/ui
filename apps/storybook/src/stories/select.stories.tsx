@@ -8,6 +8,7 @@ const meta = {
   args: {
     className: "w-64",
     disabled: false,
+    size: "default",
     onValueChange: fn(),
     onOpenChange: fn(),
     children: (
@@ -29,6 +30,7 @@ const meta = {
   },
   argTypes: {
     disabled: { control: "boolean" },
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
     children: { control: false },
   },
   decorators: [
@@ -50,5 +52,7 @@ export const Default: Story = {};
 export const WithValue: Story = { args: { defaultValue: "fra1" } };
 
 export const Open: Story = { args: { defaultValue: "fra1", defaultOpen: true } };
+
+export const Compact: Story = { args: { defaultValue: "fra1", size: "compact" } };
 
 export const Disabled: Story = { args: { defaultValue: "iad1", disabled: true } };

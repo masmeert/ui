@@ -15,7 +15,8 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-import { EASE_OUT, SPRING_LAYOUT, SPRING_PRESS } from "@/lib/ease";
+import { spring, springExit } from "@/lib/springs";
+import { typeClass } from "@/lib/type-scale";
 import { TOUCH_GESTURE_CLASS, TOUCH_GESTURE_CONTENT_CLASS } from "@/lib/touch";
 import { cn } from "cn";
 
@@ -88,7 +89,7 @@ export function SlideActionButton({
       x.set(target);
       return;
     }
-    animate(x, target, SPRING_LAYOUT);
+    animate(x, target, spring.moderate);
   };
 
   const reset = () => {
@@ -118,10 +119,10 @@ export function SlideActionButton({
     <div
       ref={trackRef}
       className={cn(
+        // Deliberately off the size ladder: the thumb must be big enough to drag.
         "relative h-16 w-72 overflow-hidden rounded-[22px] bg-muted p-1",
         "ring-1 ring-brand/10",
-        // The track only carries the label — the slide starts on the thumb,
-        // which suppresses selection for the whole gesture on its own.
+        // Content class only: the thumb suppresses selection for the whole gesture.
         TOUCH_GESTURE_CONTENT_CLASS,
         disabled && "opacity-60",
         className,
@@ -141,16 +142,21 @@ export function SlideActionButton({
       <motion.span
         aria-hidden="true"
         style={{ opacity: labelOpacity }}
-        className="pointer-events-none absolute inset-0 grid place-items-center pl-10 text-sm font-medium text-foreground"
+        className={cn(
+          "pointer-events-none absolute inset-0 grid place-items-center pl-10 font-medium text-foreground",
+          typeClass("body"),
+        )}
       >
         {children}
       </motion.span>
 
-      {/* The label leaves through AnimatePresence: unmounting it inline emptied
-          the span on reset before its fade-out could show anything. */}
+      {/* AnimatePresence, so the label's fade-out shows on reset instead of vanishing. */}
       <span
         aria-live="polite"
-        className="pointer-events-none absolute inset-0 grid place-items-center text-sm font-medium text-primary-foreground"
+        className={cn(
+          "pointer-events-none absolute inset-0 grid place-items-center font-medium text-primary-foreground",
+          typeClass("body"),
+        )}
       >
         <AnimatePresence initial={false}>
           {completed ? (
@@ -158,8 +164,8 @@ export function SlideActionButton({
               key="complete"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: reduce ? 0 : 0.15, ease: EASE_OUT }}
+              exit={{ opacity: 0, transition: springExit.fast }}
+              transition={spring.fast}
             >
               {completeLabel}
             </motion.span>
@@ -183,7 +189,7 @@ export function SlideActionButton({
         }}
         onKeyDown={handleKeyDown}
         whileTap={reduce || completed || disabled ? undefined : { scale: 0.94 }}
-        transition={SPRING_PRESS}
+        transition={spring.fast}
         className={cn(
           "sheen relative z-10 grid size-14 cursor-grab touch-none place-items-center rounded-[18px] bg-primary text-primary-foreground",
           TOUCH_GESTURE_CLASS,

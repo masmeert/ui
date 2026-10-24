@@ -5,6 +5,7 @@ import {
   BumpChartPlot,
   type BumpChartSeries,
 } from "@masmeert/ui/bump-chart";
+import { SizeProvider } from "@masmeert/ui/lib/size";
 
 const contributors: BumpChartSeries[] = [
   { id: "massimo", name: "Massimo", ranks: [1, 1, 2, 2, 1, 1, 2, 1] },
@@ -63,4 +64,13 @@ export const LegendFirst: Story = {
       </>
     ),
   },
+};
+
+/** Labels, legend and readouts step down with the region's density. */
+export const Compact: Story = {
+  render: (args) => (
+    <SizeProvider size="compact">
+      <BumpChart {...args} />
+    </SizeProvider>
+  ),
 };

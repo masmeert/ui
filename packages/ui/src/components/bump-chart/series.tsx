@@ -1,6 +1,8 @@
 import { useId, useRef } from "react";
 import { motion, useTransform, useMotionValueEvent } from "motion/react";
-import { EASE_OUT } from "@/lib/ease";
+import { useSize } from "@/lib/size";
+import { spring } from "@/lib/springs";
+import { TYPE_PX } from "@/lib/type-scale";
 import { useBumpChart } from "./context";
 import { bumpPath, PLOT } from "./model";
 import type { BumpPosition } from "./use-geometry";
@@ -17,6 +19,7 @@ export function BumpChartSeriesPath({
   index: number;
 }) {
   const { height, highlighted, setHovered, canHover, reduce } = useBumpChart();
+  const { typeVariant } = useSize();
   const clip = useId();
   const values = positions.flatMap((point) => (point ? [point.x, point.y] : []));
   const path = useTransform(values, (coordinates: number[]) => {
@@ -44,7 +47,7 @@ export function BumpChartSeriesPath({
     <motion.g
       initial={{ opacity: 0 }}
       animate={{ opacity: dimmed ? 0.22 : 1 }}
-      transition={{ duration: 0.18, ease: EASE_OUT }}
+      transition={spring.fast}
       onPointerEnter={() => {
         if (canHover) setHovered(row.id);
       }}
@@ -59,12 +62,13 @@ export function BumpChartSeriesPath({
             height={height}
             initial={reduce ? false : { transform: "scaleX(0)" }}
             animate={{ transform: "scaleX(1)" }}
-            transition={{ duration: 0.28, delay: Math.min(index, 4) * 0.025, ease: EASE_OUT }}
+            // Overshoot runs past the plot's right edge, where nothing is drawn.
+            transition={{ ...spring.slow, delay: Math.min(index, 4) * 0.025 }}
           />
         </clipPath>
       </defs>
       <g clipPath={`url(#${clip})`}>
-        {/* SVG geometry must reshape with the animated points; transforming a whole path cannot express new ranks. */}
+        {/* Animates `d`: a transform on the whole path can't express new ranks. */}
         <motion.path d={path} stroke={row.color} strokeWidth="2" fill="none" />
         <motion.path
           d={path}
@@ -73,7 +77,7 @@ export function BumpChartSeriesPath({
           fill="none"
           initial={false}
           animate={{ opacity: highlighted === row.id ? 0.16 : 0 }}
-          transition={{ duration: 0.18, ease: EASE_OUT }}
+          transition={spring.fast}
         />
         <motion.path d={path} stroke="transparent" strokeWidth="16" fill="none" />
       </g>
@@ -83,7 +87,8 @@ export function BumpChartSeriesPath({
             x="18"
             dominantBaseline="central"
             fill={row.color}
-            className="text-[10px] font-medium"
+            fontSize={TYPE_PX[typeVariant].caption.size}
+            className="font-semibold"
           >
             {row.name.length > 12 ? `${row.name.slice(0, 11)}…` : row.name}
             <title>{row.name}</title>

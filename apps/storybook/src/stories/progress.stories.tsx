@@ -50,11 +50,11 @@ function ArtifactUpload(props: ProgressProps) {
         <ProgressValue />
       </Progress>
       <div className="flex gap-2">
-        <Button size="sm" disabled={uploading} onClick={() => setUploadedPercent(1)}>
+        <Button size="compact" disabled={uploading} onClick={() => setUploadedPercent(1)}>
           {uploadedPercent === 100 ? "Upload again" : "Upload"}
         </Button>
         <Button
-          size="sm"
+          size="compact"
           variant="ghost"
           disabled={!uploading}
           onClick={() => setUploadedPercent(0)}

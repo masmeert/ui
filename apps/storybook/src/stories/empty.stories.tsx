@@ -67,8 +67,8 @@ function NoDeploysEmpty(props: EmptyProps) {
         <EmptyDescription>Push to the staging branch or promote a preview deploy.</EmptyDescription>
       </EmptyHeader>
       <EmptyContent className="flex-row justify-center">
-        <Button size="sm">Promote preview</Button>
-        <Button size="sm" variant="outline">
+        <Button size="compact">Promote preview</Button>
+        <Button size="compact" variant="outline">
           Read the docs
         </Button>
       </EmptyContent>

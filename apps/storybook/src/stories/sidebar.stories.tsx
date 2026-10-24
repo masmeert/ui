@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Archive, FolderGit2, Inbox, MessageSquare, PanelLeft, Plus, Settings } from "lucide-react";
 import { Avatar, AvatarFallback } from "@masmeert/ui/avatar";
+import { SizeProvider } from "@masmeert/ui/lib/size";
 import {
   Sidebar,
   SidebarContent,
@@ -139,7 +140,7 @@ function WorkspaceShell(props: SidebarProps) {
         </SidebarContent>
         <SidebarFooter>
           <div className="flex items-center gap-2.5 overflow-hidden px-1">
-            <Avatar size="sm">
+            <Avatar size="compact">
               <AvatarFallback>MM</AvatarFallback>
             </Avatar>
             <span className="truncate text-sm text-foreground">Massimo Meert</span>
@@ -149,7 +150,7 @@ function WorkspaceShell(props: SidebarProps) {
       </Sidebar>
       <SidebarInset>
         <header className="flex h-14 items-center gap-2 border-b border-border px-3">
-          <SidebarTrigger className="text-muted-foreground hover:bg-muted/60 hover:text-foreground">
+          <SidebarTrigger className="text-muted-foreground hover:bg-hover hover:text-foreground">
             <PanelLeft className="size-4" />
           </SidebarTrigger>
           <h1 className="text-sm font-medium text-foreground">{activePage}</h1>
@@ -179,3 +180,12 @@ export const Inset: Story = { args: { variant: "inset" } };
 export const Offcanvas: Story = { args: { collapsible: "offcanvas" } };
 
 export const Right: Story = { args: { side: "right" } };
+
+/** Density is a region decision: one provider steps every row, label and the submenu down. */
+export const Compact: Story = {
+  render: (args) => (
+    <SizeProvider size="compact">
+      <WorkspaceShell {...args} />
+    </SizeProvider>
+  ),
+};

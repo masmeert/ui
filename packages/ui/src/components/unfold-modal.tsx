@@ -15,8 +15,9 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { EASE_OUT } from "@/lib/ease";
 import { PresenceGate } from "@/components/presence-gate";
+import { spring, springExit } from "@/lib/springs";
+import { SURFACE_OFFSET, SurfaceProvider, useElevation } from "@/lib/surface";
 import { cn } from "cn";
 
 type UnfoldModalContextValue = {
@@ -38,17 +39,12 @@ function useUnfoldModalContext(component: string) {
 
 export interface UnfoldModalProps {
   children: ReactNode;
-  /** Controlled open state. */
   open?: boolean;
-  /** Initial state when used uncontrolled. */
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
-/**
- * A modal whose full-size surface unfolds outward from its exact center.
- * Supports controlled and uncontrolled state through composable primitives.
- */
+/** A modal whose full-size surface unfolds outward from its exact center. */
 export function UnfoldModal({
   children,
   open: controlledOpen,
@@ -85,7 +81,6 @@ export interface UnfoldModalTriggerProps {
   children: ReactElement;
 }
 
-/** Wraps one interactive element and opens or closes the modal. */
 export function UnfoldModalTrigger({ children }: UnfoldModalTriggerProps) {
   const context = useUnfoldModalContext("UnfoldModalTrigger");
   if (!isValidElement<React.HTMLAttributes<HTMLElement>>(children)) return children;
@@ -106,7 +101,6 @@ export interface UnfoldModalCloseProps {
   children: ReactElement;
 }
 
-/** Wraps one interactive element and closes the modal. */
 export function UnfoldModalClose({ children }: UnfoldModalCloseProps) {
   const context = useUnfoldModalContext("UnfoldModalClose");
   if (!isValidElement<React.HTMLAttributes<HTMLElement>>(children)) return children;
@@ -121,13 +115,10 @@ export function UnfoldModalClose({ children }: UnfoldModalCloseProps) {
 
 export interface UnfoldModalContentProps {
   children: ReactNode;
-  /** Accessible name announced by screen readers. */
   ariaLabel: string;
-  /** Optional id of descriptive content inside the modal. */
   ariaDescribedBy?: string;
-  /** Close on Escape or backdrop press. Default true. */
+  /** Close on Escape or backdrop press. */
   dismissible?: boolean;
-  /** Render the close control inside the panel's top-right corner. Default true. */
   showCloseButton?: boolean;
   closeButtonLabel?: string;
   className?: string;
@@ -143,17 +134,9 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
+// Same radius in both, so the motion doesn't spend its last frames rounding corners.
 const FOLDED_CLIP = "inset(48% 48% 48% 48% round 30px)";
 const OPEN_CLIP = "inset(0% 0% 0% 0% round 30px)";
-
-// Complex clip-path strings can snap when a spring resolves its final distance.
-// Keep the radius constant so the whole duration reads as surface unfolding,
-// rather than finishing early and spending its last frames rounding corners.
-const UNFOLD_EASE = [0.2, 0, 0.2, 1] as const;
-const UNFOLD_TRANSITION = {
-  duration: 0.43,
-  ease: UNFOLD_EASE,
-} as const;
 
 function getFocusableElements(root: HTMLElement | null) {
   if (!root) return [];
@@ -176,6 +159,7 @@ export function UnfoldModalContent({
   const prefersReducedMotion = useReducedMotion() ?? false;
   const [mounted, setMounted] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const surface = useElevation(SURFACE_OFFSET.dialog);
 
   useEffect(() => setMounted(true), []);
 
@@ -240,29 +224,21 @@ export function UnfoldModalContent({
                 disabled={!dismissible}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                exit={{ opacity: 0, transition: springExit.slow }}
                 {...gate}
-                transition={{
-                  duration: prefersReducedMotion ? 0.1 : 0.28,
-                  ease: EASE_OUT,
-                }}
+                transition={spring.slow}
                 onClick={() => context.setOpen(false)}
                 className={cn(
-                  "pointer-events-auto fixed inset-0 z-100 h-full w-full cursor-default bg-background/10 backdrop-blur-sm",
+                  "pointer-events-auto fixed inset-0 z-(--z-overlay) h-full w-full cursor-default bg-background/10 backdrop-blur-sm",
                   backdropClassName,
                 )}
               />
 
-              {/* `inset-4` rather than `inset-0 p-4`: same content box, but the
-                  layer stays off the viewport edges. It never takes pointer
-                  events, so it carries `inert` alone. See
-                  tests/fixed-overlay-edge-sampling.test.tsx. */}
+              {/* Never takes pointer events, so it only needs `inert`. */}
               <div
                 inert={!isPresent}
-                className="pointer-events-none fixed inset-4 z-100 flex items-center justify-center overflow-y-auto [filter:drop-shadow(0_1px_1px_rgb(0_0_0/0.06))_drop-shadow(0_8px_20px_rgb(0_0_0/0.12))]"
+                className="pointer-events-none fixed inset-4 z-(--z-overlay) flex items-center justify-center overflow-y-auto [filter:drop-shadow(0_1px_1px_rgb(0_0_0/0.06))_drop-shadow(0_8px_20px_rgb(0_0_0/0.12))]"
               >
-                {/* Drop-shadow reads the clipped child's alpha, so depth follows the
-                    unfolding silhouette without introducing another panel layer. */}
                 <div className="flex w-full flex-col items-center py-8">
                   <motion.div
                     ref={panelRef}
@@ -281,29 +257,24 @@ export function UnfoldModalContent({
                       opacity: 1,
                       clipPath: OPEN_CLIP,
                     }}
-                    exit={
-                      prefersReducedMotion
-                        ? {
-                            opacity: 0,
-                            clipPath: OPEN_CLIP,
-                          }
-                        : {
-                            opacity: 1,
-                            clipPath: FOLDED_CLIP,
-                          }
-                    }
+                    exit={{
+                      ...(prefersReducedMotion
+                        ? { opacity: 0, clipPath: OPEN_CLIP }
+                        : { opacity: 1, clipPath: FOLDED_CLIP }),
+                      transition: springExit.slow,
+                    }}
                     {...gate}
                     // A no-op onUpdate keeps Motion off WAAPI: a compositor clip-path animation doesn't repaint the parent's drop-shadow until it ends.
                     onUpdate={() => {}}
-                    transition={
-                      prefersReducedMotion ? { duration: 0.14, ease: EASE_OUT } : UNFOLD_TRANSITION
-                    }
+                    transition={prefersReducedMotion ? spring.fast : spring.slow}
                     className={cn(
-                      "pointer-events-auto relative w-full max-w-104 origin-center overflow-hidden rounded-[30px] border border-border bg-popover will-change-[clip-path]",
+                      "pointer-events-auto relative w-full max-w-104 origin-center overflow-hidden rounded-[30px] border border-border will-change-[clip-path]",
+                      // clip-path cuts the box-shadow; depth comes from the wrapper's drop-shadow.
+                      surface.className,
                       className,
                     )}
                   >
-                    {children}
+                    <SurfaceProvider value={surface.level}>{children}</SurfaceProvider>
 
                     {showCloseButton ? (
                       <motion.button
@@ -315,14 +286,13 @@ export function UnfoldModalContent({
                         exit={{
                           opacity: 0,
                           scale: prefersReducedMotion ? 1 : 0.88,
-                          transition: { duration: 0.1, ease: EASE_OUT },
+                          transition: springExit.fast,
                         }}
-                        transition={{
-                          delay: prefersReducedMotion ? 0 : 0.16,
-                          duration: prefersReducedMotion ? 0.12 : 0.2,
-                          ease: EASE_OUT,
-                        }}
-                        className="absolute top-4 right-4 inline-flex size-8 items-center justify-center rounded-full bg-foreground/5 text-muted-foreground transition-colors hover:bg-foreground/8 hover:text-foreground focus-visible:ring-4 focus-visible:ring-ring focus-visible:outline-none"
+                        // Waits for the unfold to clear the corner before it pops in.
+                        transition={
+                          prefersReducedMotion ? spring.fast : { ...spring.moderate, delay: 0.16 }
+                        }
+                        className="absolute top-4 right-4 inline-flex size-8 items-center justify-center rounded-full bg-hover text-muted-foreground transition-colors duration-(--duration-fast) hover:bg-selected hover:text-foreground focus-visible:ring-4 focus-visible:ring-ring focus-visible:outline-none"
                       >
                         <X className="size-4" aria-hidden="true" />
                       </motion.button>

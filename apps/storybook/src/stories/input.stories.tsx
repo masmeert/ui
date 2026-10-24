@@ -16,6 +16,7 @@ const meta = {
     onChange: fn(),
   },
   argTypes: {
+    size: { control: "inline-radio", options: ["compact", "default", "large"] },
     label: { control: "text" },
     placeholder: { control: "text" },
     error: { control: "text" },
@@ -40,6 +41,24 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 
 export const WithIcon: Story = { args: { leftIcon: <Mail /> } };
+
+export const Compact: Story = { args: { size: "compact", leftIcon: <Mail /> } };
+
+export const Sizes: Story = {
+  render: (args) => (
+    <div className="flex flex-col gap-4">
+      {(["compact", "default", "large"] as const).map((size) => (
+        <Input
+          key={size}
+          {...args}
+          size={size}
+          label={`${args.label} (${size})`}
+          leftIcon={<Mail />}
+        />
+      ))}
+    </div>
+  ),
+};
 
 export const Invalid: Story = {
   args: {

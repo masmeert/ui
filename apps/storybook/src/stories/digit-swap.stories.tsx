@@ -2,13 +2,14 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Button } from "@masmeert/ui/button";
 import { DigitSwap, type DigitSwapProps } from "@masmeert/ui/digit-swap";
 import { useState } from "react";
+import { typeClass } from "@masmeert/ui/lib/type-scale";
 
 function DigitSwapCycle({ readings, ...args }: DigitSwapProps & { readings: string[] }) {
   const [index, setIndex] = useState(0);
   return (
     <div className="flex flex-col items-center gap-4">
       <DigitSwap {...args} value={readings[index % readings.length]} />
-      <Button variant="outline" size="sm" onClick={() => setIndex((current) => current + 1)}>
+      <Button variant="outline" size="compact" onClick={() => setIndex((current) => current + 1)}>
         Next
       </Button>
     </div>
@@ -21,15 +22,13 @@ const meta = {
   args: {
     value: "1,284",
     direction: "up",
-    duration: 0.18,
     stagger: 0.006,
     suffixLength: 0,
-    className: "font-mono text-4xl font-semibold",
+    className: `font-mono font-bold ${typeClass("display")}`,
   },
   argTypes: {
     value: { control: false },
     direction: { control: "inline-radio", options: ["up", "down"] },
-    duration: { control: { type: "range", min: 0.05, max: 1, step: 0.01 } },
     stagger: { control: { type: "range", min: 0, max: 0.1, step: 0.002 } },
     suffixLength: { control: { type: "number", min: 0, max: 6 } },
     animationKey: { control: false },
@@ -49,7 +48,7 @@ export const CountingDown: Story = {
 };
 
 export const MaskedToken: Story = {
-  args: { stagger: 0.02, duration: 0.24 },
+  args: { stagger: 0.02 },
   render: (args) => (
     <DigitSwapCycle {...args} readings={["•••• •••• 4f2a", "ghp_ 7Kq2 4f2a", "•••• •••• 4f2a"]} />
   ),
