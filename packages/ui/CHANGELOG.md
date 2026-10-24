@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/masmeert/ui/compare/ui-v0.3.0...ui-v0.3.1) (2026-10-24)
+
+
+### Fixed
+
+* **ui:** keep fluid hover out of portaled children ([a863008](https://github.com/masmeert/ui/commit/a863008eb38f917fa29dfa89f7687dc5d936f137))
+
 ## [0.3.0](https://github.com/masmeert/ui/compare/ui-v0.2.2...ui-v0.3.0) (2026-10-24)
 
 
