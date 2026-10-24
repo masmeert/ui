@@ -83,6 +83,9 @@ export function useFluidHover<T extends HTMLElement>(
   const rectsRef = useRef<ItemRect[]>([]);
   const frame = useRef<number | null>(null);
   const observer = useRef<ResizeObserver | null>(null);
+  // While the mouse is over the list: so a re-measure can re-pick under a resting pointer.
+  const lastPoint = useRef<{ x: number; y: number } | null>(null);
+  const repick = useRef<() => void>(() => {});
   const options = useRef({ axis, isItemDisabled, gapClick });
   useLayoutEffect(() => {
     options.current = { axis, isItemDisabled, gapClick };
@@ -110,6 +113,19 @@ export function useFluidHover<T extends HTMLElement>(
     [geometry],
   );
 
+  const rectOf = useCallback(
+    (element: HTMLElement, g: NonNullable<ReturnType<typeof geometry>>): ItemRect => {
+      const r = element.getBoundingClientRect();
+      return {
+        left: (r.left - g.box.left) / g.scaleX - g.container.clientLeft + g.container.scrollLeft,
+        top: (r.top - g.box.top) / g.scaleY - g.container.clientTop + g.container.scrollTop,
+        width: r.width / g.scaleX,
+        height: r.height / g.scaleY,
+      };
+    },
+    [],
+  );
+
   // One rAF pass per burst; retries 3 frames for a popup without a box yet, and never
   // publishes zeroed rects.
   const measure = useCallback(
@@ -125,15 +141,9 @@ export function useFluidHover<T extends HTMLElement>(
         const next: ItemRect[] = [];
         let complete = items.current.size > 0;
         for (const [index, element] of items.current) {
-          const r = element.getBoundingClientRect();
-          if (r.width === 0 && r.height === 0) complete = false;
-          next[index] = {
-            left:
-              (r.left - g.box.left) / g.scaleX - g.container.clientLeft + g.container.scrollLeft,
-            top: (r.top - g.box.top) / g.scaleY - g.container.clientTop + g.container.scrollTop,
-            width: r.width / g.scaleX,
-            height: r.height / g.scaleY,
-          };
+          const rect = rectOf(element, g);
+          if (rect.width === 0 && rect.height === 0) complete = false;
+          next[index] = rect;
         }
         if (!complete) {
           if (attempt < 3) measure(attempt + 1);
@@ -142,9 +152,10 @@ export function useFluidHover<T extends HTMLElement>(
         rectsRef.current = next;
         setItemRects(next);
         setIsMeasured(true);
+        repick.current();
       });
     },
-    [geometry],
+    [geometry, rectOf],
   );
 
   /** For items moved by a transform, which the ResizeObserver can't see. Keeps the highlight up. */
@@ -212,6 +223,35 @@ export function useFluidHover<T extends HTMLElement>(
     [skip, toLocal],
   );
 
+  // Items that glide (a `layout` animation) are measured mid-flight when the list changes, and
+  // nothing fires once they land. The item under the pointer is checked on each move instead.
+  const isStale = useCallback(
+    (target: EventTarget) => {
+      const g = geometry();
+      if (!g) return false;
+      for (const [index, element] of items.current) {
+        if (!element.contains(target as Node)) continue;
+        const stored = rectsRef.current[index];
+        if (!stored) return true;
+        const now = rectOf(element, g);
+        return (
+          Math.abs(now.top - stored.top) > 1 ||
+          Math.abs(now.left - stored.left) > 1 ||
+          Math.abs(now.width - stored.width) > 1 ||
+          Math.abs(now.height - stored.height) > 1
+        );
+      }
+      return false;
+    },
+    [geometry, rectOf],
+  );
+
+  useLayoutEffect(() => {
+    repick.current = () => {
+      if (lastPoint.current) pickAt(lastPoint.current.x, lastPoint.current.y);
+    };
+  });
+
   useEffect(() => {
     if (activeIndex === null) return;
     const element = items.current.get(activeIndex);
@@ -232,13 +272,17 @@ export function useFluidHover<T extends HTMLElement>(
       onPointerEnter(event: PointerEvent) {
         if (event.pointerType !== "mouse" || isOutside(event.target)) return;
         wasOutside.current = false;
+        lastPoint.current = { x: event.clientX, y: event.clientY };
         setSession((s) => s + 1);
+        // The list may have moved since it was last measured; keeps the highlight up.
+        measure();
         pickAt(event.clientX, event.clientY);
       },
       onPointerMove(event: PointerEvent) {
         if (event.pointerType !== "mouse") return;
         if (isOutside(event.target)) {
           wasOutside.current = true;
+          lastPoint.current = null;
           setActiveIndex(null);
           return;
         }
@@ -247,10 +291,13 @@ export function useFluidHover<T extends HTMLElement>(
           wasOutside.current = false;
           setSession((s) => s + 1);
         }
+        lastPoint.current = { x: event.clientX, y: event.clientY };
+        if (isStale(event.target)) measure();
         pickAt(event.clientX, event.clientY);
       },
       onPointerLeave(event: PointerEvent) {
         if (event.pointerType !== "mouse") return;
+        lastPoint.current = null;
         setActiveIndex(null);
       },
       onClick(event: MouseEvent) {
@@ -271,7 +318,7 @@ export function useFluidHover<T extends HTMLElement>(
         items.current.get(index)?.click();
       },
     }),
-    [isOutside, pickAt, skip, toLocal],
+    [isOutside, isStale, measure, pickAt, skip, toLocal],
   );
 
   return {
