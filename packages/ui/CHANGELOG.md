@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/masmeert/ui/compare/ui-v0.3.1...ui-v0.3.2) (2026-10-24)
+
+
+### Fixed
+
+* **ui:** re-measure fluid hover when rows moved since the last measure ([b0480cf](https://github.com/masmeert/ui/commit/b0480cf79cd202abdf3786f90a39fa47ff4b0b6f))
+
 ## [0.3.1](https://github.com/masmeert/ui/compare/ui-v0.3.0...ui-v0.3.1) (2026-10-24)
 
 
