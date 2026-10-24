@@ -1,6 +1,6 @@
 import { IconMoon, IconSun } from "@tabler/icons-react";
 import { useReducedMotion } from "motion/react";
-import { useEffect, type ComponentPropsWithoutRef } from "react";
+import { useEffect, useRef, type ComponentPropsWithoutRef } from "react";
 import { flushSync } from "react-dom";
 import { ActionSwapIcon } from "@/components/action-swap";
 import { EASE_OUT_CSS } from "@/lib/ease";
@@ -124,6 +124,7 @@ export function useThemeToggle({
   origin = "bottom-up",
 }: ThemeToggleOptions) {
   const prefersReducedMotion = useReducedMotion() ?? false;
+  const pendingDark = useRef<boolean | null>(null);
   useEffect(() => {
     if (document.getElementById(VT_STYLE_ID)) return;
     const el = document.createElement("style");
@@ -133,7 +134,7 @@ export function useThemeToggle({
   }, []);
 
   const toggle = () => {
-    const next = !dark;
+    const next = !(pendingDark.current ?? dark);
 
     if (prefersReducedMotion || !("startViewTransition" in document)) {
       onDarkChange(next);
@@ -154,13 +155,19 @@ export function useThemeToggle({
 
     const viewTransition = (
       document as Document & {
-        startViewTransition(cb: () => void): { finished: Promise<void> };
+        startViewTransition(cb: () => void): {
+          ready: Promise<void>;
+          finished: Promise<void>;
+        };
       }
     ).startViewTransition(() => flushSync(() => onDarkChange(next)));
 
+    pendingDark.current = next;
     latestViewTransition = viewTransition;
+    viewTransition.ready.catch(() => {});
     viewTransition.finished
       .finally(() => {
+        if (pendingDark.current === next) pendingDark.current = null;
         if (latestViewTransition !== viewTransition) return;
         latestViewTransition = null;
         delete root.dataset.themeVt;
