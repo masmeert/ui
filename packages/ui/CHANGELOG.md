@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0](https://github.com/masmeert/ui/compare/ui-v0.2.2...ui-v0.3.0) (2026-10-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ui:** the icon peer dependency is now @tabler/icons-react (>=3.0.0) instead of lucide-react, and CommandItem's `icon` prop expects a Tabler icon component.
+
+### Added
+
+* **ui:** replace lucide-react with Tabler icons ([0d618fd](https://github.com/masmeert/ui/commit/0d618fd56dcd4bd902b2c376aa88ac40bef25aee))
+
 ## [0.2.2](https://github.com/masmeert/ui/compare/ui-v0.2.1...ui-v0.2.2) (2026-10-24)
 
 
