@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/masmeert/ui/compare/ui-v0.2.1...ui-v0.2.2) (2026-10-24)
+
+
+### Fixed
+
+* **ui:** ship a README and the changelog with the package ([621f0df](https://github.com/masmeert/ui/commit/621f0dff731f3b8a2c093ba303a077cc0dc195ec))
+
 ## [0.2.1](https://github.com/masmeert/ui/compare/ui-v0.2.0...ui-v0.2.1) (2026-10-24)
 
 
