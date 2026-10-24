@@ -2,6 +2,11 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Button } from "@masmeert/ui/button";
 import { TextScramble, type TextScrambleProps } from "@masmeert/ui/text-scramble";
 import { useState } from "react";
+import {
+  TEXT_SHIMMER_CLASS_NAME,
+  TEXT_SHIMMER_KEYFRAMES,
+  textShimmerStyle,
+} from "@masmeert/ui/lib/text-shimmer";
 import { typeClass } from "@masmeert/ui/lib/type-scale";
 
 function TextScrambleCycle({ messages, ...args }: TextScrambleProps & { messages: string[] }) {
@@ -53,5 +58,22 @@ export const SlowResolve: Story = {
       {...args}
       messages={["Resolving dependencies", "Compiling 1,204 modules", "Build finished in 14.2s"]}
     />
+  ),
+};
+
+/** A `bg-clip-text` gradient on the root has to reach the scrambling glyphs. */
+export const Shimmer: Story = {
+  args: {
+    className: `${TEXT_SHIMMER_CLASS_NAME} ${typeClass("body")}`,
+    style: textShimmerStyle(2.2),
+  },
+  render: (args) => (
+    <>
+      <style>{TEXT_SHIMMER_KEYFRAMES}</style>
+      <TextScrambleCycle
+        {...args}
+        messages={["Thinking…", "Reading the codebase", "Planning changes"]}
+      />
+    </>
   ),
 };

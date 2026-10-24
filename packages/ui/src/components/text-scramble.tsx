@@ -72,28 +72,32 @@ export function TextScramble({
   }, [duration, glyphs, reduce, text]);
 
   return (
-    <span className={cn("relative inline-block whitespace-pre", className)} style={style}>
+    <>
+      {/* Outside the root: `background-clip: text` paints even sr-only glyphs. */}
       <span className="sr-only">{text}</span>
-      {/* Holds the final width so random glyphs can't jitter the layout. */}
-      <span aria-hidden="true" className="invisible">
-        {text}
+      {/* One grid cell for both layers: absolute text falls outside `background-clip: text`. */}
+      <span
+        aria-hidden="true"
+        className={cn("relative inline-grid whitespace-pre", className)}
+        style={style}
+      >
+        {/* Holds the final width; zero height so its glyphs stay out of the clip. */}
+        <span className="invisible col-start-1 row-start-1 h-0 overflow-hidden">{text}</span>
+        {reduce ? (
+          <motion.span
+            key={revision.count}
+            // Contained, so wide random glyphs can't widen the cell.
+            className="col-start-1 row-start-1 contain-inline-size"
+            initial={revision.count > 0 ? { opacity: 0 } : false}
+            animate={{ opacity: 1 }}
+            transition={spring.fast}
+          >
+            {text}
+          </motion.span>
+        ) : (
+          <span className="col-start-1 row-start-1 contain-inline-size">{display}</span>
+        )}
       </span>
-      {reduce ? (
-        <motion.span
-          key={revision.count}
-          aria-hidden="true"
-          className="absolute top-0 left-0"
-          initial={revision.count > 0 ? { opacity: 0 } : false}
-          animate={{ opacity: 1 }}
-          transition={spring.fast}
-        >
-          {text}
-        </motion.span>
-      ) : (
-        <span aria-hidden="true" className="absolute top-0 left-0">
-          {display}
-        </span>
-      )}
-    </span>
+    </>
   );
 }
