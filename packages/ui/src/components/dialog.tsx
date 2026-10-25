@@ -109,7 +109,7 @@ export function Dialog({
                 {...gate}
                 style={{ ...gate.style, borderRadius: 28 }}
                 className={cn(
-                  "pointer-events-auto relative w-full max-w-sm overflow-hidden border border-border outline-none",
+                  "pointer-events-auto relative w-full max-w-sm overflow-hidden outline-none",
                   surface.className,
                   className,
                 )}

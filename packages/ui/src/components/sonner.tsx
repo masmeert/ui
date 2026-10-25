@@ -34,7 +34,7 @@ function Toaster({ toastOptions, ...props }: ToasterProps) {
         unstyled: true,
         classNames: {
           toast: cn(
-            "pointer-events-auto grid w-(--width) grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 rounded-[28px] border border-border p-3 has-data-description:items-start",
+            "pointer-events-auto grid w-(--width) grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 rounded-[28px] p-3 has-data-description:items-start",
             surface.className,
           ),
           icon: "inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground",

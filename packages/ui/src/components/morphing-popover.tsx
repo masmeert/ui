@@ -326,7 +326,7 @@ export function MorphingPopoverContent({
             transformOrigin: originFor(growSide, growAlign),
           }}
           // Electron hit-tests `app-region: drag` regardless of stacking, so a panel over a drag area would lose its clicks.
-          className="fixed z-(--z-popup) [filter:drop-shadow(0_1px_1px_rgb(0_0_0/0.06))_drop-shadow(0_8px_20px_rgb(0_0_0/0.12))] [-webkit-app-region:no-drag]"
+          className="fixed z-(--z-popup) [filter:var(--surface-drop-filter)] [-webkit-app-region:no-drag]"
         >
           <motion.div
             ref={ctx.contentRef}

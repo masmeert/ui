@@ -118,7 +118,7 @@ export function MultiSelectContent({
         } as CSSProperties
       }
       className={cn(
-        "fixed z-(--z-popup) w-(--multi-select-trigger-width) overflow-hidden rounded-xl border border-border text-popover-foreground outline-none",
+        "fixed z-(--z-popup) w-(--multi-select-trigger-width) overflow-hidden rounded-xl text-popover-foreground outline-none",
         surface.className,
         className,
       )}

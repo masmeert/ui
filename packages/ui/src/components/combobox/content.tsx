@@ -117,7 +117,7 @@ export function ComboboxContent({
         } as CSSProperties
       }
       className={cn(
-        "fixed z-(--z-popup) w-(--combobox-trigger-width) overflow-hidden rounded-xl border border-border text-popover-foreground outline-none",
+        "fixed z-(--z-popup) w-(--combobox-trigger-width) overflow-hidden rounded-xl text-popover-foreground outline-none",
         surface.className,
         className,
       )}

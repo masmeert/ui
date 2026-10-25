@@ -47,7 +47,7 @@ export function TooltipSurface({
       animate="animate"
       exit="exit"
       className={cn(
-        "block rounded-lg border border-border px-2.5 py-1 font-medium whitespace-nowrap text-foreground",
+        "block rounded-lg px-2.5 py-1 font-medium whitespace-nowrap text-foreground",
         surface.className,
         typeClass("caption"),
         className,

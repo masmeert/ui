@@ -188,7 +188,7 @@ function DropdownMenuPopup({
       data-slot="dropdown-menu-content"
       ref={setPopupRef}
       className={cn(
-        "group/menu relative flex max-h-(--available-height) min-w-[8rem] origin-(--transform-origin) flex-col gap-0.5 overflow-x-hidden overflow-y-auto rounded-xl border p-1.5 text-popover-foreground outline-hidden",
+        "group/menu relative flex max-h-(--available-height) min-w-[8rem] origin-(--transform-origin) flex-col gap-0.5 overflow-x-hidden overflow-y-auto rounded-xl p-1.5 text-popover-foreground outline-hidden",
         surface.className,
         "duration-(--duration-moderate) data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:duration-(--duration-exit-moderate) data-closed:ease-(--ease-exit) data-closed:fade-out-0 data-closed:fill-mode-forwards data-closed:zoom-out-95",
         className,

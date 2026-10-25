@@ -237,7 +237,7 @@ export function UnfoldModalContent({
               {/* Never takes pointer events, so it only needs `inert`. */}
               <div
                 inert={!isPresent}
-                className="pointer-events-none fixed inset-4 z-(--z-overlay) flex items-center justify-center overflow-y-auto [filter:drop-shadow(0_1px_1px_rgb(0_0_0/0.06))_drop-shadow(0_8px_20px_rgb(0_0_0/0.12))]"
+                className="pointer-events-none fixed inset-4 z-(--z-overlay) flex items-center justify-center overflow-y-auto [filter:var(--surface-drop-filter)]"
               >
                 <div className="flex w-full flex-col items-center py-8">
                   <motion.div

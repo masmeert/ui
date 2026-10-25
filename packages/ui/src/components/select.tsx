@@ -310,7 +310,7 @@ export function SelectContent({ className, children }: SelectContentProps) {
         if (!open) setShown(false);
       }}
       className={cn(
-        "absolute right-0 left-0 z-(--z-popup) overflow-hidden rounded-[12px] border border-border",
+        "absolute right-0 left-0 z-(--z-popup) overflow-hidden rounded-[12px]",
         surface.className,
         isTop ? "bottom-full mb-2 origin-bottom" : "top-full mt-2 origin-top",
         open ? "pointer-events-auto" : "pointer-events-none",

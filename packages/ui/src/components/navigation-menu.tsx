@@ -250,7 +250,7 @@ function NavigationMenuPositioner({
       >
         <NavigationMenuPrimitive.Popup
           className={cn(
-            "relative h-(--popup-height) w-(--popup-width) origin-(--transform-origin) overflow-hidden rounded-xl border text-popover-foreground outline-none",
+            "relative h-(--popup-height) w-(--popup-width) origin-(--transform-origin) overflow-hidden rounded-xl text-popover-foreground outline-none",
             surface.className,
             "transition-[width,height] duration-(--duration-slow) ease-out data-open:animate-in data-open:fade-in-0 data-open:zoom-in-90 data-closed:animate-out data-closed:duration-(--duration-exit-slow) data-closed:ease-(--ease-exit) data-closed:fade-out-0 data-closed:fill-mode-forwards data-closed:zoom-out-95",
           )}
