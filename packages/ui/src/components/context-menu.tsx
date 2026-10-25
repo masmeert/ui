@@ -486,7 +486,7 @@ export function ContextMenuContent({
       style={{ left: position.x, top: position.y }}
       // A drop-shadow follows the clip as the menu unclips from the pointer; a box-shadow would sit at full size around it from the first frame.
       className={cn(
-        "fixed z-(--z-popup) [filter:drop-shadow(0_18px_28px_rgb(0_0_0/0.2))]",
+        "fixed z-(--z-popup) [filter:var(--surface-drop-filter)]",
         context.open ? "pointer-events-auto" : "pointer-events-none",
       )}
     >

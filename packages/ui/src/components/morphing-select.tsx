@@ -296,7 +296,7 @@ export function MorphingSelectContent({ className, children }: MorphingSelectCon
             transition={reducedTransition(MORPH_OPEN, ctx.reduce)}
             style={{ borderRadius: 12 }}
             className={cn(
-              "absolute inset-x-0 top-0 z-(--z-popup) overflow-hidden border border-border",
+              "absolute inset-x-0 top-0 z-(--z-popup) overflow-hidden",
               surface.className,
               className,
             )}

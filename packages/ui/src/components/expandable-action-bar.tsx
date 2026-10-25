@@ -233,7 +233,7 @@ export function ExpandableActionBar({
             layout="size"
             className={cn(
               // Scrolls rather than overflowing, so the last action stays reachable.
-              "relative scrollbar-hide inline-flex max-w-full items-center gap-1 overflow-x-auto overflow-y-hidden rounded-full border border-border",
+              "relative scrollbar-hide inline-flex max-w-full items-center gap-1 overflow-x-auto overflow-y-hidden rounded-full",
               surface.className,
               t.segmentPad,
               t.text,

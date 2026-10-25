@@ -177,7 +177,6 @@ export function Drawer({
               style={{ maxHeight: snapValue === "auto" ? "92vh" : undefined, ...gate.style }}
               className={cn(
                 "pointer-events-auto fixed right-0 bottom-0 left-0 z-(--z-overlay) mx-auto flex max-w-2xl flex-col overflow-hidden rounded-t-3xl will-change-transform",
-                "border border-border",
                 surface.className,
                 className,
               )}

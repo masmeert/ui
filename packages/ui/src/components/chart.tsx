@@ -172,7 +172,7 @@ function ChartTooltipContent({
   return (
     <div
       className={cn(
-        "grid min-w-32 items-start gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-foreground",
+        "grid min-w-32 items-start gap-1.5 rounded-lg px-2.5 py-1.5 text-foreground",
         surface.className,
         type.caption,
         className,

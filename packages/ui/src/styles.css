@@ -51,60 +51,53 @@
   --radius-xl: 1.25rem;
   --radius-2xl: 1.75rem;
 
-  /* Light keeps one colour from level 2 up; dark adds --surface-step of white per level. */
+  /* Each level mixes --surface-step more white into the page: light lifts to white by level 3,
+     dark climbs one step per level. */
   --color-surface-1: var(--background);
-  --color-surface-2: var(--popover);
+  --color-surface-2: color-mix(
+    in oklab,
+    var(--background),
+    var(--surface-tint) min(100%, calc(var(--surface-step) * 1))
+  );
   --color-surface-3: color-mix(
     in oklab,
-    var(--popover),
-    var(--surface-tint) calc(var(--surface-step) * 1)
+    var(--background),
+    var(--surface-tint) min(100%, calc(var(--surface-step) * 2))
   );
   --color-surface-4: color-mix(
     in oklab,
-    var(--popover),
-    var(--surface-tint) calc(var(--surface-step) * 2)
+    var(--background),
+    var(--surface-tint) min(100%, calc(var(--surface-step) * 3))
   );
   --color-surface-5: color-mix(
     in oklab,
-    var(--popover),
-    var(--surface-tint) calc(var(--surface-step) * 3)
+    var(--background),
+    var(--surface-tint) min(100%, calc(var(--surface-step) * 4))
   );
   --color-surface-6: color-mix(
     in oklab,
-    var(--popover),
-    var(--surface-tint) calc(var(--surface-step) * 4)
+    var(--background),
+    var(--surface-tint) min(100%, calc(var(--surface-step) * 5))
   );
   --color-surface-7: color-mix(
     in oklab,
-    var(--popover),
-    var(--surface-tint) calc(var(--surface-step) * 5)
+    var(--background),
+    var(--surface-tint) min(100%, calc(var(--surface-step) * 6))
   );
   --color-surface-8: color-mix(
     in oklab,
-    var(--popover),
-    var(--surface-tint) calc(var(--surface-step) * 6)
+    var(--background),
+    var(--surface-tint) min(100%, calc(var(--surface-step) * 7))
   );
 
-  --shadow-surface-1: 0 0 #0000;
-  --shadow-surface-2: 0 1px 2px rgb(0 0 0 / calc(0.05 * var(--shadow-k)));
-  --shadow-surface-3:
-    0 1px 1px rgb(0 0 0 / calc(0.06 * var(--shadow-k))),
-    0 8px 20px rgb(0 0 0 / calc(0.12 * var(--shadow-k)));
-  --shadow-surface-4:
-    0 1px 2px rgb(0 0 0 / calc(0.06 * var(--shadow-k))),
-    0 12px 28px rgb(0 0 0 / calc(0.14 * var(--shadow-k)));
-  --shadow-surface-5:
-    0 2px 4px rgb(0 0 0 / calc(0.06 * var(--shadow-k))),
-    0 16px 40px rgb(0 0 0 / calc(0.16 * var(--shadow-k)));
-  --shadow-surface-6:
-    0 2px 6px rgb(0 0 0 / calc(0.07 * var(--shadow-k))),
-    0 20px 48px rgb(0 0 0 / calc(0.18 * var(--shadow-k)));
-  --shadow-surface-7:
-    0 3px 8px rgb(0 0 0 / calc(0.08 * var(--shadow-k))),
-    0 24px 56px rgb(0 0 0 / calc(0.2 * var(--shadow-k)));
-  --shadow-surface-8:
-    0 4px 10px rgb(0 0 0 / calc(0.08 * var(--shadow-k))),
-    0 32px 72px rgb(0 0 0 / calc(0.22 * var(--shadow-k)));
+  --shadow-surface-1: var(--surface-shadow-1);
+  --shadow-surface-2: var(--surface-shadow-2);
+  --shadow-surface-3: var(--surface-shadow-3);
+  --shadow-surface-4: var(--surface-shadow-4);
+  --shadow-surface-5: var(--surface-shadow-5);
+  --shadow-surface-6: var(--surface-shadow-6);
+  --shadow-surface-7: var(--surface-shadow-7);
+  --shadow-surface-8: var(--surface-shadow-8);
 
   --color-hover: color-mix(in oklab, var(--overlay) var(--hover-alpha), transparent);
   --color-selected: color-mix(in oklab, var(--overlay) var(--selected-alpha), transparent);
@@ -192,8 +185,38 @@
     --z-tooltip: 300;
 
     --surface-tint: oklch(100% 0 0);
-    --surface-step: 0%;
-    --shadow-k: 1;
+    --surface-step: 50%;
+    /* Hairline ring plus drops that double in reach per level: tight enough to sit in an 8px gutter. */
+    --shadow-color: rgb(0 0 0 / 0.06);
+    --surface-shadow-1: 0 0 0 1px var(--shadow-color);
+    --surface-shadow-2: 0 0 0 1px var(--shadow-color), 0 1px 1px -0.5px var(--shadow-color);
+    --surface-shadow-3:
+      0 0 0 1px var(--shadow-color), 0 1px 1px -0.5px var(--shadow-color),
+      0 3px 3px -1.5px var(--shadow-color);
+    --surface-shadow-4:
+      0 0 0 1px var(--shadow-color), 0 1px 1px -0.5px var(--shadow-color),
+      0 3px 3px -1.5px var(--shadow-color), 0 6px 6px -3px var(--shadow-color);
+    --surface-shadow-5:
+      0 0 0 1px var(--shadow-color), 0 1px 1px -0.5px var(--shadow-color),
+      0 3px 3px -1.5px var(--shadow-color), 0 6px 6px -3px var(--shadow-color),
+      0 12px 12px -6px var(--shadow-color);
+    --surface-shadow-6:
+      0 0 0 1px var(--shadow-color), 0 1px 1px -0.5px var(--shadow-color),
+      0 3px 3px -1.5px var(--shadow-color), 0 6px 6px -3px var(--shadow-color),
+      0 12px 12px -6px var(--shadow-color), 0 24px 24px -12px var(--shadow-color);
+    --surface-shadow-7:
+      0 0 0 1px var(--shadow-color), 0 1px 1px -0.5px var(--shadow-color),
+      0 3px 3px -1.5px var(--shadow-color), 0 6px 6px -3px var(--shadow-color),
+      0 12px 12px -6px var(--shadow-color), 0 24px 24px -12px var(--shadow-color),
+      0 48px 48px -24px var(--shadow-color);
+    --surface-shadow-8:
+      0 0 0 1px var(--shadow-color), 0 1px 1px -0.5px var(--shadow-color),
+      0 3px 3px -1.5px var(--shadow-color), 0 6px 6px -3px var(--shadow-color),
+      0 12px 12px -6px var(--shadow-color), 0 24px 24px -12px var(--shadow-color),
+      0 48px 48px -24px var(--shadow-color), 0 96px 96px -48px var(--shadow-color);
+    /* For surfaces whose clip-path would cut a box-shadow off: the drop half of level 3. */
+    --surface-drop-filter: drop-shadow(0 1px 1px var(--shadow-color))
+      drop-shadow(0 3px 3px var(--shadow-color));
     --overlay: oklch(0% 0 0);
     --hover-alpha: 5%;
     --selected-alpha: 8%;
@@ -234,7 +257,51 @@
 
   .dark {
     --surface-step: 4%;
-    --shadow-k: 2.4;
+    /* Dark lifts with a lit top edge and an inner ring; drops only add weight. */
+    --surface-highlight-base: rgb(255 255 255 / 0.01);
+    --surface-highlight-mid: rgb(255 255 255 / 0.02);
+    --surface-highlight-high: rgb(255 255 255 / 0.04);
+    --surface-highlight-peak: rgb(255 255 255 / 0.06);
+    --surface-ring-base: rgb(255 255 255 / 0.02);
+    --surface-ring-mid: rgb(255 255 255 / 0.04);
+    --surface-ring-high: rgb(255 255 255 / 0.06);
+    --surface-drop: rgb(0 0 0 / 0.18);
+    --surface-shadow-1: inset 0 0 0 1px var(--surface-ring-base);
+    --surface-shadow-2:
+      inset 0 1px 0 0 var(--surface-highlight-base), inset 0 0 0 1px var(--surface-ring-base),
+      0 1px 1px -0.5px var(--surface-drop);
+    --surface-shadow-3:
+      inset 0 1px 0 0 var(--surface-highlight-mid), inset 0 0 0 1px var(--surface-ring-base),
+      0 0 0 1px rgb(0 0 0 / 0.12), 0 1px 1px -0.5px var(--surface-drop),
+      0 3px 3px -1.5px var(--surface-drop);
+    --surface-shadow-4:
+      inset 0 1px 0 0 var(--surface-highlight-mid), inset 0 0 0 1px var(--surface-ring-mid),
+      0 0 0 1px rgb(0 0 0 / 0.14), 0 1px 1px -0.5px var(--surface-drop),
+      0 3px 3px -1.5px var(--surface-drop), 0 6px 6px -3px var(--surface-drop);
+    --surface-shadow-5:
+      inset 0 1px 0 0 var(--surface-highlight-high), inset 0 0 0 1px var(--surface-ring-mid),
+      0 0 0 1px rgb(0 0 0 / 0.16), 0 1px 1px -0.5px var(--surface-drop),
+      0 3px 3px -1.5px var(--surface-drop), 0 6px 6px -3px var(--surface-drop),
+      0 12px 12px -6px var(--surface-drop);
+    --surface-shadow-6:
+      inset 0 1px 0 0 var(--surface-highlight-high), inset 0 0 0 1px var(--surface-ring-high),
+      0 0 0 1px rgb(0 0 0 / 0.18), 0 1px 1px -0.5px var(--surface-drop),
+      0 3px 3px -1.5px var(--surface-drop), 0 6px 6px -3px var(--surface-drop),
+      0 12px 12px -6px var(--surface-drop), 0 24px 24px -12px var(--surface-drop);
+    --surface-shadow-7:
+      inset 0 1px 0 0 var(--surface-highlight-peak), inset 0 0 0 1px var(--surface-ring-high),
+      0 0 0 1px rgb(0 0 0 / 0.2), 0 1px 1px -0.5px var(--surface-drop),
+      0 3px 3px -1.5px var(--surface-drop), 0 6px 6px -3px var(--surface-drop),
+      0 12px 12px -6px var(--surface-drop), 0 24px 24px -12px var(--surface-drop),
+      0 48px 48px -24px var(--surface-drop);
+    --surface-shadow-8:
+      inset 0 1px 0 0 var(--surface-highlight-peak), inset 0 0 0 1px var(--surface-ring-high),
+      0 0 0 1px rgb(0 0 0 / 0.22), 0 1px 1px -0.5px var(--surface-drop),
+      0 3px 3px -1.5px var(--surface-drop), 0 6px 6px -3px var(--surface-drop),
+      0 12px 12px -6px var(--surface-drop), 0 24px 24px -12px var(--surface-drop),
+      0 48px 48px -24px var(--surface-drop), 0 96px 96px -48px var(--surface-drop);
+    --surface-drop-filter: drop-shadow(0 1px 1px var(--surface-drop))
+      drop-shadow(0 3px 3px var(--surface-drop));
     --overlay: oklch(100% 0 0);
     --hover-alpha: 6%;
     --selected-alpha: 10%;

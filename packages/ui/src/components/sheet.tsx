@@ -88,9 +88,7 @@ export function Sheet({
               className={cn(
                 "fixed inset-y-0 z-(--z-overlay) flex w-80 max-w-[85vw] flex-col",
                 surface.className,
-                side === "right"
-                  ? "right-0 border-l border-border"
-                  : "left-0 border-r border-border",
+                side === "right" ? "right-0" : "left-0",
                 className,
               )}
             >

@@ -227,7 +227,7 @@ export function CommandDialog({
                 {...gate}
                 onKeyDown={onKeyDown}
                 className={cn(
-                  "pointer-events-auto w-full max-w-xl overflow-hidden rounded-2xl border border-border",
+                  "pointer-events-auto w-full max-w-xl overflow-hidden rounded-2xl",
                   surface.className,
                 )}
               >
