@@ -142,6 +142,7 @@ interface SidebarPanelContextValue {
   collapsed: boolean;
   collapsible: SidebarCollapsible;
   side: SidebarSide;
+  variant: SidebarVariant;
 }
 
 const SidebarPanelContext = createContext<SidebarPanelContextValue | null>(null);
@@ -419,15 +420,17 @@ function MobileSidebar({
         }}
         className={cn(
           "pointer-events-auto fixed inset-y-0 flex h-dvh w-(--sidebar-width-mobile) max-w-[88vw] flex-col overflow-hidden",
-          "border-border will-change-transform",
+          "will-change-transform",
           surface.className,
-          side === "left" ? "left-0 border-r" : "right-0 border-l",
+          side === "left" ? "left-0" : "right-0",
           !context.openMobile && "pointer-events-none",
           className,
         )}
       >
         <SurfaceProvider value={surface.level}>
-          <SidebarPanelContext.Provider value={{ collapsed: false, collapsible: "none", side }}>
+          <SidebarPanelContext.Provider
+            value={{ collapsed: false, collapsible: "none", side, variant: "sidebar" }}
+          >
             {children}
           </SidebarPanelContext.Provider>
         </SurfaceProvider>
@@ -461,12 +464,16 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(function Sidebar(
   forwardedRef,
 ) {
   const context = useSidebar();
+  const floating = useElevation(1, { shadowLevel: 3 });
   const collapsed = collapsible !== "none" && !context.open;
   const offcanvas = collapsed && collapsible === "offcanvas";
   const width = offcanvas
     ? "0px"
     : collapsed
-      ? "var(--sidebar-width-icon)"
+      ? // The floating card's gutter comes on top, so the icon column stays centred.
+        variant === "floating"
+        ? "calc(var(--sidebar-width-icon) + 1rem)"
+        : "var(--sidebar-width-icon)"
       : "var(--sidebar-width)";
 
   if (context.isMobile) {
@@ -476,6 +483,11 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(function Sidebar(
       </MobileSidebar>
     );
   }
+
+  // Off-canvas, the column's width and the panel's slide share one spring, so the panel's edge
+  // stays on the column's edge and the content beside it glides instead of jumping.
+  const slideTransition =
+    context.reduce || context.instant ? INSTANT : context.open ? spring.slow : springExit.slow;
 
   return (
     <motion.aside
@@ -490,46 +502,56 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(function Sidebar(
       data-side={side}
       animate={{ width }}
       transition={
-        context.reduce || context.instant || collapsible === "offcanvas"
-          ? INSTANT
-          : SIDEBAR_MORPH_TRANSITION
+        collapsible === "offcanvas"
+          ? slideTransition
+          : context.reduce || context.instant
+            ? INSTANT
+            : SIDEBAR_MORPH_TRANSITION
       }
       style={style}
       className={cn(
-        "group/sidebar relative hidden h-auto shrink-0 md:block",
+        "group/sidebar relative hidden h-auto shrink-0 items-start md:flex",
         "peer",
-        side === "right" && "order-last",
+        // The off-canvas panel keeps its width while the column narrows; it overflows the column's
+        // outer side (flex-end overflows the start), and `clip` hides it without breaking sticky.
+        side === "right" && "order-last justify-end",
+        collapsible === "offcanvas" && "overflow-x-clip",
         className,
       )}
     >
       <motion.div
         initial={false}
         inert={offcanvas}
-        animate={{
-          opacity: offcanvas ? 0 : 1,
-          transform:
-            offcanvas && !context.reduce
-              ? `translateX(${side === "left" ? "-100%" : "100%"})`
-              : "translateX(0%)",
-        }}
-        transition={
-          context.instant
-            ? INSTANT
-            : reducedTransition(offcanvas ? springExit.moderate : spring.moderate, context.reduce)
-        }
+        animate={{ x: offcanvas ? (side === "left" ? "-100%" : "100%") : "0%" }}
+        transition={slideTransition}
         className={cn(
-          "sticky top-0 z-10 flex h-svh w-full flex-col overflow-hidden bg-background",
-          collapsible === "offcanvas" && "w-[var(--sidebar-width)]",
+          "sticky top-0 z-10 flex h-svh w-full flex-col overflow-hidden",
+          // Inset's card abuts the panel, and its ring sits 1px outside it: a filled panel would
+          // paint over the card's left edge.
+          variant !== "inset" && "bg-background",
+          collapsible === "offcanvas" && "w-[var(--sidebar-width)] shrink-0",
           variant === "sidebar" &&
             (side === "left" ? "border-r border-border" : "border-l border-border"),
-          variant === "floating" &&
-            "m-2 h-[calc(100svh-1rem)] rounded-2xl border border-border shadow-sm",
-          variant === "inset" && "m-2 h-[calc(100svh-1rem)] rounded-2xl",
+          // Floating lifts a card inside a full gutter; inset only needs the vertical gutter, since
+          // the content beside it is the card.
+          variant === "floating" && "p-2",
+          variant === "inset" && "py-2",
           panelClassName,
         )}
       >
-        <SidebarPanelContext.Provider value={{ collapsed, collapsible, side }}>
-          {children}
+        <SidebarPanelContext.Provider value={{ collapsed, collapsible, side, variant }}>
+          {variant === "floating" ? (
+            <div
+              className={cn(
+                "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl",
+                floating.className,
+              )}
+            >
+              <SurfaceProvider value={floating.level}>{children}</SurfaceProvider>
+            </div>
+          ) : (
+            children
+          )}
         </SidebarPanelContext.Provider>
       </motion.div>
     </motion.aside>
@@ -629,6 +651,12 @@ export const SidebarRail = forwardRef<HTMLButtonElement, SidebarRailProps>(funct
         "absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 outline-none md:block",
         "after:absolute after:inset-y-0 after:left-1/2 after:w-px after:bg-transparent after:transition-colors after:duration-(--duration-fast) hover:after:bg-border",
         "data-[side=left]:left-full data-[side=right]:right-0 data-[side=right]:translate-x-1/2",
+        // The floating card sits inside the panel's gutter, so the rail straddles the card's edge.
+        panel.variant === "floating" &&
+          "data-[side=left]:left-[calc(100%-0.5rem)] data-[side=right]:right-2",
+        // Beside a rounded card the hairline runs its straight edge only, fading out at the corners.
+        panel.variant !== "sidebar" &&
+          "after:inset-y-2 after:[mask-image:linear-gradient(to_bottom,transparent_16px,black_40px,black_calc(100%-40px),transparent_calc(100%-16px))]",
         className,
       )}
     />
@@ -648,7 +676,13 @@ export const SidebarInset = forwardRef<HTMLElement, SidebarInsetProps>(function 
       data-slot="sidebar-inset"
       className={cn(
         "relative flex min-h-svh min-w-0 flex-1 flex-col bg-background",
-        "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-2xl md:peer-data-[variant=inset]:shadow-sm",
+        "md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:min-h-[calc(100svh-1rem)] md:peer-data-[variant=inset]:rounded-2xl",
+        "md:peer-data-[variant=inset]:bg-surface-2 md:peer-data-[variant=inset]:shadow-surface-2",
+        "md:peer-data-[variant=inset]:peer-data-[side=left]:ml-0 md:peer-data-[variant=inset]:peer-data-[side=right]:mr-0",
+        // With the sidebar gone off-canvas, the card gets its gutter back on that side too.
+        "md:peer-data-[variant=inset]:peer-data-[collapsible=offcanvas]:peer-data-[state=collapsed]:peer-data-[side=left]:ml-2",
+        "md:peer-data-[variant=inset]:peer-data-[collapsible=offcanvas]:peer-data-[state=collapsed]:peer-data-[side=right]:mr-2",
+        "transition-[margin] duration-(--duration-fast)",
         className,
       )}
     />
@@ -776,7 +810,6 @@ export const SidebarMenu = forwardRef<HTMLUListElement, HTMLAttributes<HTMLUList
       hover,
       listRef,
       ':scope > li > [data-slot="sidebar-menu-button"]',
-      '[aria-current="page"]',
     );
     const inSubMenu = useRef(false);
 
@@ -819,7 +852,9 @@ export const SidebarMenu = forwardRef<HTMLUListElement, HTMLAttributes<HTMLUList
             if (!isInSubMenu(event.target)) hover.handlers.onClick(event);
           }}
         >
-          <FluidHoverHighlight hover={hover} from={items.from} className="rounded-xl" />
+          {/* No `from`: a fresh entry fades in on the row it lands on, never slides in from the current
+              page's row (coming back up from a submenu included). */}
+          <FluidHoverHighlight hover={hover} className="rounded-xl" />
           {children}
         </ul>
       </SidebarMenuHoverContext.Provider>
@@ -889,7 +924,6 @@ const SidebarMenuSubList = forwardRef<HTMLUListElement, Omit<SidebarMenuSubProps
       hover,
       listRef,
       ':scope > li > [data-slot="sidebar-menu-sub-button"]',
-      '[aria-current="page"]',
     );
 
     return (
@@ -928,7 +962,7 @@ const SidebarMenuSubList = forwardRef<HTMLUListElement, Omit<SidebarMenuSubProps
           className,
         )}
       >
-        <FluidHoverHighlight hover={hover} from={items.from} className="rounded-lg" />
+        <FluidHoverHighlight hover={hover} className="rounded-lg" />
         {children}
       </motion.ul>
     );
