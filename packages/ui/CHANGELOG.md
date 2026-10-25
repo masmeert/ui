@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.4](https://github.com/masmeert/ui/compare/ui-v0.3.3...ui-v0.3.4) (2026-10-25)
+
+
+### Added
+
+* **sidebar:** Fluid-style floating and inset variants, gliding off-canvas ([f5973e9](https://github.com/masmeert/ui/commit/f5973e9fe97fd2bbcfba664edb52672521b2e5d8))
+* **ui:** Fluid-style surface ladder ([c2dbf46](https://github.com/masmeert/ui/commit/c2dbf46727ac638dda7448303753eedf55d39a7d))
+
+
+### Fixed
+
+* **ui:** measure fluid hover items by layout, not on-screen position ([fec2185](https://github.com/masmeert/ui/commit/fec218542e6ed9314cb4879db4abb9e2cfbc3c98))
+
 ## [0.3.3](https://github.com/masmeert/ui/compare/ui-v0.3.2...ui-v0.3.3) (2026-10-24)
 
 
