@@ -113,8 +113,21 @@ export function useFluidHover<T extends HTMLElement>(
     [geometry],
   );
 
+  // Layout offsets, not the on-screen box: an item mid-transform (a `layout` glide, a swipe, a
+  // popup's scale-in) would otherwise be measured where it is passing through, not where it lands.
   const rectOf = useCallback(
     (element: HTMLElement, g: NonNullable<ReturnType<typeof geometry>>): ItemRect => {
+      let top = element.offsetTop;
+      let left = element.offsetLeft;
+      let parent = element.offsetParent as HTMLElement | null;
+      while (parent && parent !== g.container && g.container.contains(parent)) {
+        top += parent.offsetTop + parent.clientTop - parent.scrollTop;
+        left += parent.offsetLeft + parent.clientLeft - parent.scrollLeft;
+        parent = parent.offsetParent as HTMLElement | null;
+      }
+      if (parent === g.container)
+        return { top, left, width: element.offsetWidth, height: element.offsetHeight };
+      // The offset chain skipped the container (it isn't positioned, or the item is fixed).
       const r = element.getBoundingClientRect();
       return {
         left: (r.left - g.box.left) / g.scaleX - g.container.clientLeft + g.container.scrollLeft,
@@ -158,7 +171,7 @@ export function useFluidHover<T extends HTMLElement>(
     [geometry, rectOf],
   );
 
-  /** For items moved by a transform, which the ResizeObserver can't see. Keeps the highlight up. */
+  /** For items moved without resizing, which the ResizeObserver can't see. Keeps the highlight up. */
   const refresh = useCallback(() => measure(), [measure]);
 
   /** Hides the highlight until measured: for a popup that just opened. */
@@ -223,8 +236,8 @@ export function useFluidHover<T extends HTMLElement>(
     [skip, toLocal],
   );
 
-  // Items that glide (a `layout` animation) are measured mid-flight when the list changes, and
-  // nothing fires once they land. The item under the pointer is checked on each move instead.
+  // Items can move without resizing (a sibling above grows), which the ResizeObserver misses.
+  // The item under the pointer is checked on each move instead.
   const isStale = useCallback(
     (target: EventTarget) => {
       const g = geometry();
