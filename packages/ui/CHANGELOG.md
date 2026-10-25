@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.5](https://github.com/masmeert/ui/compare/ui-v0.3.4...ui-v0.3.5) (2026-10-25)
+
+
+### Fixed
+
+* **ui:** register SharedLayoutBg rows in DOM order, not through refs ([4976a87](https://github.com/masmeert/ui/commit/4976a878d2bc59f93b0f4933bf92558e425602fb))
+
 ## [0.3.4](https://github.com/masmeert/ui/compare/ui-v0.3.3...ui-v0.3.4) (2026-10-25)
 
 
