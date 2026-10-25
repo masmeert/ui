@@ -7,8 +7,6 @@ import {
   type ReactElement,
   type ReactNode,
   type Ref,
-  type RefCallback,
-  useCallback,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -16,6 +14,7 @@ import {
 import { cn } from "cn";
 import { FluidHoverHighlight } from "@/components/fluid-hover-highlight";
 import { type FluidHoverAxis, useFluidHover } from "@/hooks/use-fluid-hover";
+import { useFluidHoverDomItems } from "@/hooks/use-fluid-hover-dom-items";
 
 export interface SharedLayoutBgProps extends Omit<HTMLAttributes<HTMLElement>, "children"> {
   children: ReactNode;
@@ -24,11 +23,6 @@ export interface SharedLayoutBgProps extends Omit<HTMLAttributes<HTMLElement>, "
   pillClassName?: string;
   /** px the pill extends past each row horizontally. */
   inset?: number;
-}
-
-function setRef<T>(ref: Ref<T> | undefined, value: T | null) {
-  if (typeof ref === "function") ref(value);
-  else if (ref) (ref as { current: T | null }).current = value;
 }
 
 export const SharedLayoutBg = forwardRef<HTMLElement, SharedLayoutBgProps>(function SharedLayoutBg(
@@ -50,26 +44,9 @@ export const SharedLayoutBg = forwardRef<HTMLElement, SharedLayoutBgProps>(funct
   const containerRef = useRef<HTMLElement>(null);
   useImperativeHandle(forwardedRef, () => containerRef.current as HTMLElement);
   const hover = useFluidHover(containerRef, { axis });
-  const { registerItem } = hover;
-
-  // Stable per index, so React doesn't re-run them every render.
-  const refCallbacks = useRef(new Map<number, RefCallback<HTMLElement>>());
-  const itemRef = useCallback(
-    (index: number, childRef: Ref<HTMLElement> | undefined) => {
-      let callback = refCallbacks.current.get(index);
-      if (!callback) {
-        callback = (element: HTMLElement | null) => registerItem(index, element);
-        refCallbacks.current.set(index, callback);
-      }
-      const register = callback;
-      if (!childRef) return register;
-      return (element: HTMLElement | null) => {
-        register(element);
-        setRef(childRef, element);
-      };
-    },
-    [registerItem],
-  );
+  // Rows are found in DOM order, not through refs: a `motion` child keeps the ref it mounted
+  // with, so a row that moved would stay registered at its old index.
+  useFluidHoverDomItems(hover, containerRef, ':scope > :not([data-slot="fluid-hover-highlight"])');
 
   const insetHover = useMemo(
     () => ({
@@ -83,12 +60,9 @@ export const SharedLayoutBg = forwardRef<HTMLElement, SharedLayoutBgProps>(funct
 
   const rendered = Children.toArray(children)
     .filter(isValidElement)
-    .map((child, index) => {
-      const el = child as ReactElement<{ className?: string; ref?: Ref<HTMLElement> }>;
-      return cloneElement(el, {
-        className: cn("relative z-10", el.props.className),
-        ref: itemRef(index, el.props.ref),
-      });
+    .map((child) => {
+      const el = child as ReactElement<{ className?: string }>;
+      return cloneElement(el, { className: cn("relative z-10", el.props.className) });
     });
 
   const Tag = as;
